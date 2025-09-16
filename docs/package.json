@@ -1,0 +1,35 @@
+{
+  "name": "portman-docs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start",
+    "postbuild": "pagefind --site .next/server/app --output-path public/_pagefind"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0x-ximon/Portman.git"
+  },
+  "author": "Simon Samuel",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/0x-ximon/Portman/issues"
+  },
+  "homepage": "https://github.com/0x-ximon/Portman#readme",
+  "dependencies": {
+    "next": "^15.5.3",
+    "nextra": "^4.4.0",
+    "nextra-theme-docs": "^4.4.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.1",
+    "@types/react": "^19.1.13",
+    "pagefind": "^1.4.0",
+    "typescript": "^5.9.2"
+  }
+}
