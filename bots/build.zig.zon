@@ -1,0 +1,7 @@
+.{
+    .name = .portman_bots,
+    .version = "0.0.1",
+    .minimum_zig_version = "0.15.1",
+    .paths = .{""},
+    .fingerprint = 0xe96e279485f961cd,
+}
