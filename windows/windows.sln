@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "portman_windows", "portman_windows.csproj", "{87B527F8-7B49-4467-A179-B529A1408F6C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "portman_windows", "portman_windows.csproj", "{5123C2D3-051B-457A-8AB5-0A3E7649736B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{87B527F8-7B49-4467-A179-B529A1408F6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{87B527F8-7B49-4467-A179-B529A1408F6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{87B527F8-7B49-4467-A179-B529A1408F6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{87B527F8-7B49-4467-A179-B529A1408F6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5123C2D3-051B-457A-8AB5-0A3E7649736B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5123C2D3-051B-457A-8AB5-0A3E7649736B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5123C2D3-051B-457A-8AB5-0A3E7649736B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5123C2D3-051B-457A-8AB5-0A3E7649736B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

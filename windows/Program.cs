@@ -1,3 +1,9 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿namespace portman_windows;
 
-Console.WriteLine("Hello, World!");
+class Program
+{
+    static void Main(string[] args)
+    {
+        Console.WriteLine("Hello, World!");
+    }
+}
