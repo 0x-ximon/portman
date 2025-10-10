@@ -1,28 +1,11 @@
 use serde::{Deserialize, Serialize};
+use sqlx::prelude::FromRow;
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, FromRow)]
 pub struct Ticker {
-    symbol: TickerSymbol,
-    name: TickerName,
-
-    last: TickerValue,
-    ask: TickerValue,
-    bid: TickerValue,
+    pub symbol: String,
+    pub name: String,
+    pub last: f32,
+    pub ask: f32,
+    pub bid: f32,
 }
-
-#[derive(Serialize, Deserialize, Debug, Default, Hash, PartialEq, Eq, Clone)]
-pub struct TickerSymbol(String);
-
-impl TickerSymbol {
-    pub fn new(quote: &str, base: &str) -> Self {
-        Self {
-            0: format!("{:?}/{:?}", quote.to_uppercase(), base.to_uppercase()),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct TickerName(String);
-
-#[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct TickerValue(f64);
