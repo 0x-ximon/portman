@@ -22,8 +22,8 @@ pub enum OrderType {
 pub struct Order {
     pub id: u64,
     pub side: Side,
+    pub price: Price,
     pub quantity: Quantity,
-    pub price: Option<Price>,
     pub order_type: OrderType,
     pub user_id: u64,
 }
@@ -85,6 +85,54 @@ impl OrderBook {
         }
     }
 
+    pub fn limit_order(&self, order: Order) -> anyhow::Result<()> {
+        if order.order_type != OrderType::Limit {
+            return Err(anyhow::anyhow!(
+                "Order type must be Limit for processing limit orders."
+            ));
+        }
+
+        if order.quantity == 0.0 {
+            return Err(anyhow::anyhow!("Order quantity cannot be zero."));
+        }
+
+        match order.side {
+            Side::Buy => {
+                let mut bids = self.bids.write().map_err(|e| {
+                    anyhow::anyhow!("RwLock poisoned while acquiring asks write lock: {}", e)
+                })?;
+
+                self.process_limit_order(order, &mut bids)
+            }
+
+            Side::Sell => {
+                let mut asks = self.asks.write().map_err(|e| {
+                    anyhow::anyhow!("RwLock poisoned while acquiring bids write lock: {}", e)
+                })?;
+
+                self.process_limit_order(order, &mut asks)
+            }
+        }
+    }
+
+    fn process_limit_order(
+        &self,
+        order: Order,
+        book: &mut RwLockWriteGuard<'_, BTreeMap<u64, PriceLevel>>,
+    ) -> anyhow::Result<()> {
+        let key = self.price_to_key(order.price);
+        let level = book.entry(key).or_insert_with(|| PriceLevel {
+            quantity: 0.0,
+            price: order.price,
+            orders: VecDeque::new(),
+        });
+
+        level.quantity += order.quantity;
+        level.orders.push_back(order);
+
+        Ok(())
+    }
+
     fn process_market_order(
         &self,
         order: &Order,
@@ -138,45 +186,11 @@ impl OrderBook {
         (trades, remaining_quantity)
     }
 
-    fn process_limit_order(&self, mut order: &Order) -> anyhow::Result<()> {
-        match order.side {
-            Side::Buy => {
-                let mut asks = self.asks.write().unwrap();
-                todo!()
-            }
-            Side::Sell => {
-                let mut bids = self.bids.write().unwrap();
-                todo!()
-            }
-        }
-
-        //         match order.side {
-        //             Side::Buy => {
-        //                 let mut bids = self.bids.write().map_err(|e| format!("Lock error: {}", e))?;
-        //                 let level = bids.entry(price_key).or_insert_with(|| PriceLevel {
-        //                     price: order.price,
-        //                     total_quantity: 0,
-        //                 });
-        //                 level.total_quantity += order.quantity;
-        //             }
-        //             Side::Sell => {
-        //                 let mut asks = self.asks.write().map_err(|e| format!("Lock error: {}", e))?;
-        //                 let level = asks.entry(price_key).or_insert_with(|| PriceLevel {
-        //                     price: order.price,
-        //                     total_quantity: 0,
-        //                 });
-        //                 level.total_quantity += order.quantity;
-        //             }
-        //         }
-        //         println!("LIMIT ORDER ID {} added to the book at price {}.", order.id, order.price);
-        //         Ok(())
-    }
-
-    fn price_to_key(self, price: Price) -> u64 {
+    fn price_to_key(&self, price: Price) -> u64 {
         (price * 10f64.powi(self.order_precision as i32)).round() as u64
     }
 
-    fn key_to_price(self, key: u64) -> Price {
+    fn key_to_price(&self, key: u64) -> Price {
         key as f64 / 10f64.powi(self.order_precision as i32)
     }
 
