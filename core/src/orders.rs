@@ -129,7 +129,7 @@ impl OrderBook {
 
     fn process_limit_order(
         &self,
-        order: Order,
+        mut order: Order,
         book: &mut RwLockWriteGuard<'_, BTreeMap<u64, PriceLevel>>,
     ) -> anyhow::Result<()> {
         let key = self.price_to_key(order.price);
@@ -138,6 +138,10 @@ impl OrderBook {
             price: order.price,
             orders: VecDeque::new(),
         });
+
+        order.id = self
+            .order_counter
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         level.quantity += order.quantity;
         level.orders.push_back(order);
@@ -206,14 +210,5 @@ impl OrderBook {
 
     fn price_to_key(&self, price: Price) -> u64 {
         (price * 10f64.powi(self.order_precision as i32)).round() as u64
-    }
-
-    fn key_to_price(&self, key: u64) -> Price {
-        key as f64 / 10f64.powi(self.order_precision as i32)
-    }
-
-    fn get_next_id(&self) -> u64 {
-        use std::sync::atomic::Ordering::Relaxed;
-        self.order_counter.fetch_add(1, Relaxed)
     }
 }

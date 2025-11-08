@@ -3,7 +3,7 @@ use std::sync::Arc;
 use tonic::{Request, Response, Status};
 
 use portman_server::orders_server::Orders;
-use portman_server::{Order, Trade};
+use portman_server::{Order, Trade, Trades};
 
 use crate::orders::{OrderBook, OrderType, Side};
 
@@ -24,7 +24,7 @@ impl PortmanOrdersServer {
 
 #[tonic::async_trait]
 impl Orders for PortmanOrdersServer {
-    async fn submit_order(&self, request: Request<Order>) -> Result<Response<Trade>, Status> {
+    async fn submit_order(&self, request: Request<Order>) -> Result<Response<Trades>, Status> {
         let recv_order = request.into_inner();
 
         let order = crate::orders::Order {
@@ -49,20 +49,44 @@ impl Orders for PortmanOrdersServer {
 
         match order.order_type {
             OrderType::Market => {
-                self.order_book
+                // TODO: Handle case of remaining quantity
+                let (trades, _) = self
+                    .order_book
                     .market_order(order)
                     .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
 
-                todo!()
+                Ok(Response::new(Trades {
+                    trades: trades
+                        .iter()
+                        .map(|t| Trade {
+                            id: t.id,
+                            executed_price: t.executed_price,
+                            order: Some(Order {
+                                id: t.order.id,
+                                side: match t.order.side {
+                                    Side::Buy => 0,
+                                    Side::Sell => 1,
+                                },
+                                price: t.order.price,
+                                quantity: t.order.quantity,
+                                order_type: match t.order.order_type {
+                                    OrderType::Market => 0,
+                                    OrderType::Limit => 1,
+                                },
+                                user_id: t.order.user_id,
+                            }),
+                        })
+                        .collect(),
+                }))
             }
 
             OrderType::Limit => {
                 self.order_book
-                    .market_order(order)
+                    .limit_order(order)
                     .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
 
-                todo!()
+                Ok(Response::new(Trades { trades: vec![] }))
             }
-        };
+        }
     }
 }

@@ -2,11 +2,11 @@ syntax = "proto3";
 package orders_package;
 
 service Orders {
-    rpc SubmitOrder (Order) returns (Trade);
+    rpc SubmitOrder (Order) returns (Trades);
 }
 
 message Order {
-    string id = 1;
+    uint64 id = 1;
     Side side = 2;
     double price = 3;
     double quantity = 4;
@@ -25,7 +25,11 @@ enum OrderType {
 }
 
 message Trade {
-    string id = 1;
+    uint64 id = 1;
     double executed_price = 2;
     Order order = 3;
+}
+
+message Trades {
+    repeated Trade trades = 1;
 }
