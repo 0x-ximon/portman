@@ -1,0 +1,30 @@
+syntax = "proto3";
+package orders_package;
+
+service Orders {
+    rpc SubmitOrder (Order) returns (Trade);
+}
+
+message Order {
+    string id = 1;
+    Side side = 2;
+    double price = 3;
+    double quantity = 4;
+    OrderType order_type = 5;
+}
+
+enum Side {
+    Buy = 0;
+    Sell = 1;
+}
+
+enum OrderType {
+    Market = 0;
+    Limit = 1;
+}
+
+message Trade {
+    string id = 1;
+    double executed_price = 2;
+    Order order = 3;
+}

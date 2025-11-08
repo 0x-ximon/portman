@@ -29,8 +29,9 @@ pub struct Order {
 }
 
 pub struct Trade {
-    pub order: Order,
+    pub id: u64,
     pub executed_price: Price,
+    pub order: Order,
 }
 
 struct PriceLevel {
@@ -42,6 +43,7 @@ struct PriceLevel {
 struct OrderBook {
     pub bids: RwLock<BTreeMap<u64, PriceLevel>>,
     pub asks: RwLock<BTreeMap<u64, PriceLevel>>,
+    pub trade_counter: AtomicU64,
     pub order_counter: AtomicU64,
     pub order_precision: u8,
 }
@@ -51,6 +53,7 @@ impl OrderBook {
         OrderBook {
             bids: RwLock::new(BTreeMap::new()),
             asks: RwLock::new(BTreeMap::new()),
+            trade_counter: AtomicU64::new(1),
             order_counter: AtomicU64::new(1),
             order_precision: precision,
         }
@@ -158,17 +161,23 @@ impl OrderBook {
                 opposite_order.quantity -= fill_qty;
                 level.quantity -= fill_qty;
 
+                let id = self
+                    .trade_counter
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
                 if remaining_quantity == 0.0 {
                     trades.push(Trade {
                         // TODO: Use VWAP for executed price
                         executed_price: level.price,
                         order: *order,
+                        id: id,
                     });
                 } else if opposite_order.quantity == 0.0 {
                     if let Some(completed_order) = level.orders.pop_front() {
                         trades.push(Trade {
                             executed_price: level.price,
                             order: completed_order,
+                            id: id,
                         });
                     }
                 }
