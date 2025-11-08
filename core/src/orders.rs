@@ -6,19 +6,19 @@ use std::{
 pub type Price = f64;
 pub type Quantity = f64;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Side {
     Buy,
     Sell,
 }
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum OrderType {
     Market,
     Limit,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Order {
     pub id: u64,
     pub side: Side,
@@ -34,18 +34,27 @@ pub struct Trade {
     pub order: Order,
 }
 
-struct PriceLevel {
+#[derive(Debug)]
+pub struct PriceLevel {
     pub price: Price,
     pub quantity: Quantity,
     pub orders: VecDeque<Order>,
 }
 
-struct OrderBook {
+#[derive(Debug)]
+pub struct OrderBook {
     pub bids: RwLock<BTreeMap<u64, PriceLevel>>,
     pub asks: RwLock<BTreeMap<u64, PriceLevel>>,
     pub trade_counter: AtomicU64,
     pub order_counter: AtomicU64,
     pub order_precision: u8,
+}
+
+impl Default for OrderBook {
+    fn default() -> Self {
+        // Default precision of 2 decimal places
+        OrderBook::new(2)
+    }
 }
 
 impl OrderBook {
@@ -59,7 +68,7 @@ impl OrderBook {
         }
     }
 
-    pub fn market_order(&self, order: &Order) -> anyhow::Result<(Vec<Trade>, f64)> {
+    pub fn market_order(&self, order: Order) -> anyhow::Result<(Vec<Trade>, f64)> {
         if order.order_type != OrderType::Market {
             return Err(anyhow::anyhow!(
                 "Order type must be Market for processing market orders."
@@ -75,14 +84,14 @@ impl OrderBook {
                 let mut asks = self.asks.write().map_err(|e| {
                     anyhow::anyhow!("RwLock poisoned while acquiring asks write lock: {}", e)
                 })?;
-                let (trades, remaining_quantity) = self.process_market_order(&order, &mut asks);
+                let (trades, remaining_quantity) = self.process_market_order(order, &mut asks);
                 Ok((trades, remaining_quantity))
             }
             Side::Sell => {
                 let mut bids = self.bids.write().map_err(|e| {
                     anyhow::anyhow!("RwLock poisoned while acquiring bids write lock: {}", e)
                 })?;
-                let (trades, remaining_quantity) = self.process_market_order(&order, &mut bids);
+                let (trades, remaining_quantity) = self.process_market_order(order, &mut bids);
                 Ok((trades, remaining_quantity))
             }
         }
@@ -138,7 +147,7 @@ impl OrderBook {
 
     fn process_market_order(
         &self,
-        order: &Order,
+        order: Order,
         book: &mut RwLockWriteGuard<BTreeMap<u64, PriceLevel>>,
     ) -> (Vec<Trade>, f64) {
         let mut removable_keys: Vec<u64> = Vec::new();
@@ -169,7 +178,7 @@ impl OrderBook {
                     trades.push(Trade {
                         // TODO: Use VWAP for executed price
                         executed_price: level.price,
-                        order: *order,
+                        order: order,
                         id: id,
                     });
                 } else if opposite_order.quantity == 0.0 {
