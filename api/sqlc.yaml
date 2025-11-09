@@ -1,0 +1,11 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "commands"
+    schema: "schemas"
+    gen:
+      go:
+        sql_package: "pgx/v5"
+        package: "repositories"
+        out: "repositories"
+        emit_json_tags: true
