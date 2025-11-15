@@ -4,13 +4,13 @@ WHERE ID = $1 LIMIT 1;
 
 -- name: ListTickers :many
 SELECT * FROM tickers
-ORDER BY name;
+ORDER BY symbol;
 
 -- name: CreateTicker :one
 INSERT INTO tickers (
-    symbol, name
+    symbol, base, quote, status
 ) VALUES (
-  $1, $2
+  $1, $2, $3, $4
 )
 RETURNING *;
 
