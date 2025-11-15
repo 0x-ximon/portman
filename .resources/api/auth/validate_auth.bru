@@ -1,0 +1,23 @@
+meta {
+  name: Validate Auth
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{BASE_URL}}/auth/initiate
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "emailAddress": "{{EMAIL_ADDRESS}}",
+    "otp": ""
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
