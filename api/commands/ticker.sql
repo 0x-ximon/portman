@@ -9,9 +9,7 @@ ORDER BY symbol;
 -- name: CreateTicker :one
 INSERT INTO tickers (
     symbol, base, quote, status
-) VALUES (
-  $1, $2, $3, $4
-)
+) VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 -- name: DeleteTicker :exec

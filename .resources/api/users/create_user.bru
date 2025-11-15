@@ -1,0 +1,27 @@
+meta {
+  name: Create User
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://localhost:3001/users
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "first_name": "Austin",
+    "last_name": "Cloude",
+    "email_address": "austin.cloude@email.com",
+    "wallet_address": "0x05",
+    "password": "123456##",
+    "role": "USER"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
