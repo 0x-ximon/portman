@@ -3,21 +3,21 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/0x-ximon/portman/api/repositories"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 )
 
-type TickerHandler struct {
+type UsersHandler struct {
 	Conn *pgx.Conn
 }
 
-func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.Conn)
 	ctx := r.Context()
 
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		result := Result{
@@ -29,11 +29,11 @@ func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticker, err := repo.GetTicker(ctx, int32(id))
+	user, err := repo.GetUser(ctx, id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
-			Message: "ticker not found",
+			Message: "user not found",
 			Error:   err,
 		}
 
@@ -43,18 +43,18 @@ func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	result := Result{
-		Message: "ticker retrieved",
-		Data:    ticker,
+		Message: "user retrieved",
+		Data:    user,
 	}
 
 	json.NewEncoder(w).Encode(result)
 }
 
-func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.Conn)
 	ctx := r.Context()
 
-	var params repositories.CreateTickerParams
+	var params repositories.CreateUserParams
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -67,11 +67,11 @@ func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticker, err := repo.CreateTicker(ctx, params)
+	user, err := repo.CreateUser(ctx, params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
-			Message: "could not create ticker",
+			Message: "could not create user",
 			Error:   err,
 		}
 
@@ -81,22 +81,22 @@ func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	result := Result{
-		Message: "ticker created",
-		Data:    ticker,
+		Message: "user created",
+		Data:    user,
 	}
 
 	json.NewEncoder(w).Encode(result)
 }
 
-func (h *TickerHandler) ListTickers(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.Conn)
 	ctx := r.Context()
 
-	tickers, err := repo.ListTickers(ctx)
+	users, err := repo.ListUsers(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
-			Message: "could not list tickers",
+			Message: "could not list users",
 			Error:   err,
 		}
 
@@ -106,18 +106,18 @@ func (h *TickerHandler) ListTickers(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	results := Result{
-		Message: "tickers retrieved",
-		Data:    tickers,
+		Message: "users retrieved",
+		Data:    users,
 	}
 
 	json.NewEncoder(w).Encode(results)
 }
 
-func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.Conn)
 	ctx := r.Context()
 
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		results := Result{
@@ -129,11 +129,11 @@ func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = repo.DeleteTicker(ctx, int32(id))
+	err = repo.DeleteUser(ctx, id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		results := Result{
-			Message: "could not delete ticker",
+			Message: "could not delete user",
 			Error:   err,
 		}
 
@@ -143,8 +143,7 @@ func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	results := Result{
-		Message: "ticker deleted",
-		Data:    nil,
+		Message: "user deleted",
 	}
 
 	json.NewEncoder(w).Encode(results)

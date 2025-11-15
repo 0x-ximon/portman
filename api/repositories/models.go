@@ -7,7 +7,53 @@ package repositories
 import (
 	"database/sql/driver"
 	"fmt"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Role string
+
+const (
+	RoleUSER  Role = "USER"
+	RoleBOT   Role = "BOT"
+	RoleADMIN Role = "ADMIN"
+)
+
+func (e *Role) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Role(s)
+	case string:
+		*e = Role(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Role: %T", src)
+	}
+	return nil
+}
+
+type NullRole struct {
+	Role  Role `json:"role"`
+	Valid bool `json:"valid"` // Valid is true if Role is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.Role, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.Role.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.Role), nil
+}
 
 type Status string
 
@@ -58,4 +104,19 @@ type Ticker struct {
 	Base   string `json:"base"`
 	Quote  string `json:"quote"`
 	Status Status `json:"status"`
+}
+
+type User struct {
+	ID            uuid.UUID          `json:"id"`
+	FirstName     string             `json:"first_name"`
+	LastName      string             `json:"last_name"`
+	EmailAddress  string             `json:"email_address"`
+	WalletAddress string             `json:"wallet_address"`
+	FreeBalance   pgtype.Numeric     `json:"free_balance"`
+	FrozenBalance pgtype.Numeric     `json:"frozen_balance"`
+	Role          Role               `json:"role"`
+	Password      string             `json:"password"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
 }

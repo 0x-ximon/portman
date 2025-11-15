@@ -8,7 +8,7 @@ CREATE TABLE
     symbol TEXT UNIQUE NOT NULL,
     base TEXT NOT NULL,
     quote TEXT NOT NULL,
-    status STATUS NOT NULL
+    status STATUS NOT NULL DEFAULT 'CLOSED'
   )
 -- +goose StatementEnd
 
