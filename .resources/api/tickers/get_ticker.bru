@@ -1,15 +1,20 @@
 meta {
   name: Get Ticker
   type: http
-  seq: 1
+  seq: 2
 }
 
 get {
-  url: http://localhost:3001/tickers/1
+  url: http://localhost:3001/tickers/:id
   body: none
   auth: inherit
 }
 
+params:path {
+  id: 1
+}
+
 settings {
   encodeUrl: true
+  timeout: 0
 }

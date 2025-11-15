@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/0x-ximon/portman/api/handlers"
 	"github.com/0x-ximon/portman/api/middleware"
+	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
 
@@ -19,20 +21,27 @@ func init() {
 }
 
 func main() {
-	host := os.Getenv("HOST")
+	router := http.NewServeMux()
+	ctx := context.Background()
+
+	conn, err := pgx.Connect(ctx, os.Getenv("DB_URL"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer conn.Close(ctx)
+
+	tickers := &handlers.TickerHandler{Conn: conn}
+	router.HandleFunc("GET /tickers", tickers.ListTickers)
+	router.HandleFunc("POST /tickers", tickers.CreateTicker)
+	router.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
+	router.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
+
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
 		port = "3001"
 	}
 
-	addr := net.JoinHostPort(host, port)
-	router := http.NewServeMux()
-
-	router.HandleFunc("GET /tickers", handlers.GetTickers)
-	router.HandleFunc("POST /tickers", handlers.CreateTicker)
-	router.HandleFunc("GET /tickers/{id}", handlers.GetTicker)
-	router.HandleFunc("DELETE /tickers/{id}", handlers.DeleteTicker)
-
+	addr := net.JoinHostPort(os.Getenv("HOST"), port)
 	s := http.Server{
 		Addr:    addr,
 		Handler: middleware.Logger(router),
