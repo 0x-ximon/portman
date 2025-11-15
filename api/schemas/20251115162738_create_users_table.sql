@@ -6,16 +6,17 @@ CREATE TYPE ROLE AS ENUM ('USER', 'BOT', 'ADMIN');
 CREATE TABLE
   users (
     ID UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
-
+    phone_number TEXT NOT NULL UNIQUE,
     email_address TEXT NOT NULL UNIQUE,
     wallet_address TEXT NOT NULL UNIQUE,
+
+    password TEXT NOT NULL,
+    role ROLE NOT NULL DEFAULT 'USER',
     free_balance NUMERIC NOT NULL DEFAULT 0.0,
     frozen_balance NUMERIC NOT NULL DEFAULT 0.0,
-
-    role ROLE NOT NULL DEFAULT 'USER',
-    password TEXT NOT NULL,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -15,7 +15,7 @@ const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     first_name, last_name, email_address, wallet_address, role, password
 ) VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, first_name, last_name, email_address, wallet_address, free_balance, frozen_balance, role, password, created_at, updated_at, deleted_at
+RETURNING id, first_name, last_name, phone_number, email_address, wallet_address, password, role, free_balance, frozen_balance, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
@@ -41,12 +41,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
+		&i.PhoneNumber,
 		&i.EmailAddress,
 		&i.WalletAddress,
+		&i.Password,
+		&i.Role,
 		&i.FreeBalance,
 		&i.FrozenBalance,
-		&i.Role,
-		&i.Password,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -64,8 +65,34 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
+const findUserByEmail = `-- name: FindUserByEmail :one
+SELECT id, first_name, last_name, phone_number, email_address, wallet_address, password, role, free_balance, frozen_balance, created_at, updated_at, deleted_at FROM users
+WHERE email_address = $1 LIMIT 1
+`
+
+func (q *Queries) FindUserByEmail(ctx context.Context, emailAddress string) (User, error) {
+	row := q.db.QueryRow(ctx, findUserByEmail, emailAddress)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.PhoneNumber,
+		&i.EmailAddress,
+		&i.WalletAddress,
+		&i.Password,
+		&i.Role,
+		&i.FreeBalance,
+		&i.FrozenBalance,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
-SELECT id, first_name, last_name, email_address, wallet_address, free_balance, frozen_balance, role, password, created_at, updated_at, deleted_at FROM users
+SELECT id, first_name, last_name, phone_number, email_address, wallet_address, password, role, free_balance, frozen_balance, created_at, updated_at, deleted_at FROM users
 WHERE ID = $1 LIMIT 1
 `
 
@@ -76,12 +103,13 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.ID,
 		&i.FirstName,
 		&i.LastName,
+		&i.PhoneNumber,
 		&i.EmailAddress,
 		&i.WalletAddress,
+		&i.Password,
+		&i.Role,
 		&i.FreeBalance,
 		&i.FrozenBalance,
-		&i.Role,
-		&i.Password,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -90,7 +118,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, first_name, last_name, email_address, wallet_address, free_balance, frozen_balance, role, password, created_at, updated_at, deleted_at FROM users
+SELECT id, first_name, last_name, phone_number, email_address, wallet_address, password, role, free_balance, frozen_balance, created_at, updated_at, deleted_at FROM users
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -106,12 +134,13 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.ID,
 			&i.FirstName,
 			&i.LastName,
+			&i.PhoneNumber,
 			&i.EmailAddress,
 			&i.WalletAddress,
+			&i.Password,
+			&i.Role,
 			&i.FreeBalance,
 			&i.FrozenBalance,
-			&i.Role,
-			&i.Password,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,

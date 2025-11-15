@@ -110,12 +110,13 @@ type User struct {
 	ID            uuid.UUID          `json:"id"`
 	FirstName     string             `json:"first_name"`
 	LastName      string             `json:"last_name"`
+	PhoneNumber   string             `json:"phone_number"`
 	EmailAddress  string             `json:"email_address"`
 	WalletAddress string             `json:"wallet_address"`
+	Password      string             `json:"password"`
+	Role          Role               `json:"role"`
 	FreeBalance   pgtype.Numeric     `json:"free_balance"`
 	FrozenBalance pgtype.Numeric     `json:"frozen_balance"`
-	Role          Role               `json:"role"`
-	Password      string             `json:"password"`
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
 	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
