@@ -14,8 +14,12 @@ body:json {
   {
     "email_address": "{{EMAIL_ADDRESS}}",
     "password": "{{PASSWORD}}",
-    "otp": ""
+    "otp": "{{OTP}}"
   }
+}
+
+vars:pre-request {
+  OTP: 625357
 }
 
 settings {

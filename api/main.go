@@ -30,6 +30,12 @@ func main() {
 	}
 	defer conn.Close(ctx)
 
+	chain := middlewares.NewChain(
+		middlewares.ContentType,
+		middlewares.Auth,
+		middlewares.Logger,
+	)
+
 	auth := &handlers.AuthHandler{Conn: conn}
 	router.HandleFunc("POST /auth/initiate", auth.Initiatiate)
 	router.HandleFunc("POST /auth/validate", auth.Validate)
@@ -54,7 +60,7 @@ func main() {
 	addr := net.JoinHostPort(os.Getenv("HOST"), port)
 	s := http.Server{
 		Addr:    addr,
-		Handler: middlewares.Logger(router),
+		Handler: chain(router),
 	}
 
 	log.Printf("Starting server on %s", addr)
