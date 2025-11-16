@@ -181,7 +181,7 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := services.GenerateJWT(user.EmailAddress)
+	token, err := services.GenerateJWT(user.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{

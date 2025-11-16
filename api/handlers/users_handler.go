@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/0x-ximon/portman/api/repositories"
@@ -18,11 +19,35 @@ func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.Conn)
 	ctx := r.Context()
 
+	token, ok := services.GetToken(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		result := Result{
+			Message: "unauthorized",
+			Error:   fmt.Errorf("bearer token not found"),
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		result := Result{
 			Message: "invalid id",
+			Error:   err,
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	claims, err := services.ValidateJWT(token)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		result := Result{
+			Message: "could not validate token",
 			Error:   err,
 		}
 
@@ -36,6 +61,17 @@ func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		result := Result{
 			Message: "user not found",
 			Error:   err,
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	if user.ID != claims.ID {
+		w.WriteHeader(http.StatusUnauthorized)
+		result := Result{
+			Message: "unauthorized",
+			Error:   fmt.Errorf("user id mismatch"),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -189,6 +225,18 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.Conn)
 	ctx := r.Context()
 
+	token, ok := services.GetToken(r)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		result := Result{
+			Message: "unauthorized",
+			Error:   fmt.Errorf("bearer token not found"),
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -198,6 +246,29 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		}
 
 		json.NewEncoder(w).Encode(results)
+		return
+	}
+
+	claims, err := services.ValidateJWT(token)
+	if err != nil {
+		w.WriteHeader(http.StatusUnauthorized)
+		result := Result{
+			Message: "invalid token",
+			Error:   err,
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	if id != claims.ID {
+		w.WriteHeader(http.StatusUnauthorized)
+		result := Result{
+			Message: "unauthorized",
+			Error:   fmt.Errorf("user id mismatch"),
+		}
+
+		json.NewEncoder(w).Encode(result)
 		return
 	}
 
