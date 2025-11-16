@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/0x-ximon/portman/api/handlers"
-	"github.com/0x-ximon/portman/api/middleware"
+	"github.com/0x-ximon/portman/api/middlewares"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
@@ -30,17 +30,21 @@ func main() {
 	}
 	defer conn.Close(ctx)
 
-	tickers := &handlers.TickerHandler{Conn: conn}
-	router.HandleFunc("GET /tickers", tickers.ListTickers)
-	router.HandleFunc("POST /tickers", tickers.CreateTicker)
-	router.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
-	router.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
+	auth := &handlers.AuthHandler{Conn: conn}
+	router.HandleFunc("POST /auth/initiate", auth.Initiatiate)
+	router.HandleFunc("POST /auth/validate", auth.Validate)
 
 	users := &handlers.UsersHandler{Conn: conn}
 	router.HandleFunc("GET /users", users.ListUsers)
 	router.HandleFunc("POST /users", users.CreateUser)
 	router.HandleFunc("GET /users/{id}", users.GetUser)
 	router.HandleFunc("DELETE /users/{id}", users.DeleteUser)
+
+	tickers := &handlers.TickerHandler{Conn: conn}
+	router.HandleFunc("GET /tickers", tickers.ListTickers)
+	router.HandleFunc("POST /tickers", tickers.CreateTicker)
+	router.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
+	router.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
 
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
@@ -50,7 +54,7 @@ func main() {
 	addr := net.JoinHostPort(os.Getenv("HOST"), port)
 	s := http.Server{
 		Addr:    addr,
-		Handler: middleware.Logger(router),
+		Handler: middlewares.Logger(router),
 	}
 
 	log.Printf("Starting server on %s", addr)
