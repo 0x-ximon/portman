@@ -13,14 +13,15 @@ import (
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
-    first_name, last_name, email_address, wallet_address, role, password
-) VALUES ($1, $2, $3, $4, $5, $6)
+    first_name, last_name, phone_number, email_address, wallet_address, role, password
+) VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, first_name, last_name, phone_number, email_address, wallet_address, password, role, free_balance, frozen_balance, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
 	FirstName     string `json:"first_name"`
 	LastName      string `json:"last_name"`
+	PhoneNumber   string `json:"phone_number"`
 	EmailAddress  string `json:"email_address"`
 	WalletAddress string `json:"wallet_address"`
 	Role          Role   `json:"role"`
@@ -31,6 +32,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	row := q.db.QueryRow(ctx, createUser,
 		arg.FirstName,
 		arg.LastName,
+		arg.PhoneNumber,
 		arg.EmailAddress,
 		arg.WalletAddress,
 		arg.Role,

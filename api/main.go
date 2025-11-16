@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/0x-ximon/portman/api/handlers"
-	"github.com/0x-ximon/portman/api/middleware"
+	"github.com/0x-ximon/portman/api/middlewares"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
@@ -54,7 +54,7 @@ func main() {
 	addr := net.JoinHostPort(os.Getenv("HOST"), port)
 	s := http.Server{
 		Addr:    addr,
-		Handler: middleware.Logger(router),
+		Handler: middlewares.Logger(router),
 	}
 
 	log.Printf("Starting server on %s", addr)

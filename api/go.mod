@@ -14,6 +14,7 @@ require (
 	github.com/jackc/pgx/v5 v5.7.6 // indirect
 	github.com/redis/go-redis/v9 v9.16.0 // indirect
 	github.com/resend/resend-go/v3 v3.0.0 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 )

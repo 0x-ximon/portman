@@ -7,9 +7,11 @@ package repositories
 import (
 	"database/sql/driver"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/shopspring/decimal"
 )
 
 type Role string
@@ -115,9 +117,9 @@ type User struct {
 	WalletAddress string             `json:"wallet_address"`
 	Password      string             `json:"password"`
 	Role          Role               `json:"role"`
-	FreeBalance   pgtype.Numeric     `json:"free_balance"`
-	FrozenBalance pgtype.Numeric     `json:"frozen_balance"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt     pgtype.Timestamptz `json:"updated_at"`
+	FreeBalance   decimal.Decimal    `json:"free_balance"`
+	FrozenBalance decimal.Decimal    `json:"frozen_balance"`
+	CreatedAt     time.Time          `json:"created_at"`
+	UpdatedAt     time.Time          `json:"updated_at"`
 	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`
 }
