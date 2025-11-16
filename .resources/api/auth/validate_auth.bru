@@ -5,14 +5,15 @@ meta {
 }
 
 post {
-  url: {{BASE_URL}}/auth/initiate
+  url: {{BASE_URL}}/auth/validate
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "emailAddress": "{{EMAIL_ADDRESS}}",
+    "email_address": "{{EMAIL_ADDRESS}}",
+    "password": "{{PASSWORD}}",
     "otp": ""
   }
 }

@@ -78,7 +78,7 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !services.ValidateHash(*params.Password, user.Password) {
+	if !services.ValidateHash(params.Password, user.Password) {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
 			Message: "invalid credentials",
@@ -99,7 +99,7 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := cacher.SetOTP(ctx, user.ID, otp); err != nil {
+	if err := cacher.StoreOTP(ctx, user.ID, otp); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
 			Message: "could not set otp",
@@ -159,11 +159,11 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	otp, err := cacher.GetOTP(ctx, user.ID)
+	otp, err := cacher.RetrieveOTP(ctx, user.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
-			Message: "could not set otp",
+			Message: "could not get otp",
 			Error:   err,
 		}
 
@@ -171,7 +171,7 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if otp != *params.OTP {
+	if otp != params.OTP {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
 			Message: "invalid otp",
@@ -186,6 +186,17 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
 			Message: "could not generate token",
+			Error:   err,
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	if err := cacher.DeleteOTP(ctx, user.ID); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		result := Result{
+			Message: "could not delete otp",
 			Error:   err,
 		}
 

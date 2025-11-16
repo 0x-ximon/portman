@@ -3,6 +3,7 @@ sql:
   - engine: "postgresql"
     queries: "data/queries"
     schema: "data/migrations"
+
     gen:
       go:
         sql_package: "pgx/v5"
@@ -10,6 +11,7 @@ sql:
         out: "repositories"
         emit_json_tags: true
         emit_pointers_for_null_types: true
+
         overrides:
           - db_type: "uuid"
             go_type:
@@ -20,20 +22,8 @@ sql:
             go_type:
               import: "time"
               type: "Time"
-          - db_type: "timestamptz"
-            nullable: true
-            go_type:
-              import: "time"
-              type: "Time"
 
           - db_type: "pg_catalog.numeric"
             go_type:
               import: "github.com/shopspring/decimal"
               type: "Decimal"
-          - db_type: "pg_catalog.numeric"
-            nullable: true
-            go_type:
-              import: "github.com/shopspring/decimal"
-              type: "Decimal"
-
-

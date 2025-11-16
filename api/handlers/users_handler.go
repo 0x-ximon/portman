@@ -140,7 +140,7 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := cacher.SetOTP(ctx, user.ID, otp); err != nil {
+	if err := cacher.StoreOTP(ctx, user.ID, otp); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Result{
 			Message: "could not set otp",

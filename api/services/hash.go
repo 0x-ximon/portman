@@ -31,8 +31,8 @@ func GenerateOTP(length int) (string, error) {
 }
 
 func GenerateJWT(emailAddress string) (string, error) {
-	jwtKey := os.Getenv("JWT_SECRET")
-	if jwtKey == "" {
+	jwtSecret, ok := os.LookupEnv("JWT_SECRET")
+	if !ok {
 		return "", fmt.Errorf("JWT_SECRET environment variable not set")
 	}
 
@@ -45,7 +45,7 @@ func GenerateJWT(emailAddress string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
+	return token.SignedString([]byte(jwtSecret))
 }
 
 func ValidateJWT(tokenString string) (*Claims, error) {

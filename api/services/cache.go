@@ -35,7 +35,7 @@ func NewCacheService() (*CacheService, error) {
 	return &CacheService{client: redis.NewClient(opt)}, nil
 }
 
-func (c *CacheService) SetOTP(ctx context.Context, id uuid.UUID, otp string) error {
+func (c *CacheService) StoreOTP(ctx context.Context, id uuid.UUID, otp string) error {
 	err := c.client.Set(ctx, id.String(), otp, 30*time.Minute).Err()
 	if err != nil {
 		return err
@@ -44,11 +44,20 @@ func (c *CacheService) SetOTP(ctx context.Context, id uuid.UUID, otp string) err
 	return nil
 }
 
-func (c *CacheService) GetOTP(ctx context.Context, id uuid.UUID) (string, error) {
+func (c *CacheService) RetrieveOTP(ctx context.Context, id uuid.UUID) (string, error) {
 	otp, err := c.client.Get(ctx, id.String()).Result()
 	if err != nil {
 		return "", err
 	}
 
 	return otp, nil
+}
+
+func (c *CacheService) DeleteOTP(ctx context.Context, id uuid.UUID) error {
+	err := c.client.Del(ctx, id.String()).Err()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
