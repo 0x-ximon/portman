@@ -5,18 +5,19 @@ meta {
 }
 
 post {
-  url: http://localhost:3001/users
+  url: {{BASE_URL}}/users
   body: json
   auth: inherit
 }
 
 body:json {
   {
-    "first_name": "Austin",
-    "last_name": "Cloude",
-    "email_address": "austin.cloude@email.com",
-    "wallet_address": "0x05",
-    "password": "123456##",
+    "first_name": "Simon",
+    "last_name": "Samuel",
+    "phone_number": "{{PHONE_NUMBER}}",
+    "email_address": "{{EMAIL_ADDRESS}}",
+    "wallet_address": "{{WALLET_ADDRESS}}",
+    "password": "{{PASSWORD}}",
     "role": "USER"
   }
 }
