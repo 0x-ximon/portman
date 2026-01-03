@@ -3,8 +3,8 @@ package services
 import (
 	"crypto/rand"
 	"fmt"
-	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -17,7 +17,7 @@ type Claims struct {
 	ID uuid.UUID `json:"id"`
 }
 
-type TokenKey struct{}
+type ClaimsKey struct{}
 
 func GenerateOTP(length int) (string, error) {
 	bytes := make([]byte, length)
@@ -25,13 +25,13 @@ func GenerateOTP(length int) (string, error) {
 		return "", err
 	}
 
-	var otp string
+	var otp strings.Builder
 	for i := range length {
 		digit := bytes[i] % 10
-		otp += fmt.Sprintf("%d", digit)
+		fmt.Fprintf(&otp, "%d", digit)
 	}
 
-	return otp, nil
+	return otp.String(), nil
 }
 
 func GenerateJWT(id uuid.UUID) (string, error) {
@@ -73,11 +73,6 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
-}
-
-func GetToken(r *http.Request) (string, bool) {
-	token, ok := r.Context().Value(TokenKey{}).(string)
-	return token, ok
 }
 
 func HashPassword(password string) (string, error) {

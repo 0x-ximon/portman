@@ -21,10 +21,15 @@ func Auth(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-
 		token := parts[1]
-		ctx := context.WithValue(r.Context(), services.TokenKey{}, token)
 
+		claims, err := services.ValidateJWT(token)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), services.ClaimsKey{}, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

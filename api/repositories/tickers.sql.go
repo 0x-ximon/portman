@@ -10,17 +10,16 @@ import (
 )
 
 const createTicker = `-- name: CreateTicker :one
-INSERT INTO tickers (
-    symbol, base, quote, status
-) VALUES ($1, $2, $3, $4)
-RETURNING id, symbol, base, quote, status
+INSERT INTO tickers (symbol, base, quote, status) 
+VALUES ($1, $2, $3, $4)
+RETURNING id, base, quote, symbol, status
 `
 
 type CreateTickerParams struct {
-	Symbol string `json:"symbol"`
-	Base   string `json:"base"`
-	Quote  string `json:"quote"`
-	Status Status `json:"status"`
+	Symbol string       `json:"symbol"`
+	Base   string       `json:"base"`
+	Quote  string       `json:"quote"`
+	Status TickerStatus `json:"status"`
 }
 
 func (q *Queries) CreateTicker(ctx context.Context, arg CreateTickerParams) (Ticker, error) {
@@ -33,9 +32,9 @@ func (q *Queries) CreateTicker(ctx context.Context, arg CreateTickerParams) (Tic
 	var i Ticker
 	err := row.Scan(
 		&i.ID,
-		&i.Symbol,
 		&i.Base,
 		&i.Quote,
+		&i.Symbol,
 		&i.Status,
 	)
 	return i, err
@@ -52,7 +51,7 @@ func (q *Queries) DeleteTicker(ctx context.Context, id int32) error {
 }
 
 const getTicker = `-- name: GetTicker :one
-SELECT id, symbol, base, quote, status FROM tickers
+SELECT id, base, quote, symbol, status FROM tickers
 WHERE ID = $1 LIMIT 1
 `
 
@@ -61,16 +60,16 @@ func (q *Queries) GetTicker(ctx context.Context, id int32) (Ticker, error) {
 	var i Ticker
 	err := row.Scan(
 		&i.ID,
-		&i.Symbol,
 		&i.Base,
 		&i.Quote,
+		&i.Symbol,
 		&i.Status,
 	)
 	return i, err
 }
 
 const listTickers = `-- name: ListTickers :many
-SELECT id, symbol, base, quote, status FROM tickers
+SELECT id, base, quote, symbol, status FROM tickers
 ORDER BY symbol
 `
 
@@ -85,9 +84,9 @@ func (q *Queries) ListTickers(ctx context.Context) ([]Ticker, error) {
 		var i Ticker
 		if err := rows.Scan(
 			&i.ID,
-			&i.Symbol,
 			&i.Base,
 			&i.Quote,
+			&i.Symbol,
 			&i.Status,
 		); err != nil {
 			return nil, err

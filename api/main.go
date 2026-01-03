@@ -52,6 +52,11 @@ func main() {
 	router.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
 	router.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
 
+	orders := &handlers.OrderHandler{Conn: conn}
+	router.HandleFunc("GET /orders", orders.ListOrders)
+	router.HandleFunc("POST /orders", orders.CreateOrder)
+	router.HandleFunc("GET /orders/{id}", orders.GetOrder)
+
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
 		port = "3001"

@@ -7,8 +7,8 @@ CREATE TYPE ORDER_STATUS AS ENUM ('PENDING', 'CANCELLED', 'FULFILLED', 'REJECTED
 CREATE TABLE
   orders (
     ID SERIAL PRIMARY KEY,
-    buyer_id UUID NOT NULL REFERENCES users(id),
-    seller_id UUID NOT NULL REFERENCES users(id),
+    buyer_id UUID REFERENCES users(id) DEFAULT NULL,
+    seller_id UUID REFERENCES users(id) DEFAULT NULL,
 
     price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     quantity NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
@@ -18,7 +18,7 @@ CREATE TABLE
     status ORDER_STATUS NOT NULL DEFAULT 'PENDING',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )
 -- +goose StatementEnd
 
