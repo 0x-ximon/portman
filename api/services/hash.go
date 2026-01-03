@@ -26,7 +26,7 @@ func GenerateOTP(length int) (string, error) {
 	}
 
 	var otp string
-	for i := 0; i < length; i++ {
+	for i := range length {
 		digit := bytes[i] % 10
 		otp += fmt.Sprintf("%d", digit)
 	}

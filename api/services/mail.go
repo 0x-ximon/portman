@@ -49,11 +49,10 @@ func (m *MailService) SendOTP(to string, otp string) error {
 		Subject: "OTP Verification",
 	}
 
-	sent, err := m.client.Emails.Send(emailParams)
+	_, err = m.client.Emails.Send(emailParams)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(sent.Id)
 	return nil
 }

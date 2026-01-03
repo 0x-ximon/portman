@@ -1,0 +1,31 @@
+-- +goose Up
+-- +goose StatementBegin
+CREATE TYPE ORDER_SIDE AS ENUM ('BUY', 'SELL');
+CREATE TYPE ORDER_TYPE AS ENUM ('LIMIT', 'MARKET');
+CREATE TYPE ORDER_STATUS AS ENUM ('PENDING', 'CANCELLED', 'FULFILLED', 'REJECTED');
+
+CREATE TABLE
+  orders (
+    ID SERIAL PRIMARY KEY,
+    buyer_id UUID NOT NULL REFERENCES users(id),
+    seller_id UUID NOT NULL REFERENCES users(id),
+
+    price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    quantity NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+
+    side ORDER_SIDE NOT NULL,
+    type ORDER_TYPE NOT NULL,
+    status ORDER_STATUS NOT NULL DEFAULT 'PENDING',
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  )
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE orders;
+DROP TYPE ORDER_STATUS;
+DROP TYPE ORDER_TYPE;
+DROP TYPE ORDER_SIDE;
+-- +goose StatementEnd
