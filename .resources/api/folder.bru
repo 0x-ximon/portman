@@ -1,8 +1,17 @@
 meta {
   name: api
-  seq: 1
 }
 
 auth {
-  mode: inherit
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+vars:pre-request {
+  USER_ID: 81c21426-c1e1-427b-ab60-07488dec785d
+  TOKEN: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Njc2MzA2NzcsImlkIjoiODFjMjE0MjYtYzFlMS00MjdiLWFiNjAtMDc0ODhkZWM3ODVkIn0.KhEpV-CcGwzqoVQGrBD34SPzweiVacn9JfIwGOIv6nk
+  BASE_URL: http://localhost:3001
 }

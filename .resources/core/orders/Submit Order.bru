@@ -1,0 +1,28 @@
+meta {
+  name: Submit Order
+  type: grpc
+  seq: 1
+}
+
+grpc {
+  url: {{BASE_URL}}
+  method: /proto.OrdersService/SubmitOrder
+  body: grpc
+  protoPath: ../.proto/orders.proto
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "id": 430,
+      "Side": 0,
+      "type": 0,
+      "status": 0,
+      "price": "templum",
+      "quantity": "usus"
+    }
+  '''
+}
