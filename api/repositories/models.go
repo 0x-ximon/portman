@@ -229,9 +229,8 @@ func (ns NullTickerStatus) Value() (driver.Value, error) {
 }
 
 type Order struct {
-	ID        int32           `json:"id"`
-	BuyerID   uuid.UUID       `json:"buyer_id"`
-	SellerID  uuid.UUID       `json:"seller_id"`
+	ID        int64           `json:"id"`
+	UserID    uuid.UUID       `json:"user_id"`
 	Price     decimal.Decimal `json:"price"`
 	Quantity  decimal.Decimal `json:"quantity"`
 	Side      OrderSide       `json:"side"`

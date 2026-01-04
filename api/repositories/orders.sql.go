@@ -13,14 +13,13 @@ import (
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (buyer_id, seller_id, price, quantity, side, type, status)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, buyer_id, seller_id, price, quantity, side, type, status, created_at, updated_at
+INSERT INTO orders (user_id, price, quantity, side, type, status)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, user_id, price, quantity, side, type, status, created_at, updated_at
 `
 
 type CreateOrderParams struct {
-	BuyerID  uuid.UUID       `json:"buyer_id"`
-	SellerID uuid.UUID       `json:"seller_id"`
+	UserID   uuid.UUID       `json:"user_id"`
 	Price    decimal.Decimal `json:"price"`
 	Quantity decimal.Decimal `json:"quantity"`
 	Side     OrderSide       `json:"side"`
@@ -30,8 +29,7 @@ type CreateOrderParams struct {
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
 	row := q.db.QueryRow(ctx, createOrder,
-		arg.BuyerID,
-		arg.SellerID,
+		arg.UserID,
 		arg.Price,
 		arg.Quantity,
 		arg.Side,
@@ -41,8 +39,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 	var i Order
 	err := row.Scan(
 		&i.ID,
-		&i.BuyerID,
-		&i.SellerID,
+		&i.UserID,
 		&i.Price,
 		&i.Quantity,
 		&i.Side,
@@ -55,23 +52,22 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 }
 
 const getOrder = `-- name: GetOrder :one
-SELECT id, buyer_id, seller_id, price, quantity, side, type, status, created_at, updated_at FROM orders
-WHERE ID = $1 and buyer_id = $2 or seller_id = $2
+SELECT id, user_id, price, quantity, side, type, status, created_at, updated_at FROM orders
+WHERE ID = $1 and user_id = $2
 LIMIT 1
 `
 
 type GetOrderParams struct {
-	ID      int32     `json:"id"`
-	BuyerID uuid.UUID `json:"buyer_id"`
+	ID     int64     `json:"id"`
+	UserID uuid.UUID `json:"user_id"`
 }
 
 func (q *Queries) GetOrder(ctx context.Context, arg GetOrderParams) (Order, error) {
-	row := q.db.QueryRow(ctx, getOrder, arg.ID, arg.BuyerID)
+	row := q.db.QueryRow(ctx, getOrder, arg.ID, arg.UserID)
 	var i Order
 	err := row.Scan(
 		&i.ID,
-		&i.BuyerID,
-		&i.SellerID,
+		&i.UserID,
 		&i.Price,
 		&i.Quantity,
 		&i.Side,
@@ -84,12 +80,12 @@ func (q *Queries) GetOrder(ctx context.Context, arg GetOrderParams) (Order, erro
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, buyer_id, seller_id, price, quantity, side, type, status, created_at, updated_at FROM orders
-WHERE buyer_id = $1 or seller_id = $1
+SELECT id, user_id, price, quantity, side, type, status, created_at, updated_at FROM orders
+WHERE user_id = $1
 `
 
-func (q *Queries) ListOrders(ctx context.Context, buyerID uuid.UUID) ([]Order, error) {
-	rows, err := q.db.Query(ctx, listOrders, buyerID)
+func (q *Queries) ListOrders(ctx context.Context, userID uuid.UUID) ([]Order, error) {
+	rows, err := q.db.Query(ctx, listOrders, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +95,7 @@ func (q *Queries) ListOrders(ctx context.Context, buyerID uuid.UUID) ([]Order, e
 		var i Order
 		if err := rows.Scan(
 			&i.ID,
-			&i.BuyerID,
-			&i.SellerID,
+			&i.UserID,
 			&i.Price,
 			&i.Quantity,
 			&i.Side,
