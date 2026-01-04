@@ -9,10 +9,12 @@ import (
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5"
+	"google.golang.org/grpc"
 )
 
 type OrderHandler struct {
-	Conn *pgx.Conn
+	Conn     *pgx.Conn
+	CoreConn *grpc.ClientConn
 }
 
 func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {

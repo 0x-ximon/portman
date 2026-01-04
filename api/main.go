@@ -9,6 +9,7 @@ import (
 
 	"github.com/0x-ximon/portman/api/handlers"
 	"github.com/0x-ximon/portman/api/middlewares"
+	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
@@ -29,6 +30,12 @@ func main() {
 		log.Fatalln(err)
 	}
 	defer conn.Close(ctx)
+
+	coreConn, err := services.NewCoreService().Connect()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer coreConn.Close()
 
 	chain := middlewares.NewChain(
 		middlewares.ContentType,
@@ -52,7 +59,7 @@ func main() {
 	router.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
 	router.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
 
-	orders := &handlers.OrderHandler{Conn: conn}
+	orders := &handlers.OrderHandler{Conn: conn, CoreConn: coreConn}
 	router.HandleFunc("GET /orders", orders.ListOrders)
 	router.HandleFunc("POST /orders", orders.CreateOrder)
 	router.HandleFunc("GET /orders/{id}", orders.GetOrder)
