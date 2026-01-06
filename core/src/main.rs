@@ -2,22 +2,22 @@ use std::sync::Arc;
 use tonic::transport::Server;
 
 use crate::{
-    orders::OrderBook,
-    server::{PortmanOrdersServer, portman_server::orders_server::OrdersServer},
+    order_book::OrderBook, server::OrdersServer,
+    server::proto::orders_service_server::OrdersServiceServer,
 };
 
-mod orders;
+mod order_book;
 mod server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let order_book = Arc::new(OrderBook::default());
-
+    let book = Arc::new(OrderBook::default());
     let addr = "[::1]:50051".parse()?;
-    let portman_order_server = PortmanOrdersServer::new(order_book.clone());
+
+    let order_server = OrdersServer::new(book.clone());
 
     Server::builder()
-        .add_service(OrdersServer::new(portman_order_server))
+        .add_service(OrdersServiceServer::new(order_server))
         .serve(addr)
         .await?;
 

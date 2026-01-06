@@ -1,0 +1,26 @@
+meta {
+  name: Create Order
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{BASE_URL}}/orders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "user_id": "{{USER_ID}}",
+    "side": "BUY",
+    "type": "MARKET",
+    "price": 10.24,
+    "quantity": 8.1
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

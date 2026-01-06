@@ -1,19 +1,20 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TYPE STATUS AS ENUM ('OPEN', 'CLOSED', 'SUSPENDED');
+CREATE TYPE TICKER_STATUS AS ENUM ('OPEN', 'CLOSED', 'SUSPENDED');
 
 CREATE TABLE
   tickers (
     ID SERIAL PRIMARY KEY,
-    symbol TEXT UNIQUE NOT NULL,
+
     base TEXT NOT NULL,
     quote TEXT NOT NULL,
-    status STATUS NOT NULL DEFAULT 'CLOSED'
+    symbol TEXT UNIQUE NOT NULL,
+    status TICKER_STATUS NOT NULL DEFAULT 'CLOSED'
   )
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE tickers;
-DROP TYPE STATUS;
+DROP TYPE TICKER_STATUS;
 -- +goose StatementEnd

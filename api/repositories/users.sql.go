@@ -12,9 +12,8 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (
-    first_name, last_name, phone_number, email_address, wallet_address, role, password
-) VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO users (first_name, last_name, phone_number, email_address, wallet_address, role, password) 
+VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING id, first_name, last_name, phone_number, email_address, wallet_address, password, role, free_balance, frozen_balance, created_at, updated_at, deleted_at
 `
 

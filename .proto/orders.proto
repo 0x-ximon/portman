@@ -1,0 +1,48 @@
+syntax = "proto3";
+package proto;
+
+option go_package = "github.com/0x-ximon/portman/api/proto";
+
+service OrdersService {
+    rpc SubmitOrder (SubmitOrderRequest) returns (SubmitOrderResponse);
+}
+
+message SubmitOrderRequest {
+    int64 id = 1;
+
+    Side side = 7;
+    Type type = 8;
+    Status status = 9;
+
+    string price = 4;
+    string quantity = 5;
+}
+
+message SubmitOrderResponse {
+    Result result = 1;
+}
+
+enum Side {
+    SIDE_UNSPECIFIED = 0;
+    SIDE_BUY = 1;
+    SIDE_SELL = 2;
+}
+
+enum Type {
+    TYPE_UNSPECIFIED = 0;
+    TYPE_MARKET = 1;
+    TYPE_LIMIT = 2;
+}
+
+enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_PENDING = 1;
+    STATUS_FILLED = 2;
+    STATUS_CANCELLED = 3;
+}
+
+enum Result {
+    RESULT_UNSPECIFIED = 0;
+    RESULT_SUCCESS = 1;
+    RESULT_FAILURE = 2;
+}
