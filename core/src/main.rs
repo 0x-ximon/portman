@@ -6,7 +6,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::server::{OrdersServer, proto::orders_service_server::OrdersServiceServer};
 
-mod order_book;
+mod orders;
 mod server;
 
 #[tokio::main]

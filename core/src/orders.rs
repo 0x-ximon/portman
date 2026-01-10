@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, VecDeque},
-    sync::{RwLock, RwLockWriteGuard},
+    sync::{RwLock, RwLockWriteGuard, atomic::AtomicU64},
 };
 
 use rust_decimal::Decimal;
@@ -33,7 +33,6 @@ pub enum OrderStatus {
 #[derive(Clone, Debug)]
 pub struct Order {
     pub id: i64,
-    pub symbol: Symbol,
     pub side: OrderSide,
     pub price: OrderPrice,
     pub r#type: OrderType,
@@ -54,6 +53,7 @@ pub struct PriceLevel {
 pub struct OrderBook {
     pub bids: RwLock<BTreeMap<i64, PriceLevel>>,
     pub asks: RwLock<BTreeMap<i64, PriceLevel>>,
+    pub liquidity: AtomicU64,
     pub precision: i32,
 }
 
@@ -62,6 +62,7 @@ impl OrderBook {
         OrderBook {
             bids: RwLock::new(BTreeMap::new()),
             asks: RwLock::new(BTreeMap::new()),
+            liquidity: AtomicU64::new(0),
             precision,
         }
     }
@@ -117,10 +118,6 @@ impl OrderBook {
             orders: VecDeque::new(),
         });
 
-        // order.id = self
-        //     .order_counter
-        //     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
         level.quantity += order.quantity;
         level.orders.push_back(order);
 
@@ -152,25 +149,9 @@ impl OrderBook {
                 opposite_order.quantity -= fill_qty;
                 level.quantity -= fill_qty;
 
-                // let id = self
-                //     .trade_counter
-                //     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-
                 if remaining_quantity == Decimal::ZERO {
-                    // trades.push(Trade {
-                    //     // TODO: Use VWAP for executed price
-                    //     executed_price: level.price,
-                    //     order: order,
-                    //     id: id,
-                    // });
                 } else if opposite_order.quantity == Decimal::ZERO {
-                    if let Some(completed_order) = level.orders.pop_front() {
-                        // trades.push(Trade {
-                        //     executed_price: level.price,
-                        //     order: completed_order,
-                        //     id: id,
-                        // });
-                    }
+                    if let Some(completed_order) = level.orders.pop_front() {}
                 }
             }
 

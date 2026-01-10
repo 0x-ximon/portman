@@ -9,7 +9,7 @@ use rust_decimal::Decimal;
 use tonic::{Request, Response, Status};
 
 use crate::{
-    order_book::{self},
+    orders::{self},
     server::proto::{
         NewOrderBookRequest, NewOrderBookResponse, SubmitOrderRequest, SubmitOrderResponse,
     },
@@ -20,7 +20,7 @@ pub mod proto {
 }
 
 pub struct OrdersServer {
-    pub order_books: RwLock<HashMap<order_book::Symbol, Arc<order_book::OrderBook>>>,
+    pub order_books: RwLock<HashMap<orders::Symbol, Arc<orders::OrderBook>>>,
 }
 
 impl OrdersServer {
@@ -39,86 +39,73 @@ impl OrdersService for OrdersServer {
     ) -> Result<Response<SubmitOrderResponse>, Status> {
         let recv_order = request.into_inner();
 
-        let order = crate::order_book::Order {
-            id: recv_order.id,
-            symbol: order_book::Symbol(recv_order.symbol.to_string()),
+        let order_books = self
+            .order_books
+            .read()
+            .map_err(|e| Status::internal(format!("Failed to read order books: {}", e)))?;
 
-            side: match recv_order.side() {
-                proto::Side::Buy => order_book::OrderSide::Buy,
-                proto::Side::Sell => order_book::OrderSide::Sell,
-                proto::Side::Unspecified => {
-                    return Err(Status::invalid_argument("Side must be specified"));
-                }
-            },
+        let symbol = orders::Symbol(recv_order.symbol.to_string());
 
-            r#type: match recv_order.r#type() {
-                proto::Type::Market => order_book::OrderType::Market,
-                proto::Type::Limit => order_book::OrderType::Limit,
-                proto::Type::Unspecified => {
-                    return Err(Status::invalid_argument("Type must be specified"));
-                }
-            },
+        if let Some(order_book) = order_books.get(&symbol) {
+            let order = orders::Order {
+                id: recv_order.id,
 
-            price: Decimal::from_str(&recv_order.price)
-                .map_err(|_| Status::invalid_argument("Invalid price: precision loss or nan"))?,
+                side: match recv_order.side() {
+                    proto::Side::Buy => orders::OrderSide::Buy,
+                    proto::Side::Sell => orders::OrderSide::Sell,
+                    proto::Side::Unspecified => {
+                        return Err(Status::invalid_argument("Side must be specified"));
+                    }
+                },
 
-            quantity: Decimal::from_str(&recv_order.quantity)
-                .map_err(|_| Status::invalid_argument("Invalid quantity: precision loss or nan"))?,
+                r#type: match recv_order.r#type() {
+                    proto::Type::Market => orders::OrderType::Market,
+                    proto::Type::Limit => orders::OrderType::Limit,
+                    proto::Type::Unspecified => {
+                        return Err(Status::invalid_argument("Type must be specified"));
+                    }
+                },
 
-            status: match recv_order.status() {
-                proto::Status::Pending => order_book::OrderStatus::Pending,
-                proto::Status::Fulfilled => order_book::OrderStatus::Fulfilled,
-                proto::Status::Cancelled => order_book::OrderStatus::Cancelled,
-                proto::Status::Unspecified => {
-                    return Err(Status::invalid_argument("Status must be specified"));
-                }
-            },
-        };
+                price: Decimal::from_str(&recv_order.price).map_err(|_| {
+                    Status::invalid_argument("Invalid price: precision loss or nan")
+                })?,
 
-        if order.quantity == Decimal::ZERO {
-            return Err(Status::invalid_argument("Order quantity cannot be zero."));
-        }
+                quantity: Decimal::from_str(&recv_order.quantity).map_err(|_| {
+                    Status::invalid_argument("Invalid quantity: precision loss or nan")
+                })?,
 
-        match order.r#type {
-            order_book::OrderType::Market => {
-                // TODO: Handle case of remaining quantity
-                // let (_, _) = self
-                //     .order_book
-                //     .market_order(order)
-                //     .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
+                status: match recv_order.status() {
+                    proto::Status::Pending => orders::OrderStatus::Pending,
+                    proto::Status::Fulfilled => orders::OrderStatus::Fulfilled,
+                    proto::Status::Cancelled => orders::OrderStatus::Cancelled,
+                    proto::Status::Unspecified => {
+                        return Err(Status::invalid_argument("Status must be specified"));
+                    }
+                },
+            };
 
-                // Ok(Response::new(Trades {
-                //     trades: trades
-                //         .iter()
-                //         .map(|t| Trade {
-                //             id: t.id,
-                //             executed_price: t.executed_price,
-                //             order: Some(Order {
-                //                 id: t.order.id,
-                //                 side: match t.order.side {
-                //                     Side::Buy => 0,
-                //                     Side::Sell => 1,
-                //                 },
-                //                 price: t.order.price,
-                //                 quantity: t.order.quantity,
-                //                 order_type: match t.order.order_type {
-                //                     OrderType::Market => 0,
-                //                     OrderType::Limit => 1,
-                //                 },
-                //                 user_id: t.order.user_id,
-                //             }),
-                //         })
-                //         .collect(),
-                // }))
+            if order.quantity == Decimal::ZERO {
+                return Err(Status::invalid_argument("Order quantity cannot be zero."));
             }
 
-            order_book::OrderType::Limit => {
-                // self.order_book
-                //     .limit_order(order)
-                //     .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
+            match order.r#type {
+                orders::OrderType::Market => {
+                    order_book
+                        .market_order(order)
+                        .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
+                }
 
-                // Ok(Response::new(Trades { trades: vec![] }))
+                orders::OrderType::Limit => {
+                    order_book
+                        .limit_order(order)
+                        .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
+                }
             }
+        } else {
+            return Err(Status::internal(format!(
+                "Order book not found for symbol {:?}",
+                symbol
+            )));
         }
 
         Ok(Response::new(SubmitOrderResponse {
@@ -132,10 +119,10 @@ impl OrdersService for OrdersServer {
     ) -> Result<Response<NewOrderBookResponse>, Status> {
         let recv_order_book = request.into_inner();
 
-        let symbol = order_book::Symbol(recv_order_book.symbol.to_owned());
+        let symbol = orders::Symbol(recv_order_book.symbol.to_owned());
         let precision = recv_order_book.precision;
 
-        let order_book = Arc::new(order_book::OrderBook::new(precision));
+        let order_book = Arc::new(orders::OrderBook::new(precision));
         let mut order_books = self
             .order_books
             .write()
