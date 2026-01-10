@@ -19,139 +19,139 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	OrderService_SubmitOrder_FullMethodName  = "/proto.OrderService/SubmitOrder"
-	OrderService_NewOrderBook_FullMethodName = "/proto.OrderService/NewOrderBook"
+	OrdersService_SubmitOrder_FullMethodName  = "/proto.OrdersService/SubmitOrder"
+	OrdersService_NewOrderBook_FullMethodName = "/proto.OrdersService/NewOrderBook"
 )
 
-// OrderServiceClient is the client API for OrderService service.
+// OrdersServiceClient is the client API for OrdersService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type OrderServiceClient interface {
+type OrdersServiceClient interface {
 	SubmitOrder(ctx context.Context, in *SubmitOrderRequest, opts ...grpc.CallOption) (*SubmitOrderResponse, error)
 	NewOrderBook(ctx context.Context, in *NewOrderBookRequest, opts ...grpc.CallOption) (*NewOrderBookResponse, error)
 }
 
-type orderServiceClient struct {
+type ordersServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewOrderServiceClient(cc grpc.ClientConnInterface) OrderServiceClient {
-	return &orderServiceClient{cc}
+func NewOrdersServiceClient(cc grpc.ClientConnInterface) OrdersServiceClient {
+	return &ordersServiceClient{cc}
 }
 
-func (c *orderServiceClient) SubmitOrder(ctx context.Context, in *SubmitOrderRequest, opts ...grpc.CallOption) (*SubmitOrderResponse, error) {
+func (c *ordersServiceClient) SubmitOrder(ctx context.Context, in *SubmitOrderRequest, opts ...grpc.CallOption) (*SubmitOrderResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SubmitOrderResponse)
-	err := c.cc.Invoke(ctx, OrderService_SubmitOrder_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, OrdersService_SubmitOrder_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *orderServiceClient) NewOrderBook(ctx context.Context, in *NewOrderBookRequest, opts ...grpc.CallOption) (*NewOrderBookResponse, error) {
+func (c *ordersServiceClient) NewOrderBook(ctx context.Context, in *NewOrderBookRequest, opts ...grpc.CallOption) (*NewOrderBookResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(NewOrderBookResponse)
-	err := c.cc.Invoke(ctx, OrderService_NewOrderBook_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, OrdersService_NewOrderBook_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// OrderServiceServer is the server API for OrderService service.
-// All implementations must embed UnimplementedOrderServiceServer
+// OrdersServiceServer is the server API for OrdersService service.
+// All implementations must embed UnimplementedOrdersServiceServer
 // for forward compatibility.
-type OrderServiceServer interface {
+type OrdersServiceServer interface {
 	SubmitOrder(context.Context, *SubmitOrderRequest) (*SubmitOrderResponse, error)
 	NewOrderBook(context.Context, *NewOrderBookRequest) (*NewOrderBookResponse, error)
-	mustEmbedUnimplementedOrderServiceServer()
+	mustEmbedUnimplementedOrdersServiceServer()
 }
 
-// UnimplementedOrderServiceServer must be embedded to have
+// UnimplementedOrdersServiceServer must be embedded to have
 // forward compatible implementations.
 //
 // NOTE: this should be embedded by value instead of pointer to avoid a nil
 // pointer dereference when methods are called.
-type UnimplementedOrderServiceServer struct{}
+type UnimplementedOrdersServiceServer struct{}
 
-func (UnimplementedOrderServiceServer) SubmitOrder(context.Context, *SubmitOrderRequest) (*SubmitOrderResponse, error) {
+func (UnimplementedOrdersServiceServer) SubmitOrder(context.Context, *SubmitOrderRequest) (*SubmitOrderResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SubmitOrder not implemented")
 }
-func (UnimplementedOrderServiceServer) NewOrderBook(context.Context, *NewOrderBookRequest) (*NewOrderBookResponse, error) {
+func (UnimplementedOrdersServiceServer) NewOrderBook(context.Context, *NewOrderBookRequest) (*NewOrderBookResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method NewOrderBook not implemented")
 }
-func (UnimplementedOrderServiceServer) mustEmbedUnimplementedOrderServiceServer() {}
-func (UnimplementedOrderServiceServer) testEmbeddedByValue()                      {}
+func (UnimplementedOrdersServiceServer) mustEmbedUnimplementedOrdersServiceServer() {}
+func (UnimplementedOrdersServiceServer) testEmbeddedByValue()                       {}
 
-// UnsafeOrderServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to OrderServiceServer will
+// UnsafeOrdersServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to OrdersServiceServer will
 // result in compilation errors.
-type UnsafeOrderServiceServer interface {
-	mustEmbedUnimplementedOrderServiceServer()
+type UnsafeOrdersServiceServer interface {
+	mustEmbedUnimplementedOrdersServiceServer()
 }
 
-func RegisterOrderServiceServer(s grpc.ServiceRegistrar, srv OrderServiceServer) {
-	// If the following call panics, it indicates UnimplementedOrderServiceServer was
+func RegisterOrdersServiceServer(s grpc.ServiceRegistrar, srv OrdersServiceServer) {
+	// If the following call panics, it indicates UnimplementedOrdersServiceServer was
 	// embedded by pointer and is nil.  This will cause panics if an
 	// unimplemented method is ever invoked, so we test this at initialization
 	// time to prevent it from happening at runtime later due to I/O.
 	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
 		t.testEmbeddedByValue()
 	}
-	s.RegisterService(&OrderService_ServiceDesc, srv)
+	s.RegisterService(&OrdersService_ServiceDesc, srv)
 }
 
-func _OrderService_SubmitOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _OrdersService_SubmitOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SubmitOrderRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(OrderServiceServer).SubmitOrder(ctx, in)
+		return srv.(OrdersServiceServer).SubmitOrder(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: OrderService_SubmitOrder_FullMethodName,
+		FullMethod: OrdersService_SubmitOrder_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrderServiceServer).SubmitOrder(ctx, req.(*SubmitOrderRequest))
+		return srv.(OrdersServiceServer).SubmitOrder(ctx, req.(*SubmitOrderRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _OrderService_NewOrderBook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _OrdersService_NewOrderBook_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NewOrderBookRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(OrderServiceServer).NewOrderBook(ctx, in)
+		return srv.(OrdersServiceServer).NewOrderBook(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: OrderService_NewOrderBook_FullMethodName,
+		FullMethod: OrdersService_NewOrderBook_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(OrderServiceServer).NewOrderBook(ctx, req.(*NewOrderBookRequest))
+		return srv.(OrdersServiceServer).NewOrderBook(ctx, req.(*NewOrderBookRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-// OrderService_ServiceDesc is the grpc.ServiceDesc for OrderService service.
+// OrdersService_ServiceDesc is the grpc.ServiceDesc for OrdersService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
-var OrderService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.OrderService",
-	HandlerType: (*OrderServiceServer)(nil),
+var OrdersService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "proto.OrdersService",
+	HandlerType: (*OrdersServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "SubmitOrder",
-			Handler:    _OrderService_SubmitOrder_Handler,
+			Handler:    _OrdersService_SubmitOrder_Handler,
 		},
 		{
 			MethodName: "NewOrderBook",
-			Handler:    _OrderService_NewOrderBook_Handler,
+			Handler:    _OrdersService_NewOrderBook_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

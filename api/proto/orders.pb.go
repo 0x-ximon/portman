@@ -358,7 +358,7 @@ func (x *SubmitOrderResponse) GetResult() Result {
 
 type NewOrderBookRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Precision     string                 `protobuf:"bytes,1,opt,name=precision,proto3" json:"precision,omitempty"`
+	Precision     int32                  `protobuf:"varint,1,opt,name=precision,proto3" json:"precision,omitempty"`
 	Symbol        string                 `protobuf:"bytes,2,opt,name=symbol,proto3" json:"symbol,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -394,11 +394,11 @@ func (*NewOrderBookRequest) Descriptor() ([]byte, []int) {
 	return file_orders_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *NewOrderBookRequest) GetPrecision() string {
+func (x *NewOrderBookRequest) GetPrecision() int32 {
 	if x != nil {
 		return x.Precision
 	}
-	return ""
+	return 0
 }
 
 func (x *NewOrderBookRequest) GetSymbol() string {
@@ -468,7 +468,7 @@ const file_orders_proto_rawDesc = "" +
 	"\x13SubmitOrderResponse\x12%\n" +
 	"\x06result\x18\x01 \x01(\x0e2\r.proto.ResultR\x06result\"K\n" +
 	"\x13NewOrderBookRequest\x12\x1c\n" +
-	"\tprecision\x18\x01 \x01(\tR\tprecision\x12\x16\n" +
+	"\tprecision\x18\x01 \x01(\x05R\tprecision\x12\x16\n" +
 	"\x06symbol\x18\x02 \x01(\tR\x06symbol\"=\n" +
 	"\x14NewOrderBookResponse\x12%\n" +
 	"\x06result\x18\x01 \x01(\x0e2\r.proto.ResultR\x06result*9\n" +
@@ -489,8 +489,8 @@ const file_orders_proto_rawDesc = "" +
 	"\x06Result\x12\x16\n" +
 	"\x12RESULT_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eRESULT_SUCCESS\x10\x01\x12\x12\n" +
-	"\x0eRESULT_FAILURE\x10\x022\x9d\x01\n" +
-	"\fOrderService\x12D\n" +
+	"\x0eRESULT_FAILURE\x10\x022\x9e\x01\n" +
+	"\rOrdersService\x12D\n" +
 	"\vSubmitOrder\x12\x19.proto.SubmitOrderRequest\x1a\x1a.proto.SubmitOrderResponse\x12G\n" +
 	"\fNewOrderBook\x12\x1a.proto.NewOrderBookRequest\x1a\x1b.proto.NewOrderBookResponseB'Z%github.com/0x-ximon/portman/api/protob\x06proto3"
 
@@ -524,10 +524,10 @@ var file_orders_proto_depIdxs = []int32{
 	2, // 2: proto.SubmitOrderRequest.status:type_name -> proto.Status
 	3, // 3: proto.SubmitOrderResponse.result:type_name -> proto.Result
 	3, // 4: proto.NewOrderBookResponse.result:type_name -> proto.Result
-	4, // 5: proto.OrderService.SubmitOrder:input_type -> proto.SubmitOrderRequest
-	6, // 6: proto.OrderService.NewOrderBook:input_type -> proto.NewOrderBookRequest
-	5, // 7: proto.OrderService.SubmitOrder:output_type -> proto.SubmitOrderResponse
-	7, // 8: proto.OrderService.NewOrderBook:output_type -> proto.NewOrderBookResponse
+	4, // 5: proto.OrdersService.SubmitOrder:input_type -> proto.SubmitOrderRequest
+	6, // 6: proto.OrdersService.NewOrderBook:input_type -> proto.NewOrderBookRequest
+	5, // 7: proto.OrdersService.SubmitOrder:output_type -> proto.SubmitOrderResponse
+	7, // 8: proto.OrdersService.NewOrderBook:output_type -> proto.NewOrderBookResponse
 	7, // [7:9] is the sub-list for method output_type
 	5, // [5:7] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
