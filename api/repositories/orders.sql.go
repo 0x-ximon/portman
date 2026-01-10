@@ -13,22 +13,24 @@ import (
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (user_id, price, quantity, side, type)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, user_id, price, quantity, side, type, status, created_at, updated_at
+INSERT INTO orders (user_id, ticker_symbol, price, quantity, side, type)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, user_id, ticker_symbol, price, quantity, side, type, status, created_at, updated_at
 `
 
 type CreateOrderParams struct {
-	UserID   uuid.UUID       `json:"user_id"`
-	Price    decimal.Decimal `json:"price"`
-	Quantity decimal.Decimal `json:"quantity"`
-	Side     OrderSide       `json:"side"`
-	Type     OrderType       `json:"type"`
+	UserID       uuid.UUID       `json:"user_id"`
+	TickerSymbol string          `json:"ticker_symbol"`
+	Price        decimal.Decimal `json:"price"`
+	Quantity     decimal.Decimal `json:"quantity"`
+	Side         OrderSide       `json:"side"`
+	Type         OrderType       `json:"type"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
 	row := q.db.QueryRow(ctx, createOrder,
 		arg.UserID,
+		arg.TickerSymbol,
 		arg.Price,
 		arg.Quantity,
 		arg.Side,
@@ -38,6 +40,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.TickerSymbol,
 		&i.Price,
 		&i.Quantity,
 		&i.Side,
@@ -50,7 +53,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 }
 
 const getOrder = `-- name: GetOrder :one
-SELECT id, user_id, price, quantity, side, type, status, created_at, updated_at FROM orders
+SELECT id, user_id, ticker_symbol, price, quantity, side, type, status, created_at, updated_at FROM orders
 WHERE ID = $1 and user_id = $2
 LIMIT 1
 `
@@ -66,6 +69,7 @@ func (q *Queries) GetOrder(ctx context.Context, arg GetOrderParams) (Order, erro
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
+		&i.TickerSymbol,
 		&i.Price,
 		&i.Quantity,
 		&i.Side,
@@ -78,7 +82,7 @@ func (q *Queries) GetOrder(ctx context.Context, arg GetOrderParams) (Order, erro
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, user_id, price, quantity, side, type, status, created_at, updated_at FROM orders
+SELECT id, user_id, ticker_symbol, price, quantity, side, type, status, created_at, updated_at FROM orders
 WHERE user_id = $1
 `
 
@@ -94,6 +98,7 @@ func (q *Queries) ListOrders(ctx context.Context, userID uuid.UUID) ([]Order, er
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
+			&i.TickerSymbol,
 			&i.Price,
 			&i.Quantity,
 			&i.Side,

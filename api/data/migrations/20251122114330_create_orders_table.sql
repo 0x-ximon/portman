@@ -8,6 +8,7 @@ CREATE TABLE
   orders (
     ID BIGSERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id) NOT NULL,
+    ticker_symbol TEXT REFERENCES tickers(symbol) NOT NULL,
 
     price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
     quantity NUMERIC(10, 2) NOT NULL DEFAULT 0.00,

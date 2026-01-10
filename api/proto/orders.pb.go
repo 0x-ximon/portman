@@ -223,11 +223,12 @@ func (Result) EnumDescriptor() ([]byte, []int) {
 type SubmitOrderRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	Side          Side                   `protobuf:"varint,7,opt,name=side,proto3,enum=proto.Side" json:"side,omitempty"`
-	Type          Type                   `protobuf:"varint,8,opt,name=type,proto3,enum=proto.Type" json:"type,omitempty"`
-	Status        Status                 `protobuf:"varint,9,opt,name=status,proto3,enum=proto.Status" json:"status,omitempty"`
-	Price         string                 `protobuf:"bytes,4,opt,name=price,proto3" json:"price,omitempty"`
-	Quantity      string                 `protobuf:"bytes,5,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Side          Side                   `protobuf:"varint,2,opt,name=side,proto3,enum=proto.Side" json:"side,omitempty"`
+	Type          Type                   `protobuf:"varint,3,opt,name=type,proto3,enum=proto.Type" json:"type,omitempty"`
+	Status        Status                 `protobuf:"varint,4,opt,name=status,proto3,enum=proto.Status" json:"status,omitempty"`
+	Price         string                 `protobuf:"bytes,5,opt,name=price,proto3" json:"price,omitempty"`
+	Quantity      string                 `protobuf:"bytes,6,opt,name=quantity,proto3" json:"quantity,omitempty"`
+	Symbol        string                 `protobuf:"bytes,7,opt,name=symbol,proto3" json:"symbol,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -304,6 +305,13 @@ func (x *SubmitOrderRequest) GetQuantity() string {
 	return ""
 }
 
+func (x *SubmitOrderRequest) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
 type SubmitOrderResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Result        Result                 `protobuf:"varint,1,opt,name=result,proto3,enum=proto.Result" json:"result,omitempty"`
@@ -348,19 +356,121 @@ func (x *SubmitOrderResponse) GetResult() Result {
 	return Result_RESULT_UNSPECIFIED
 }
 
+type NewOrderBookRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Precision     string                 `protobuf:"bytes,1,opt,name=precision,proto3" json:"precision,omitempty"`
+	Symbol        string                 `protobuf:"bytes,2,opt,name=symbol,proto3" json:"symbol,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NewOrderBookRequest) Reset() {
+	*x = NewOrderBookRequest{}
+	mi := &file_orders_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NewOrderBookRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NewOrderBookRequest) ProtoMessage() {}
+
+func (x *NewOrderBookRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_orders_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NewOrderBookRequest.ProtoReflect.Descriptor instead.
+func (*NewOrderBookRequest) Descriptor() ([]byte, []int) {
+	return file_orders_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *NewOrderBookRequest) GetPrecision() string {
+	if x != nil {
+		return x.Precision
+	}
+	return ""
+}
+
+func (x *NewOrderBookRequest) GetSymbol() string {
+	if x != nil {
+		return x.Symbol
+	}
+	return ""
+}
+
+type NewOrderBookResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Result        Result                 `protobuf:"varint,1,opt,name=result,proto3,enum=proto.Result" json:"result,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *NewOrderBookResponse) Reset() {
+	*x = NewOrderBookResponse{}
+	mi := &file_orders_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *NewOrderBookResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*NewOrderBookResponse) ProtoMessage() {}
+
+func (x *NewOrderBookResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_orders_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use NewOrderBookResponse.ProtoReflect.Descriptor instead.
+func (*NewOrderBookResponse) Descriptor() ([]byte, []int) {
+	return file_orders_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *NewOrderBookResponse) GetResult() Result {
+	if x != nil {
+		return x.Result
+	}
+	return Result_RESULT_UNSPECIFIED
+}
+
 var File_orders_proto protoreflect.FileDescriptor
 
 const file_orders_proto_rawDesc = "" +
 	"\n" +
-	"\forders.proto\x12\x05proto\"\xbf\x01\n" +
+	"\forders.proto\x12\x05proto\"\xd7\x01\n" +
 	"\x12SubmitOrderRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x1f\n" +
-	"\x04side\x18\a \x01(\x0e2\v.proto.SideR\x04side\x12\x1f\n" +
-	"\x04type\x18\b \x01(\x0e2\v.proto.TypeR\x04type\x12%\n" +
-	"\x06status\x18\t \x01(\x0e2\r.proto.StatusR\x06status\x12\x14\n" +
-	"\x05price\x18\x04 \x01(\tR\x05price\x12\x1a\n" +
-	"\bquantity\x18\x05 \x01(\tR\bquantity\"<\n" +
+	"\x04side\x18\x02 \x01(\x0e2\v.proto.SideR\x04side\x12\x1f\n" +
+	"\x04type\x18\x03 \x01(\x0e2\v.proto.TypeR\x04type\x12%\n" +
+	"\x06status\x18\x04 \x01(\x0e2\r.proto.StatusR\x06status\x12\x14\n" +
+	"\x05price\x18\x05 \x01(\tR\x05price\x12\x1a\n" +
+	"\bquantity\x18\x06 \x01(\tR\bquantity\x12\x16\n" +
+	"\x06symbol\x18\a \x01(\tR\x06symbol\"<\n" +
 	"\x13SubmitOrderResponse\x12%\n" +
+	"\x06result\x18\x01 \x01(\x0e2\r.proto.ResultR\x06result\"K\n" +
+	"\x13NewOrderBookRequest\x12\x1c\n" +
+	"\tprecision\x18\x01 \x01(\tR\tprecision\x12\x16\n" +
+	"\x06symbol\x18\x02 \x01(\tR\x06symbol\"=\n" +
+	"\x14NewOrderBookResponse\x12%\n" +
 	"\x06result\x18\x01 \x01(\x0e2\r.proto.ResultR\x06result*9\n" +
 	"\x04Side\x12\x14\n" +
 	"\x10SIDE_UNSPECIFIED\x10\x00\x12\f\n" +
@@ -379,9 +489,10 @@ const file_orders_proto_rawDesc = "" +
 	"\x06Result\x12\x16\n" +
 	"\x12RESULT_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eRESULT_SUCCESS\x10\x01\x12\x12\n" +
-	"\x0eRESULT_FAILURE\x10\x022U\n" +
-	"\rOrdersService\x12D\n" +
-	"\vSubmitOrder\x12\x19.proto.SubmitOrderRequest\x1a\x1a.proto.SubmitOrderResponseB'Z%github.com/0x-ximon/portman/api/protob\x06proto3"
+	"\x0eRESULT_FAILURE\x10\x022\x9d\x01\n" +
+	"\fOrderService\x12D\n" +
+	"\vSubmitOrder\x12\x19.proto.SubmitOrderRequest\x1a\x1a.proto.SubmitOrderResponse\x12G\n" +
+	"\fNewOrderBook\x12\x1a.proto.NewOrderBookRequest\x1a\x1b.proto.NewOrderBookResponseB'Z%github.com/0x-ximon/portman/api/protob\x06proto3"
 
 var (
 	file_orders_proto_rawDescOnce sync.Once
@@ -396,27 +507,32 @@ func file_orders_proto_rawDescGZIP() []byte {
 }
 
 var file_orders_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_orders_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_orders_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_orders_proto_goTypes = []any{
-	(Side)(0),                   // 0: proto.Side
-	(Type)(0),                   // 1: proto.Type
-	(Status)(0),                 // 2: proto.Status
-	(Result)(0),                 // 3: proto.Result
-	(*SubmitOrderRequest)(nil),  // 4: proto.SubmitOrderRequest
-	(*SubmitOrderResponse)(nil), // 5: proto.SubmitOrderResponse
+	(Side)(0),                    // 0: proto.Side
+	(Type)(0),                    // 1: proto.Type
+	(Status)(0),                  // 2: proto.Status
+	(Result)(0),                  // 3: proto.Result
+	(*SubmitOrderRequest)(nil),   // 4: proto.SubmitOrderRequest
+	(*SubmitOrderResponse)(nil),  // 5: proto.SubmitOrderResponse
+	(*NewOrderBookRequest)(nil),  // 6: proto.NewOrderBookRequest
+	(*NewOrderBookResponse)(nil), // 7: proto.NewOrderBookResponse
 }
 var file_orders_proto_depIdxs = []int32{
 	0, // 0: proto.SubmitOrderRequest.side:type_name -> proto.Side
 	1, // 1: proto.SubmitOrderRequest.type:type_name -> proto.Type
 	2, // 2: proto.SubmitOrderRequest.status:type_name -> proto.Status
 	3, // 3: proto.SubmitOrderResponse.result:type_name -> proto.Result
-	4, // 4: proto.OrdersService.SubmitOrder:input_type -> proto.SubmitOrderRequest
-	5, // 5: proto.OrdersService.SubmitOrder:output_type -> proto.SubmitOrderResponse
-	5, // [5:6] is the sub-list for method output_type
-	4, // [4:5] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 4: proto.NewOrderBookResponse.result:type_name -> proto.Result
+	4, // 5: proto.OrderService.SubmitOrder:input_type -> proto.SubmitOrderRequest
+	6, // 6: proto.OrderService.NewOrderBook:input_type -> proto.NewOrderBookRequest
+	5, // 7: proto.OrderService.SubmitOrder:output_type -> proto.SubmitOrderResponse
+	7, // 8: proto.OrderService.NewOrderBook:output_type -> proto.NewOrderBookResponse
+	7, // [7:9] is the sub-list for method output_type
+	5, // [5:7] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_orders_proto_init() }
@@ -430,7 +546,7 @@ func file_orders_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_orders_proto_rawDesc), len(file_orders_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

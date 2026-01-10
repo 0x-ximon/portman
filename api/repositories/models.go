@@ -229,15 +229,16 @@ func (ns NullTickerStatus) Value() (driver.Value, error) {
 }
 
 type Order struct {
-	ID        int64           `json:"id"`
-	UserID    uuid.UUID       `json:"user_id"`
-	Price     decimal.Decimal `json:"price"`
-	Quantity  decimal.Decimal `json:"quantity"`
-	Side      OrderSide       `json:"side"`
-	Type      OrderType       `json:"type"`
-	Status    OrderStatus     `json:"status"`
-	CreatedAt time.Time       `json:"created_at"`
-	UpdatedAt time.Time       `json:"updated_at"`
+	ID           int64           `json:"id"`
+	UserID       uuid.UUID       `json:"user_id"`
+	TickerSymbol string          `json:"ticker_symbol"`
+	Price        decimal.Decimal `json:"price"`
+	Quantity     decimal.Decimal `json:"quantity"`
+	Side         OrderSide       `json:"side"`
+	Type         OrderType       `json:"type"`
+	Status       OrderStatus     `json:"status"`
+	CreatedAt    time.Time       `json:"created_at"`
+	UpdatedAt    time.Time       `json:"updated_at"`
 }
 
 type Ticker struct {
