@@ -42,6 +42,7 @@ func main() {
 		services.Auth,
 
 		middleware.Logger,
+		middleware.Heartbeat("/health"),
 	)
 
 	auth := &handlers.AuthHandler{Conn: conn}
