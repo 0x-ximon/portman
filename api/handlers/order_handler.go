@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/0x-ximon/portman/api/proto"
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5"
@@ -24,9 +24,9 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
-		result := Result{
+		result := Payload{
 			Message: "unauthorized",
-			Error:   fmt.Errorf("bearer token not found"),
+			Error:   "bearer token not found",
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -34,25 +34,25 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	userID := claims.ID
 
-	orderID, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	orderID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		result := Result{
+		result := Payload{
 			Message: "invalid id",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
 		return
 	}
 
-	params := repositories.GetOrderParams{ID: int32(orderID), BuyerID: userID}
+	params := repositories.GetOrderParams{ID: orderID, UserID: userID}
 	order, err := repo.GetOrder(ctx, params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "order not found",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -60,7 +60,7 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	result := Result{
+	result := Payload{
 		Message: "order retrieved",
 		Data:    order,
 	}
@@ -76,9 +76,9 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		result := Result{
+		result := Payload{
 			Message: "invalid params",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -87,10 +87,11 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
 	if !ok {
+
 		w.WriteHeader(http.StatusUnauthorized)
-		result := Result{
+		result := Payload{
 			Message: "unauthorized",
-			Error:   fmt.Errorf("bearer token not found"),
+			Error:   "bearer token not found",
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -100,9 +101,9 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	user, err := repo.GetUser(ctx, claims.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "user not found",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -115,19 +116,34 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	order, err := repo.CreateOrder(ctx, params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not create order",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
 		return
 	}
 
-	// TODO: Send Order To Core for Processing via gRPC
+	serviceClient := proto.NewOrdersServiceClient(h.CoreConn)
+
+	_, err = serviceClient.SubmitOrder(ctx, &proto.SubmitOrderRequest{
+		Id: order.ID,
+	})
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		result := Payload{
+			Message: "could not send order to core",
+			Error:   err.Error(),
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
-	result := Result{
+	result := Payload{
 		Message: "order created",
 		Data:    order,
 	}
@@ -142,9 +158,9 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
-		result := Result{
+		result := Payload{
 			Message: "unauthorized",
-			Error:   fmt.Errorf("bearer token not found"),
+			Error:   "bearer token not found",
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -156,9 +172,9 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	orders, err := repo.ListOrders(ctx, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not list orders",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -166,7 +182,7 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	results := Result{
+	results := Payload{
 		Message: "orders retrieved",
 		Data:    orders,
 	}

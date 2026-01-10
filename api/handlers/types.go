@@ -6,8 +6,8 @@ type Credentials struct {
 	OTP          string `json:"otp"`
 }
 
-type Result struct {
+type Payload struct {
 	Message string `json:"message"`
-	Error   error  `json:"error,omitempty"`
+	Error   string `json:"error,omitempty"`
 	Data    any    `json:"data,omitempty"`
 }

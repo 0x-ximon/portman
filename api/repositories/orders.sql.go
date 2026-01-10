@@ -13,8 +13,8 @@ import (
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (user_id, price, quantity, side, type, status)
-VALUES ($1, $2, $3, $4, $5, $6)
+INSERT INTO orders (user_id, price, quantity, side, type)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING id, user_id, price, quantity, side, type, status, created_at, updated_at
 `
 
@@ -24,7 +24,6 @@ type CreateOrderParams struct {
 	Quantity decimal.Decimal `json:"quantity"`
 	Side     OrderSide       `json:"side"`
 	Type     OrderType       `json:"type"`
-	Status   OrderStatus     `json:"status"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -34,7 +33,6 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.Quantity,
 		arg.Side,
 		arg.Type,
-		arg.Status,
 	)
 	var i Order
 	err := row.Scan(

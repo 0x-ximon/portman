@@ -39,6 +39,8 @@ func main() {
 
 	chain := services.NewChain(
 		services.ContentType,
+		services.Auth,
+
 		middleware.Logger,
 	)
 
