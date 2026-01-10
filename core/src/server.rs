@@ -1,12 +1,18 @@
-use std::{str::FromStr, sync::Arc};
+use std::{
+    collections::HashMap,
+    str::FromStr,
+    sync::{Arc, RwLock},
+};
 
 use proto::orders_service_server::OrdersService;
 use rust_decimal::Decimal;
 use tonic::{Request, Response, Status};
 
 use crate::{
-    order_book,
-    server::proto::{SubmitOrderRequest, SubmitOrderResponse},
+    order_book::{self},
+    server::proto::{
+        NewOrderBookRequest, NewOrderBookResponse, SubmitOrderRequest, SubmitOrderResponse,
+    },
 };
 
 pub mod proto {
@@ -14,12 +20,14 @@ pub mod proto {
 }
 
 pub struct OrdersServer {
-    pub order_book: Arc<order_book::OrderBook>,
+    pub order_books: RwLock<HashMap<order_book::Symbol, Arc<order_book::OrderBook>>>,
 }
 
 impl OrdersServer {
-    pub fn new(order_book: Arc<order_book::OrderBook>) -> Self {
-        Self { order_book }
+    pub fn new() -> Self {
+        Self {
+            order_books: RwLock::new(HashMap::new()),
+        }
     }
 }
 
@@ -31,7 +39,6 @@ impl OrdersService for OrdersServer {
     ) -> Result<Response<SubmitOrderResponse>, Status> {
         let recv_order = request.into_inner();
 
-        // 3. Construct Internal Order Struct
         let order = crate::order_book::Order {
             id: recv_order.id,
             symbol: order_book::Symbol(recv_order.symbol.to_string()),
@@ -115,6 +122,28 @@ impl OrdersService for OrdersServer {
         }
 
         Ok(Response::new(SubmitOrderResponse {
+            result: proto::Result::Success as i32,
+        }))
+    }
+
+    async fn new_order_book(
+        &self,
+        request: Request<NewOrderBookRequest>,
+    ) -> Result<Response<NewOrderBookResponse>, Status> {
+        let recv_order_book = request.into_inner();
+
+        let symbol = order_book::Symbol(recv_order_book.symbol.to_owned());
+        let precision = recv_order_book.precision;
+
+        let order_book = Arc::new(order_book::OrderBook::new(precision));
+        let mut order_books = self
+            .order_books
+            .write()
+            .map_err(|e| Status::internal(format!("Failed to write order books: {}", e)))?;
+
+        order_books.insert(symbol, order_book);
+
+        Ok(Response::new(NewOrderBookResponse {
             result: proto::Result::Success as i32,
         }))
     }

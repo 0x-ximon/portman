@@ -1,11 +1,11 @@
 use std::{
     collections::{BTreeMap, VecDeque},
-    sync::{RwLock, RwLockWriteGuard, atomic::AtomicI64},
+    sync::{RwLock, RwLockWriteGuard},
 };
 
 use rust_decimal::Decimal;
 
-#[derive(Clone, Debug)]
+#[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub struct Symbol(pub String);
 
 pub type OrderPrice = Decimal;
@@ -41,11 +41,7 @@ pub struct Order {
     pub quantity: OrderQuantity,
 }
 
-pub struct Trade {
-    pub id: i64,
-    pub executed_price: OrderPrice,
-    pub order: Order,
-}
+pub type Trades = Vec<Order>;
 
 #[derive(Debug)]
 pub struct PriceLevel {
@@ -58,44 +54,33 @@ pub struct PriceLevel {
 pub struct OrderBook {
     pub bids: RwLock<BTreeMap<i64, PriceLevel>>,
     pub asks: RwLock<BTreeMap<i64, PriceLevel>>,
-    pub trade_counter: AtomicI64,
-    pub order_counter: AtomicI64,
-    pub order_precision: u8,
-}
-
-impl Default for OrderBook {
-    fn default() -> Self {
-        // Default precision of 2 decimal places
-        OrderBook::new(2)
-    }
+    pub precision: i32,
 }
 
 impl OrderBook {
-    pub fn new(precision: u8) -> Self {
+    pub fn new(precision: i32) -> Self {
         OrderBook {
             bids: RwLock::new(BTreeMap::new()),
             asks: RwLock::new(BTreeMap::new()),
-            trade_counter: AtomicI64::new(1),
-            order_counter: AtomicI64::new(1),
-            order_precision: precision,
+            precision,
         }
     }
 
-    pub fn market_order(&self, order: Order) -> anyhow::Result<(Vec<Trade>, Decimal)> {
+    pub fn market_order(&self, order: Order) -> anyhow::Result<((), Decimal)> {
         match order.side {
             OrderSide::Buy => {
                 let mut asks = self.asks.write().map_err(|e| {
                     anyhow::anyhow!("RwLock poisoned while acquiring asks write lock: {}", e)
                 })?;
                 let (trades, remaining_quantity) = self.process_market_order(order, &mut asks);
-                Ok((trades, remaining_quantity))
+                Ok(((), remaining_quantity))
             }
             OrderSide::Sell => {
                 let mut bids = self.bids.write().map_err(|e| {
                     anyhow::anyhow!("RwLock poisoned while acquiring bids write lock: {}", e)
                 })?;
                 let (trades, remaining_quantity) = self.process_market_order(order, &mut bids);
-                Ok((trades, remaining_quantity))
+                Ok(((), remaining_quantity))
             }
         }
     }
@@ -122,7 +107,7 @@ impl OrderBook {
 
     fn process_limit_order(
         &self,
-        mut order: Order,
+        order: Order,
         book: &mut RwLockWriteGuard<'_, BTreeMap<i64, PriceLevel>>,
     ) -> anyhow::Result<()> {
         let key = self.price_to_key(order.price);
@@ -132,9 +117,9 @@ impl OrderBook {
             orders: VecDeque::new(),
         });
 
-        order.id = self
-            .order_counter
-            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        // order.id = self
+        //     .order_counter
+        //     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
         level.quantity += order.quantity;
         level.orders.push_back(order);
@@ -146,10 +131,10 @@ impl OrderBook {
         &self,
         order: Order,
         book: &mut RwLockWriteGuard<BTreeMap<i64, PriceLevel>>,
-    ) -> (Vec<Trade>, Decimal) {
+    ) -> (Vec<()>, Decimal) {
         let mut removable_keys: Vec<i64> = Vec::new();
         let mut remaining_quantity = order.quantity;
-        let mut trades: Vec<Trade> = Vec::new();
+        let trades: Vec<()> = Vec::new();
 
         for (key, level) in book.iter_mut() {
             if remaining_quantity == Decimal::ZERO {
@@ -167,24 +152,24 @@ impl OrderBook {
                 opposite_order.quantity -= fill_qty;
                 level.quantity -= fill_qty;
 
-                let id = self
-                    .trade_counter
-                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                // let id = self
+                //     .trade_counter
+                //     .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
                 if remaining_quantity == Decimal::ZERO {
-                    trades.push(Trade {
-                        // TODO: Use VWAP for executed price
-                        executed_price: level.price,
-                        order: order,
-                        id: id,
-                    });
+                    // trades.push(Trade {
+                    //     // TODO: Use VWAP for executed price
+                    //     executed_price: level.price,
+                    //     order: order,
+                    //     id: id,
+                    // });
                 } else if opposite_order.quantity == Decimal::ZERO {
                     if let Some(completed_order) = level.orders.pop_front() {
-                        trades.push(Trade {
-                            executed_price: level.price,
-                            order: completed_order,
-                            id: id,
-                        });
+                        // trades.push(Trade {
+                        //     executed_price: level.price,
+                        //     order: completed_order,
+                        //     id: id,
+                        // });
                     }
                 }
             }
