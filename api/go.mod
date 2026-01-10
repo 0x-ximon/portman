@@ -3,6 +3,7 @@ module github.com/0x-ximon/portman/api
 go 1.25.0
 
 require (
+	github.com/go-chi/chi v1.5.5
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.8.0
@@ -11,6 +12,8 @@ require (
 	github.com/resend/resend-go/v3 v3.0.0
 	github.com/shopspring/decimal v1.4.0
 	golang.org/x/crypto v0.46.0
+	google.golang.org/grpc v1.78.0
+	google.golang.org/protobuf v1.36.11
 )
 
 require (
@@ -22,6 +25,4 @@ require (
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251029180050-ab9386a59fda // indirect
-	google.golang.org/grpc v1.78.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
 )

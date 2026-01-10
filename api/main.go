@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/0x-ximon/portman/api/handlers"
-	"github.com/0x-ximon/portman/api/middlewares"
 	"github.com/0x-ximon/portman/api/services"
+	"github.com/go-chi/chi/middleware"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 )
@@ -22,7 +22,7 @@ func init() {
 }
 
 func main() {
-	router := http.NewServeMux()
+	mux := http.NewServeMux()
 	ctx := context.Background()
 
 	conn, err := pgx.Connect(ctx, os.Getenv("DB_URL"))
@@ -37,32 +37,31 @@ func main() {
 	}
 	defer coreConn.Close()
 
-	chain := middlewares.NewChain(
-		middlewares.ContentType,
-		middlewares.Auth,
-		middlewares.Logger,
+	chain := services.NewChain(
+		services.ContentType,
+		middleware.Logger,
 	)
 
 	auth := &handlers.AuthHandler{Conn: conn}
-	router.HandleFunc("POST /auth/initiate", auth.Initiatiate)
-	router.HandleFunc("POST /auth/validate", auth.Validate)
+	mux.HandleFunc("POST /auth/initiate", auth.Initiatiate)
+	mux.HandleFunc("POST /auth/validate", auth.Validate)
 
 	users := &handlers.UsersHandler{Conn: conn}
-	router.HandleFunc("GET /users", users.ListUsers)
-	router.HandleFunc("POST /users", users.CreateUser)
-	router.HandleFunc("GET /users/{id}", users.GetUser)
-	router.HandleFunc("DELETE /users/{id}", users.DeleteUser)
+	mux.HandleFunc("GET /users", users.ListUsers)
+	mux.HandleFunc("POST /users", users.CreateUser)
+	mux.HandleFunc("GET /users/{id}", users.GetUser)
+	mux.HandleFunc("DELETE /users/{id}", users.DeleteUser)
 
 	tickers := &handlers.TickerHandler{Conn: conn}
-	router.HandleFunc("GET /tickers", tickers.ListTickers)
-	router.HandleFunc("POST /tickers", tickers.CreateTicker)
-	router.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
-	router.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
+	mux.HandleFunc("GET /tickers", tickers.ListTickers)
+	mux.HandleFunc("POST /tickers", tickers.CreateTicker)
+	mux.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
+	mux.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
 
 	orders := &handlers.OrderHandler{Conn: conn, CoreConn: coreConn}
-	router.HandleFunc("GET /orders", orders.ListOrders)
-	router.HandleFunc("POST /orders", orders.CreateOrder)
-	router.HandleFunc("GET /orders/{id}", orders.GetOrder)
+	mux.HandleFunc("GET /orders", orders.ListOrders)
+	mux.HandleFunc("POST /orders", orders.CreateOrder)
+	mux.HandleFunc("GET /orders/{id}", orders.GetOrder)
 
 	port, ok := os.LookupEnv("PORT")
 	if !ok {
@@ -72,7 +71,7 @@ func main() {
 	addr := net.JoinHostPort(os.Getenv("HOST"), port)
 	s := http.Server{
 		Addr:    addr,
-		Handler: chain(router),
+		Handler: chain(mux),
 	}
 
 	log.Printf("Starting server on %s", addr)

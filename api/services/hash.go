@@ -14,7 +14,9 @@ import (
 
 type Claims struct {
 	jwt.RegisteredClaims
-	ID uuid.UUID `json:"id"`
+	ID            uuid.UUID `json:"id"`
+	EmailAddress  string    `json:"email"`
+	WalletAddress string    `json:"wallet"`
 }
 
 type ClaimsKey struct{}
