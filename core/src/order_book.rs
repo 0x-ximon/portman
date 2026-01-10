@@ -20,12 +20,20 @@ pub enum OrderType {
     Limit,
 }
 
+#[derive(PartialEq, Copy, Clone, Debug)]
+pub enum OrderStatus {
+    Pending,
+    Fulfilled,
+    Cancelled,
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct Order {
     pub id: i64,
     pub side: OrderSide,
     pub price: OrderPrice,
     pub r#type: OrderType,
+    pub status: OrderStatus,
     pub quantity: OrderQuantity,
 }
 

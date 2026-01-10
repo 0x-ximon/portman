@@ -37,7 +37,7 @@ enum Type {
 enum Status {
     STATUS_UNSPECIFIED = 0;
     STATUS_PENDING = 1;
-    STATUS_FILLED = 2;
+    STATUS_FULFILLED = 2;
     STATUS_CANCELLED = 3;
 }
 

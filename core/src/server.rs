@@ -56,6 +56,15 @@ impl OrdersService for OrdersServer {
 
             quantity: Decimal::from_str(&recv_order.quantity)
                 .map_err(|_| Status::invalid_argument("Invalid quantity: precision loss or nan"))?,
+
+            status: match recv_order.status() {
+                proto::Status::Pending => order_book::OrderStatus::Pending,
+                proto::Status::Fulfilled => order_book::OrderStatus::Fulfilled,
+                proto::Status::Cancelled => order_book::OrderStatus::Cancelled,
+                proto::Status::Unspecified => {
+                    return Err(Status::invalid_argument("Status must be specified"));
+                }
+            },
         };
 
         if order.quantity == Decimal::ZERO {
@@ -64,7 +73,6 @@ impl OrdersService for OrdersServer {
 
         match order.r#type {
             order_book::OrderType::Market => {
-                println!("Processing Market Order #{}", order.id);
                 // TODO: Handle case of remaining quantity
                 // let (_, _) = self
                 //     .order_book
@@ -97,7 +105,6 @@ impl OrdersService for OrdersServer {
             }
 
             order_book::OrderType::Limit => {
-                println!("Processing Limit Order #{}", order.id);
                 // self.order_book
                 //     .limit_order(order)
                 //     .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
@@ -106,13 +113,8 @@ impl OrdersService for OrdersServer {
             }
         }
 
-        let reply = SubmitOrderResponse {
+        Ok(Response::new(SubmitOrderResponse {
             result: proto::Result::Success as i32,
-        };
-
-        // Ok(Response::new(reply))
-
-        //
-        todo!();
+        }))
     }
 }

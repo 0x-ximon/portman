@@ -12,6 +12,22 @@ import (
 	"google.golang.org/grpc"
 )
 
+var sideMap = map[repositories.OrderSide]proto.Side{
+	repositories.OrderSideBUY:  proto.Side_SIDE_BUY,
+	repositories.OrderSideSELL: proto.Side_SIDE_SELL,
+}
+
+var typeMap = map[repositories.OrderType]proto.Type{
+	repositories.OrderTypeLIMIT:  proto.Type_TYPE_LIMIT,
+	repositories.OrderTypeMARKET: proto.Type_TYPE_MARKET,
+}
+
+var statusMap = map[repositories.OrderStatus]proto.Status{
+	repositories.OrderStatusPENDING:   proto.Status_STATUS_PENDING,
+	repositories.OrderStatusCANCELLED: proto.Status_STATUS_CANCELLED,
+	repositories.OrderStatusFULFILLED: proto.Status_STATUS_FULFILLED,
+}
+
 type OrderHandler struct {
 	Conn     *pgx.Conn
 	CoreConn *grpc.ClientConn
@@ -125,17 +141,33 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	request := proto.SubmitOrderRequest{
+		Id:       order.ID,
+		Side:     sideMap[order.Side],
+		Type:     typeMap[order.Type],
+		Status:   statusMap[order.Status],
+		Price:    order.Price.String(),
+		Quantity: order.Quantity.String(),
+	}
+
 	serviceClient := proto.NewOrdersServiceClient(h.CoreConn)
-
-	_, err = serviceClient.SubmitOrder(ctx, &proto.SubmitOrderRequest{
-		Id: order.ID,
-	})
-
+	response, err := serviceClient.SubmitOrder(ctx, &request)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Payload{
 			Message: "could not send order to core",
 			Error:   err.Error(),
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
+	if response.Result != proto.Result_RESULT_SUCCESS {
+		w.WriteHeader(http.StatusInternalServerError)
+		result := Payload{
+			Message: "order not exectued",
+			Error:   "core rejected the order",
 		}
 
 		json.NewEncoder(w).Encode(result)
