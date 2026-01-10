@@ -5,20 +5,31 @@ option go_package = "github.com/0x-ximon/portman/api/proto";
 
 service OrdersService {
     rpc SubmitOrder (SubmitOrderRequest) returns (SubmitOrderResponse);
+    rpc NewOrderBook (NewOrderBookRequest) returns (NewOrderBookResponse);
 }
 
 message SubmitOrderRequest {
     int64 id = 1;
 
-    Side side = 7;
-    Type type = 8;
-    Status status = 9;
+    Side side = 2;
+    Type type = 3;
+    Status status = 4;
 
-    string price = 4;
-    string quantity = 5;
+    string price = 5;
+    string quantity = 6;
+    string symbol = 7;
 }
 
 message SubmitOrderResponse {
+    Result result = 1;
+}
+
+message NewOrderBookRequest {
+    int32 precision = 1;
+    string symbol = 2;
+}
+
+message NewOrderBookResponse {
     Result result = 1;
 }
 

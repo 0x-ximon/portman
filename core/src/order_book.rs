@@ -5,6 +5,9 @@ use std::{
 
 use rust_decimal::Decimal;
 
+#[derive(Clone, Debug)]
+pub struct Symbol(pub String);
+
 pub type OrderPrice = Decimal;
 pub type OrderQuantity = Decimal;
 
@@ -27,9 +30,10 @@ pub enum OrderStatus {
     Cancelled,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Order {
     pub id: i64,
+    pub symbol: Symbol,
     pub side: OrderSide,
     pub price: OrderPrice,
     pub r#type: OrderType,

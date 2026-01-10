@@ -34,6 +34,7 @@ impl OrdersService for OrdersServer {
         // 3. Construct Internal Order Struct
         let order = crate::order_book::Order {
             id: recv_order.id,
+            symbol: order_book::Symbol(recv_order.symbol.to_string()),
 
             side: match recv_order.side() {
                 proto::Side::Buy => order_book::OrderSide::Buy,
