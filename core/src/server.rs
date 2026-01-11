@@ -44,7 +44,7 @@ impl OrdersService for OrdersServer {
             .read()
             .map_err(|e| Status::internal(format!("Failed to read order books: {}", e)))?;
 
-        let symbol = orders::Symbol(recv_order.symbol.to_string());
+        let symbol = recv_order.symbol.to_string();
 
         if let Some(order_book) = order_books.get(&symbol) {
             let order = orders::Order {
@@ -66,13 +66,13 @@ impl OrdersService for OrdersServer {
                     }
                 },
 
-                price: Decimal::from_str(&recv_order.price).map_err(|_| {
-                    Status::invalid_argument("Invalid price: precision loss or nan")
-                })?,
+                price: Decimal::from_str(&recv_order.price)
+                    .map_err(|_| Status::invalid_argument("Price: precision loss or nan"))?
+                    .round_dp(order_book.price_precision),
 
-                quantity: Decimal::from_str(&recv_order.quantity).map_err(|_| {
-                    Status::invalid_argument("Invalid quantity: precision loss or nan")
-                })?,
+                quantity: Decimal::from_str(&recv_order.quantity)
+                    .map_err(|_| Status::invalid_argument("Quantity: precision loss or nan"))?
+                    .round_dp(order_book.quantity_precision),
 
                 status: match recv_order.status() {
                     proto::Status::Pending => orders::OrderStatus::Pending,
@@ -90,15 +90,21 @@ impl OrdersService for OrdersServer {
 
             match order.r#type {
                 orders::OrderType::Market => {
-                    order_book
+                    let orders = order_book
                         .market_order(order)
                         .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
+
+                    // TODO: Notify clients about the order execution
                 }
 
                 orders::OrderType::Limit => {
                     order_book
                         .limit_order(order)
                         .map_err(|e| Status::internal(format!("Order processing error: {}", e)))?;
+                }
+
+                orders::OrderType::Unknown => {
+                    return Err(Status::invalid_argument("Unknown order type"));
                 }
             }
         } else {
@@ -119,10 +125,11 @@ impl OrdersService for OrdersServer {
     ) -> Result<Response<NewOrderBookResponse>, Status> {
         let recv_order_book = request.into_inner();
 
-        let symbol = orders::Symbol(recv_order_book.symbol.to_owned());
-        let precision = recv_order_book.precision;
+        let price_precision = recv_order_book.price_precision;
+        let quantity_precision = recv_order_book.quantity_precision;
+        let symbol = recv_order_book.symbol.to_owned();
 
-        let order_book = Arc::new(orders::OrderBook::new(precision));
+        let order_book = Arc::new(orders::OrderBook::new(price_precision, quantity_precision));
         let mut order_books = self
             .order_books
             .write()
@@ -133,5 +140,67 @@ impl OrdersService for OrdersServer {
         Ok(Response::new(NewOrderBookResponse {
             result: proto::Result::Success as i32,
         }))
+    }
+}
+
+#[cfg(test)]
+mod server_tests {
+    use super::*;
+
+    #[test]
+    fn test_submit_order() {
+        tokio::runtime::Runtime::new().unwrap().block_on(async {
+            let server = OrdersServer::new();
+            let symbol = "BTC/USD".to_string();
+            let precision = 2;
+
+            let request = Request::new(NewOrderBookRequest {
+                symbol: symbol.to_owned(),
+                price_precision: precision,
+                quantity_precision: precision,
+            });
+            let response = server.new_order_book(request).await.unwrap();
+
+            assert_eq!(response.into_inner().result, proto::Result::Success as i32);
+
+            let order_books = server.order_books.read().unwrap();
+            assert!(order_books.contains_key(&symbol));
+
+            let payload = orders::Order {
+                id: 1,
+                side: orders::OrderSide::Buy,
+                price: Decimal::new(200504, 3),
+                quantity: Decimal::new(1004, 3),
+                r#type: orders::OrderType::Limit,
+                status: orders::OrderStatus::Pending,
+            };
+
+            let request = Request::new(SubmitOrderRequest {
+                id: payload.id,
+                side: payload.side as i32,
+                r#type: payload.r#type as i32,
+                status: payload.status as i32,
+                price: payload.price.to_string(),
+                quantity: payload.quantity.to_string(),
+                symbol: symbol.to_owned(),
+            });
+
+            let response = server.submit_order(request).await.unwrap();
+            assert_eq!(response.into_inner().result, proto::Result::Success as i32);
+
+            let order_book = order_books.get(&symbol).unwrap();
+            let mut bids = order_book.bids.write().unwrap();
+            let asks = order_book.asks.read().unwrap();
+
+            assert_eq!(bids.len(), 1);
+            assert_eq!(asks.len(), 0);
+
+            let (_, mut level) = bids.pop_first().unwrap();
+            let order = level.orders.pop_front().unwrap();
+
+            assert_eq!(order.id, payload.id);
+            assert_eq!(order.price, Decimal::new(20050, precision));
+            assert_eq!(order.quantity, Decimal::new(100, precision));
+        });
     }
 }
