@@ -25,8 +25,9 @@ message SubmitOrderResponse {
 }
 
 message NewOrderBookRequest {
-    int32 precision = 1;
-    string symbol = 2;
+    uint32 price_precision = 1;
+    uint32 quantity_precision = 2;
+    string symbol = 3;
 }
 
 message NewOrderBookResponse {

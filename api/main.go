@@ -45,6 +45,17 @@ func main() {
 		middleware.Heartbeat("/health"),
 	)
 
+	port, ok := os.LookupEnv("PORT")
+	if !ok {
+		port = "3001"
+	}
+
+	addr := net.JoinHostPort(os.Getenv("HOST"), port)
+	s := http.Server{
+		Addr:    addr,
+		Handler: chain(mux),
+	}
+
 	auth := &handlers.AuthHandler{Conn: conn}
 	mux.HandleFunc("POST /auth/initiate", auth.Initiatiate)
 	mux.HandleFunc("POST /auth/validate", auth.Validate)
@@ -65,17 +76,6 @@ func main() {
 	mux.HandleFunc("GET /orders", orders.ListOrders)
 	mux.HandleFunc("POST /orders", orders.CreateOrder)
 	mux.HandleFunc("GET /orders/{id}", orders.GetOrder)
-
-	port, ok := os.LookupEnv("PORT")
-	if !ok {
-		port = "3001"
-	}
-
-	addr := net.JoinHostPort(os.Getenv("HOST"), port)
-	s := http.Server{
-		Addr:    addr,
-		Handler: chain(mux),
-	}
 
 	log.Printf("Starting server on %s", addr)
 	s.ListenAndServe()
