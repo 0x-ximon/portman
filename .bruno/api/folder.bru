@@ -1,0 +1,17 @@
+meta {
+  name: api
+}
+
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+vars:pre-request {
+  USER_ID: 81c21426-c1e1-427b-ab60-07488dec785d
+  TOKEN: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NjgxMzM1NTMsImlkIjoiODFjMjE0MjYtYzFlMS00MjdiLWFiNjAtMDc0ODhkZWM3ODVkIn0.nVcpDuULqdL-KbQll2GzwKISX74nWuNEn440ZOwEFeE
+  BASE_URL: http://localhost:3001
+}

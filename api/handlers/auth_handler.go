@@ -21,9 +21,9 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		result := Result{
+		result := Payload{
 			Message: "invalid params",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -33,9 +33,9 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 	otp, err := services.GenerateOTP(6)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not generate otp",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -45,9 +45,9 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 	mailer, err := services.NewMailService()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not create mailer",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -57,9 +57,9 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 	cacher, err := services.NewCacheService()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not create cacher",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -69,9 +69,9 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 	user, err := repo.FindUserByEmail(ctx, params.EmailAddress)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "user not found",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -80,7 +80,7 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 
 	if !services.ValidateHash(params.Password, user.Password) {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "invalid credentials",
 		}
 
@@ -90,9 +90,9 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 
 	if err := mailer.SendOTP(user.EmailAddress, otp); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not send otp",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -101,9 +101,9 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 
 	if err := cacher.StoreOTP(ctx, user.ID, otp); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not set otp",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -111,7 +111,7 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	result := Result{
+	result := Payload{
 		Message: "otp sent",
 	}
 
@@ -126,9 +126,9 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		result := Result{
+		result := Payload{
 			Message: "invalid params",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -138,9 +138,9 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	cacher, err := services.NewCacheService()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not create cacher",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -150,9 +150,9 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	user, err := repo.FindUserByEmail(ctx, params.EmailAddress)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "user not found",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -162,9 +162,9 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	otp, err := cacher.RetrieveOTP(ctx, user.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not get otp",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -173,8 +173,9 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 
 	if otp != params.OTP {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "invalid otp",
+			Error:   "otp does not match",
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -184,9 +185,9 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	token, err := services.GenerateJWT(user.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not generate token",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -195,9 +196,9 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 
 	if err := cacher.DeleteOTP(ctx, user.ID); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not delete otp",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -205,7 +206,7 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	result := Result{
+	result := Payload{
 		Message: "otp validated",
 		Data:    token,
 	}

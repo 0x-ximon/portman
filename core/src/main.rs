@@ -1,23 +1,25 @@
-use std::sync::Arc;
-use tonic::transport::Server;
+#![allow(dead_code)]
+#![allow(unused_variables)]
 
-use crate::{
-    orders::OrderBook,
-    server::{PortmanOrdersServer, portman_server::orders_server::OrdersServer},
-};
+use tonic::transport;
+use tower_http::trace::TraceLayer;
+
+use crate::server::{OrdersServer, proto::orders_service_server::OrdersServiceServer};
 
 mod orders;
 mod server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let order_book = Arc::new(OrderBook::default());
-
     let addr = "[::1]:50051".parse()?;
-    let portman_order_server = PortmanOrdersServer::new(order_book.clone());
 
-    Server::builder()
-        .add_service(OrdersServer::new(portman_order_server))
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO)
+        .init();
+
+    transport::Server::builder()
+        .layer(TraceLayer::new_for_grpc())
+        .add_service(OrdersServiceServer::new(OrdersServer::new()))
         .serve(addr)
         .await?;
 

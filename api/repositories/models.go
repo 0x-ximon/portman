@@ -14,6 +14,134 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type OrderSide string
+
+const (
+	OrderSideBUY  OrderSide = "BUY"
+	OrderSideSELL OrderSide = "SELL"
+)
+
+func (e *OrderSide) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OrderSide(s)
+	case string:
+		*e = OrderSide(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OrderSide: %T", src)
+	}
+	return nil
+}
+
+type NullOrderSide struct {
+	OrderSide OrderSide `json:"order_side"`
+	Valid     bool      `json:"valid"` // Valid is true if OrderSide is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrderSide) Scan(value interface{}) error {
+	if value == nil {
+		ns.OrderSide, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OrderSide.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrderSide) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OrderSide), nil
+}
+
+type OrderStatus string
+
+const (
+	OrderStatusPENDING   OrderStatus = "PENDING"
+	OrderStatusCANCELLED OrderStatus = "CANCELLED"
+	OrderStatusFULFILLED OrderStatus = "FULFILLED"
+	OrderStatusREJECTED  OrderStatus = "REJECTED"
+)
+
+func (e *OrderStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OrderStatus(s)
+	case string:
+		*e = OrderStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OrderStatus: %T", src)
+	}
+	return nil
+}
+
+type NullOrderStatus struct {
+	OrderStatus OrderStatus `json:"order_status"`
+	Valid       bool        `json:"valid"` // Valid is true if OrderStatus is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrderStatus) Scan(value interface{}) error {
+	if value == nil {
+		ns.OrderStatus, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OrderStatus.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrderStatus) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OrderStatus), nil
+}
+
+type OrderType string
+
+const (
+	OrderTypeLIMIT  OrderType = "LIMIT"
+	OrderTypeMARKET OrderType = "MARKET"
+)
+
+func (e *OrderType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OrderType(s)
+	case string:
+		*e = OrderType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OrderType: %T", src)
+	}
+	return nil
+}
+
+type NullOrderType struct {
+	OrderType OrderType `json:"order_type"`
+	Valid     bool      `json:"valid"` // Valid is true if OrderType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrderType) Scan(value interface{}) error {
+	if value == nil {
+		ns.OrderType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OrderType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrderType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OrderType), nil
+}
+
 type Role string
 
 const (
@@ -57,55 +185,68 @@ func (ns NullRole) Value() (driver.Value, error) {
 	return string(ns.Role), nil
 }
 
-type Status string
+type TickerStatus string
 
 const (
-	StatusOPEN      Status = "OPEN"
-	StatusCLOSED    Status = "CLOSED"
-	StatusSUSPENDED Status = "SUSPENDED"
+	TickerStatusOPEN      TickerStatus = "OPEN"
+	TickerStatusCLOSED    TickerStatus = "CLOSED"
+	TickerStatusSUSPENDED TickerStatus = "SUSPENDED"
 )
 
-func (e *Status) Scan(src interface{}) error {
+func (e *TickerStatus) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = Status(s)
+		*e = TickerStatus(s)
 	case string:
-		*e = Status(s)
+		*e = TickerStatus(s)
 	default:
-		return fmt.Errorf("unsupported scan type for Status: %T", src)
+		return fmt.Errorf("unsupported scan type for TickerStatus: %T", src)
 	}
 	return nil
 }
 
-type NullStatus struct {
-	Status Status `json:"status"`
-	Valid  bool   `json:"valid"` // Valid is true if Status is not NULL
+type NullTickerStatus struct {
+	TickerStatus TickerStatus `json:"ticker_status"`
+	Valid        bool         `json:"valid"` // Valid is true if TickerStatus is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullStatus) Scan(value interface{}) error {
+func (ns *NullTickerStatus) Scan(value interface{}) error {
 	if value == nil {
-		ns.Status, ns.Valid = "", false
+		ns.TickerStatus, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.Status.Scan(value)
+	return ns.TickerStatus.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullStatus) Value() (driver.Value, error) {
+func (ns NullTickerStatus) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.Status), nil
+	return string(ns.TickerStatus), nil
+}
+
+type Order struct {
+	ID           int64           `json:"id"`
+	UserID       uuid.UUID       `json:"user_id"`
+	TickerSymbol string          `json:"ticker_symbol"`
+	Price        decimal.Decimal `json:"price"`
+	Quantity     decimal.Decimal `json:"quantity"`
+	Side         OrderSide       `json:"side"`
+	Type         OrderType       `json:"type"`
+	Status       OrderStatus     `json:"status"`
+	CreatedAt    time.Time       `json:"created_at"`
+	UpdatedAt    time.Time       `json:"updated_at"`
 }
 
 type Ticker struct {
-	ID     int32  `json:"id"`
-	Symbol string `json:"symbol"`
-	Base   string `json:"base"`
-	Quote  string `json:"quote"`
-	Status Status `json:"status"`
+	ID     int32        `json:"id"`
+	Base   string       `json:"base"`
+	Quote  string       `json:"quote"`
+	Symbol string       `json:"symbol"`
+	Status TickerStatus `json:"status"`
 }
 
 type User struct {

@@ -1,0 +1,19 @@
+{
+  "version": "1",
+  "name": "Portman",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ],
+  "size": 0.0038728713989257812,
+  "filesCount": 21,
+  "protobuf": {
+    "protoFiles": [
+      {
+        "path": "../.proto/orders.proto",
+        "type": "file"
+      }
+    ]
+  }
+}

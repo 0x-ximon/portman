@@ -20,9 +20,9 @@ func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		result := Result{
+		result := Payload{
 			Message: "invalid id",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -32,9 +32,9 @@ func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
 	ticker, err := repo.GetTicker(ctx, int32(id))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "ticker not found",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -42,7 +42,7 @@ func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	result := Result{
+	result := Payload{
 		Message: "ticker retrieved",
 		Data:    ticker,
 	}
@@ -58,9 +58,9 @@ func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		result := Result{
+		result := Payload{
 			Message: "invalid params",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -70,9 +70,9 @@ func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
 	ticker, err := repo.CreateTicker(ctx, params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not create ticker",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -80,7 +80,7 @@ func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	result := Result{
+	result := Payload{
 		Message: "ticker created",
 		Data:    ticker,
 	}
@@ -95,9 +95,9 @@ func (h *TickerHandler) ListTickers(w http.ResponseWriter, r *http.Request) {
 	tickers, err := repo.ListTickers(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		result := Result{
+		result := Payload{
 			Message: "could not list tickers",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -105,7 +105,7 @@ func (h *TickerHandler) ListTickers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	results := Result{
+	results := Payload{
 		Message: "tickers retrieved",
 		Data:    tickers,
 	}
@@ -120,9 +120,9 @@ func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		results := Result{
+		results := Payload{
 			Message: "invalid id",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(results)
@@ -132,9 +132,9 @@ func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
 	err = repo.DeleteTicker(ctx, int32(id))
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		results := Result{
+		results := Payload{
 			Message: "could not delete ticker",
-			Error:   err,
+			Error:   err.Error(),
 		}
 
 		json.NewEncoder(w).Encode(results)
@@ -142,7 +142,7 @@ func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	results := Result{
+	results := Payload{
 		Message: "ticker deleted",
 		Data:    nil,
 	}
