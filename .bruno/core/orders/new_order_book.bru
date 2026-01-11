@@ -1,0 +1,25 @@
+meta {
+  name: New Order Book
+  type: grpc
+  seq: 2
+}
+
+grpc {
+  url: {{BASE_URL}}
+  method: /proto.OrdersService/NewOrderBook
+  body: grpc
+  protoPath: ../.proto/orders.proto
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "price_precision": 2,
+      "quantity_precision": 6,
+      "symbol": "BTC/USDT"
+    }
+  '''
+}
