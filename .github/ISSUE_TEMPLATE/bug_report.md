@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Create a report to help Portman improve
+about: Submit a bug to help Portman improve
 title: "[BUG] "
 labels: bug
 assignees: "0x-ximon"
