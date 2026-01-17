@@ -21,9 +21,6 @@ jobs:
         with:
           go-version-file: "api/go.mod"
 
-      - name: Verify Go version
-        run: go version
-
       - name: Install dependencies
         run: go mod download
 
