@@ -17,13 +17,15 @@ body:grpc {
   name: message 1
   content: '''
     {
-      "id": 12345,
-      "side": "SIDE_SELL",
-      "type": "TYPE_LIMIT",
-      "status": "STATUS_PENDING",
-      "symbol": "ETH/USDT",
-      "price": "150.75",
-      "quantity": "10"
+      "order": {
+        "id": 12345,
+        "side": "SIDE_SELL",
+        "type": "TYPE_LIMIT",
+        "status": "STATUS_PENDING",
+        "price": "150.75",
+        "quantity": "10"
+      },
+      "symbol": "ETH/USDT"
     }
   '''
 }
