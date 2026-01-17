@@ -29,6 +29,3 @@ jobs:
 
       - name: Run tests
         run: go test -v .
-
-      - name: Open Isssues
-        uses: alstr/todo-to-issue-action@v5.1.13
