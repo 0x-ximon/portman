@@ -53,15 +53,18 @@ impl OrdersService for OrdersServer {
         };
 
         let recv_order = request.into_inner();
-
-        let order_books = self
-            .order_books
-            .read()
-            .map_err(|e| Status::internal(format!("Failed to read order books: {}", e)))?;
-
         let symbol = recv_order.symbol.to_string();
 
-        if let Some(order_book) = order_books.get(&symbol) {
+        let order_book = {
+            let order_books = self
+                .order_books
+                .read()
+                .map_err(|e| Status::internal(format!("Failed to read order books: {}", e)))?;
+
+            order_books.get(&symbol).cloned()
+        };
+
+        if let Some(order_book) = order_book {
             let order = orders::Order {
                 id: recv_order.id,
 
@@ -116,15 +119,15 @@ impl OrdersService for OrdersServer {
                         // TODO: Reinsert the orders into the order book before returning
                         .map_err(|e| Status::internal(format!("Failed to save orders: {}", e)))?;
 
-                    // stream
-                    //     .publish("orders.processed", "Hello".into())
-                    //     .await
-                    //     .map_err(|e| {
-                    //         Status::internal(format!(
-                    //             "Failed to publish order processed event: {}",
-                    //             e
-                    //         ))
-                    //     })?;
+                    stream
+                        .publish("orders.processed", "Hello".into())
+                        .await
+                        .map_err(|e| {
+                            Status::internal(format!(
+                                "Failed to publish order processed event: {}",
+                                e
+                            ))
+                        })?;
                 }
 
                 orders::OrderType::Limit => {
