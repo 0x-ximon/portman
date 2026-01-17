@@ -42,7 +42,12 @@ func GenerateJWT(id uuid.UUID) (string, error) {
 		return "", fmt.Errorf("JWT_SECRET environment variable not set")
 	}
 
-	expirationTime := jwt.NewNumericDate(time.Now().Add(24 * time.Hour))
+	t := time.Now().Add(24 * time.Hour)
+	if os.Getenv("ENV") == "dev" {
+		t.Add(10e3 * time.Hour)
+	}
+
+	expirationTime := jwt.NewNumericDate(t)
 	claims := &Claims{
 		ID: id,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -61,7 +66,6 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	}
 
 	claims := &Claims{}
-
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
 		return []byte(jwtKey), nil
 	})

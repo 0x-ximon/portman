@@ -147,6 +147,13 @@ impl OrdersService for OrdersServer {
             .write()
             .map_err(|e| Status::internal(format!("Failed to write order books: {}", e)))?;
 
+        if order_books.contains_key(&symbol) {
+            return Err(Status::already_exists(format!(
+                "{} order book already exists",
+                symbol
+            )));
+        }
+
         order_books.insert(symbol, order_book);
 
         Ok(Response::new(NewOrderBookResponse {

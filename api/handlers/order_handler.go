@@ -88,6 +88,18 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.Conn)
 	ctx := r.Context()
 
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		result := Payload{
+			Message: "unauthorized",
+			Error:   "bearer token not found",
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
 	var params repositories.CreateOrderParams
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
@@ -95,19 +107,6 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		result := Payload{
 			Message: "invalid params",
 			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
-	if !ok {
-
-		w.WriteHeader(http.StatusUnauthorized)
-		result := Payload{
-			Message: "unauthorized",
-			Error:   "bearer token not found",
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -143,6 +142,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	request := proto.SubmitOrderRequest{
 		Id:       order.ID,
+		Symbol:   order.TickerSymbol,
 		Side:     sideMap[order.Side],
 		Type:     typeMap[order.Type],
 		Status:   statusMap[order.Status],
