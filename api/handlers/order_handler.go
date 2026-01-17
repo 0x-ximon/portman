@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 )
 
@@ -220,4 +222,9 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(results)
+}
+
+func (h *OrderHandler) ProcessOrder(m *nats.Msg) {
+	fmt.Println("Received jetstream message: ", string(m.Data))
+	m.Ack()
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
+	"github.com/nats-io/nats.go"
 )
 
 func init() {
@@ -36,6 +37,12 @@ func main() {
 		log.Fatalln(err)
 	}
 	defer coreConn.Close()
+
+	nc, err := nats.Connect(os.Getenv("NATS_URL"))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer nc.Close()
 
 	chain := services.NewChain(
 		services.ContentType,
@@ -76,6 +83,7 @@ func main() {
 	mux.HandleFunc("GET /orders", orders.ListOrders)
 	mux.HandleFunc("POST /orders", orders.CreateOrder)
 	mux.HandleFunc("GET /orders/{id}", orders.GetOrder)
+	nc.Subscribe("orders.processed", orders.ProcessOrder)
 
 	log.Printf("Starting server on %s", addr)
 	s.ListenAndServe()
