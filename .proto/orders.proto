@@ -9,15 +9,8 @@ service OrdersService {
 }
 
 message SubmitOrderRequest {
-    int64 id = 1;
-
-    Side side = 2;
-    Type type = 3;
-    Status status = 4;
-
-    string price = 5;
-    string quantity = 6;
-    string symbol = 7;
+    Order order = 1;
+    string symbol = 2;
 }
 
 message SubmitOrderResponse {
@@ -32,6 +25,17 @@ message NewOrderBookRequest {
 
 message NewOrderBookResponse {
     Result result = 1;
+}
+
+message Order {
+    int64 id = 1;
+
+    Side side = 2;
+    Type type = 3;
+    Status status = 4;
+
+    string price = 5;
+    string quantity = 6;
 }
 
 enum Side {
