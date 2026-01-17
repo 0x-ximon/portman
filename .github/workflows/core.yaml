@@ -28,3 +28,6 @@ jobs:
 
       - name: Run tests
         run: cargo test --verbose
+
+      - name: Open Isssues
+        uses: alstr/todo-to-issue-action@v5.1.13
