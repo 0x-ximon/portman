@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5"
+	"github.com/nats-io/nats.go"
 	"google.golang.org/grpc"
 )
 
@@ -88,6 +90,18 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.Conn)
 	ctx := r.Context()
 
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		result := Payload{
+			Message: "unauthorized",
+			Error:   "bearer token not found",
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+
 	var params repositories.CreateOrderParams
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
@@ -95,19 +109,6 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		result := Payload{
 			Message: "invalid params",
 			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
-	if !ok {
-
-		w.WriteHeader(http.StatusUnauthorized)
-		result := Payload{
-			Message: "unauthorized",
-			Error:   "bearer token not found",
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -142,12 +143,15 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request := proto.SubmitOrderRequest{
-		Id:       order.ID,
-		Side:     sideMap[order.Side],
-		Type:     typeMap[order.Type],
-		Status:   statusMap[order.Status],
-		Price:    order.Price.String(),
-		Quantity: order.Quantity.String(),
+		Order: &proto.Order{
+			Id:       order.ID,
+			Side:     sideMap[order.Side],
+			Type:     typeMap[order.Type],
+			Status:   statusMap[order.Status],
+			Price:    order.Price.String(),
+			Quantity: order.Quantity.String(),
+		},
+		Symbol: order.TickerSymbol,
 	}
 
 	serviceClient := proto.NewOrdersServiceClient(h.CoreConn)
@@ -220,4 +224,9 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(results)
+}
+
+func (h *OrderHandler) ProcessOrder(m *nats.Msg) {
+	fmt.Println("Received jetstream message: ", string(m.Data))
+	m.Ack()
 }
