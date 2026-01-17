@@ -143,13 +143,15 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	request := proto.SubmitOrderRequest{
-		Id:       order.ID,
-		Symbol:   order.TickerSymbol,
-		Side:     sideMap[order.Side],
-		Type:     typeMap[order.Type],
-		Status:   statusMap[order.Status],
-		Price:    order.Price.String(),
-		Quantity: order.Quantity.String(),
+		Order: &proto.Order{
+			Id:       order.ID,
+			Side:     sideMap[order.Side],
+			Type:     typeMap[order.Type],
+			Status:   statusMap[order.Status],
+			Price:    order.Price.String(),
+			Quantity: order.Quantity.String(),
+		},
+		Symbol: order.TickerSymbol,
 	}
 
 	serviceClient := proto.NewOrdersServiceClient(h.CoreConn)
