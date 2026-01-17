@@ -4,6 +4,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
+use async_nats::jetstream::Context;
 use proto::orders_service_server::OrdersService;
 use questdb::ingress::Sender;
 use rust_decimal::Decimal;
@@ -22,13 +23,15 @@ pub mod proto {
 }
 
 pub struct OrdersServer {
+    pub stream: Option<Context>,
     pub connection: Option<RwLock<Sender>>,
     pub order_books: RwLock<HashMap<orders::Symbol, Arc<orders::OrderBook>>>,
 }
 
 impl OrdersServer {
-    pub fn new(conn: Option<RwLock<Sender>>) -> Self {
+    pub fn new(conn: Option<RwLock<Sender>>, stream: Option<Context>) -> Self {
         Self {
+            stream,
             connection: conn,
             order_books: RwLock::new(HashMap::new()),
         }
@@ -43,6 +46,10 @@ impl OrdersService for OrdersServer {
     ) -> Result<Response<SubmitOrderResponse>, Status> {
         let Some(ref conn) = self.connection else {
             return Err(Status::unavailable("Connection not available"));
+        };
+
+        let Some(ref stream) = self.stream else {
+            return Err(Status::unavailable("Stream not available"));
         };
 
         let recv_order = request.into_inner();
@@ -106,7 +113,18 @@ impl OrdersService for OrdersServer {
 
                     store
                         .save_orders(&symbol, &orders)
+                        // TODO: Reinsert the orders into the order book before returning
                         .map_err(|e| Status::internal(format!("Failed to save orders: {}", e)))?;
+
+                    // stream
+                    //     .publish("orders.processed", "Hello".into())
+                    //     .await
+                    //     .map_err(|e| {
+                    //         Status::internal(format!(
+                    //             "Failed to publish order processed event: {}",
+                    //             e
+                    //         ))
+                    //     })?;
                 }
 
                 orders::OrderType::Limit => {
@@ -169,7 +187,7 @@ mod server_tests {
     #[test]
     fn test_submit_order() {
         tokio::runtime::Runtime::new().unwrap().block_on(async {
-            let server = OrdersServer::new(None);
+            let server = OrdersServer::new(None, None);
             let symbol = "BTC/USD".to_string();
             let precision = 2;
 

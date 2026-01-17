@@ -16,6 +16,7 @@ tracing = "0.1.44"
 tracing-subscriber = "0.3.22"
 dotenv = "0.15.0"
 questdb-rs = "6.1.0"
+async-nats = "0.45.0"
 
 [build-dependencies]
 tonic-prost-build = "0.14.2"
