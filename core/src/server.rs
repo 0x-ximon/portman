@@ -1,6 +1,5 @@
 use std::{
     collections::HashMap,
-    str::FromStr,
     sync::{Arc, RwLock},
 };
 
@@ -52,8 +51,12 @@ impl OrdersService for OrdersServer {
             return Err(Status::unavailable("Stream not available"));
         };
 
-        let recv_order = request.into_inner();
-        let symbol = recv_order.symbol.to_string();
+        let inner = request.into_inner();
+        let symbol = inner.symbol;
+
+        let Some(recv_order) = inner.order else {
+            return Err(Status::invalid_argument("order is missing"));
+        };
 
         let order_book = {
             let order_books = self
@@ -65,46 +68,16 @@ impl OrdersService for OrdersServer {
         };
 
         if let Some(order_book) = order_book {
-            let order = orders::Order {
-                id: recv_order.id,
-
-                side: match recv_order.side() {
-                    proto::Side::Buy => orders::OrderSide::Buy,
-                    proto::Side::Sell => orders::OrderSide::Sell,
-                    proto::Side::Unspecified => {
-                        return Err(Status::invalid_argument("Side must be specified"));
-                    }
-                },
-
-                r#type: match recv_order.r#type() {
-                    proto::Type::Market => orders::OrderType::Market,
-                    proto::Type::Limit => orders::OrderType::Limit,
-                    proto::Type::Unspecified => {
-                        return Err(Status::invalid_argument("Type must be specified"));
-                    }
-                },
-
-                price: Decimal::from_str(&recv_order.price)
-                    .map_err(|_| Status::invalid_argument("Price: precision loss or nan"))?
-                    .round_dp(order_book.price_precision),
-
-                quantity: Decimal::from_str(&recv_order.quantity)
-                    .map_err(|_| Status::invalid_argument("Quantity: precision loss or nan"))?
-                    .round_dp(order_book.quantity_precision),
-
-                status: match recv_order.status() {
-                    proto::Status::Pending => orders::OrderStatus::Pending,
-                    proto::Status::Fulfilled => orders::OrderStatus::Fulfilled,
-                    proto::Status::Cancelled => orders::OrderStatus::Cancelled,
-                    proto::Status::Unspecified => {
-                        return Err(Status::invalid_argument("Status must be specified"));
-                    }
-                },
-            };
+            let mut order: orders::Order = recv_order
+                .try_into()
+                .map_err(|e| Status::invalid_argument("Could not parse order"))?;
 
             if order.quantity == Decimal::ZERO {
                 return Err(Status::invalid_argument("Order quantity cannot be zero."));
             }
+
+            order.price = order.price.round_dp(order_book.price_precision);
+            order.quantity = order.quantity.round_dp(order_book.quantity_precision);
 
             let store = Store::new(conn);
 
@@ -119,8 +92,13 @@ impl OrdersService for OrdersServer {
                         // TODO: Reinsert the orders into the order book before returning
                         .map_err(|e| Status::internal(format!("Failed to save orders: {}", e)))?;
 
-                    stream
-                        .publish("orders.processed", "Hello".into())
+                    // PERF: Switch from JSON to Protobuf
+                    let payload = serde_json::to_vec(&orders).map_err(|e| {
+                        Status::internal(format!("Failed to serialize orders: {}", e))
+                    })?;
+
+                    let ack = stream
+                        .publish("orders.processed", payload.into())
                         .await
                         .map_err(|e| {
                             Status::internal(format!(
@@ -128,6 +106,10 @@ impl OrdersService for OrdersServer {
                                 e
                             ))
                         })?;
+
+                    ack.await.map_err(|e| {
+                        Status::internal(format!("Acknowledgement not received: {}", e))
+                    })?;
                 }
 
                 orders::OrderType::Limit => {

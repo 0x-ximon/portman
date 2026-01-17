@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use std::{
     collections::{BTreeMap, VecDeque},
     sync::{RwLock, RwLockWriteGuard},
@@ -5,27 +6,30 @@ use std::{
 
 use anyhow::Ok;
 use rust_decimal::Decimal;
+use serde::{Deserialize, Serialize};
+
+use crate::server::proto;
 
 pub type Symbol = String;
 pub type Precision = u32;
 pub type OrderPrice = Decimal;
 pub type OrderQuantity = Decimal;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum OrderSide {
     Unknown,
     Buy,
     Sell,
 }
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum OrderType {
     Unknown,
     Market,
     Limit,
 }
 
-#[derive(PartialEq, Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug, Deserialize, Serialize)]
 pub enum OrderStatus {
     Unknown,
     Pending,
@@ -33,7 +37,7 @@ pub enum OrderStatus {
     Cancelled,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Order {
     pub id: i64,
     pub side: OrderSide,
@@ -41,6 +45,38 @@ pub struct Order {
     pub r#type: OrderType,
     pub status: OrderStatus,
     pub quantity: OrderQuantity,
+}
+
+impl TryFrom<proto::Order> for Order {
+    type Error = anyhow::Error;
+
+    fn try_from(recv_order: proto::Order) -> Result<Self, Self::Error> {
+        Ok(Self {
+            id: recv_order.id,
+
+            price: Decimal::from_str(&recv_order.price)?,
+            quantity: Decimal::from_str(&recv_order.quantity)?,
+
+            side: match recv_order.side() {
+                proto::Side::Buy => OrderSide::Buy,
+                proto::Side::Sell => OrderSide::Sell,
+                proto::Side::Unspecified => OrderSide::Unknown,
+            },
+
+            r#type: match recv_order.r#type() {
+                proto::Type::Market => OrderType::Market,
+                proto::Type::Limit => OrderType::Limit,
+                proto::Type::Unspecified => OrderType::Unknown,
+            },
+
+            status: match recv_order.status() {
+                proto::Status::Pending => OrderStatus::Pending,
+                proto::Status::Fulfilled => OrderStatus::Fulfilled,
+                proto::Status::Cancelled => OrderStatus::Cancelled,
+                proto::Status::Unspecified => OrderStatus::Unknown,
+            },
+        })
+    }
 }
 
 pub type Orders = Vec<Order>;
@@ -141,6 +177,7 @@ impl OrderBook {
                 level.liquidity -= fill_qty;
 
                 if remaining_quantity == Decimal::ZERO {
+                    // BUG: Include opposite orders when done
                 } else if opposite_order.quantity == Decimal::ZERO {
                     if let Some(completed_order) = level.orders.pop_front() {
                         orders.push(completed_order);
