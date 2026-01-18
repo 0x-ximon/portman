@@ -126,6 +126,7 @@ const (
 	Status_STATUS_PENDING     Status = 1
 	Status_STATUS_FULFILLED   Status = 2
 	Status_STATUS_CANCELLED   Status = 3
+	Status_STATUS_REJECTED    Status = 4
 )
 
 // Enum value maps for Status.
@@ -135,12 +136,14 @@ var (
 		1: "STATUS_PENDING",
 		2: "STATUS_FULFILLED",
 		3: "STATUS_CANCELLED",
+		4: "STATUS_REJECTED",
 	}
 	Status_value = map[string]int32{
 		"STATUS_UNSPECIFIED": 0,
 		"STATUS_PENDING":     1,
 		"STATUS_FULFILLED":   2,
 		"STATUS_CANCELLED":   3,
+		"STATUS_REJECTED":    4,
 	}
 )
 
@@ -535,12 +538,13 @@ const file_orders_proto_rawDesc = "" +
 	"\x10TYPE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vTYPE_MARKET\x10\x01\x12\x0e\n" +
 	"\n" +
-	"TYPE_LIMIT\x10\x02*`\n" +
+	"TYPE_LIMIT\x10\x02*u\n" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eSTATUS_PENDING\x10\x01\x12\x14\n" +
 	"\x10STATUS_FULFILLED\x10\x02\x12\x14\n" +
-	"\x10STATUS_CANCELLED\x10\x03*H\n" +
+	"\x10STATUS_CANCELLED\x10\x03\x12\x13\n" +
+	"\x0fSTATUS_REJECTED\x10\x04*H\n" +
 	"\x06Result\x12\x16\n" +
 	"\x12RESULT_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eRESULT_SUCCESS\x10\x01\x12\x12\n" +

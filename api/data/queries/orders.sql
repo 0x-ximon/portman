@@ -8,6 +8,11 @@ SELECT * FROM orders
 WHERE ID = $1 and user_id = $2
 LIMIT 1;
 
+-- name: UpdateOrder :exec
+UPDATE orders
+SET status = $2, updated_at = now()
+WHERE ID = $1;
+
 -- name: ListOrders :many
 SELECT * FROM orders
 WHERE user_id = $1;
