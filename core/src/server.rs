@@ -70,7 +70,7 @@ impl OrdersService for OrdersServer {
         if let Some(order_book) = order_book {
             let mut order: orders::Order = recv_order
                 .try_into()
-                .map_err(|e| Status::invalid_argument("Could not parse order"))?;
+                .map_err(|e| Status::invalid_argument(format!("Could not parse order: {}", e)))?;
 
             if order.quantity == Decimal::ZERO {
                 return Err(Status::invalid_argument("Order quantity cannot be zero."));
