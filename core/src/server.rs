@@ -10,7 +10,7 @@ use rust_decimal::Decimal;
 use tonic::{Request, Response, Status};
 
 use crate::{
-    orders,
+    orders::{self},
     server::proto::{
         NewOrderBookRequest, NewOrderBookResponse, SubmitOrderRequest, SubmitOrderResponse,
     },
@@ -22,15 +22,15 @@ pub mod proto {
 }
 
 pub struct OrdersServer {
-    pub stream: Option<Context>,
+    pub publisher: Option<Context>,
     pub connection: Option<RwLock<Sender>>,
     pub order_books: RwLock<HashMap<orders::Symbol, Arc<orders::OrderBook>>>,
 }
 
 impl OrdersServer {
-    pub fn new(conn: Option<RwLock<Sender>>, stream: Option<Context>) -> Self {
+    pub fn new(conn: Option<RwLock<Sender>>, publisher: Option<Context>) -> Self {
         Self {
-            stream,
+            publisher,
             connection: conn,
             order_books: RwLock::new(HashMap::new()),
         }
@@ -47,8 +47,8 @@ impl OrdersService for OrdersServer {
             return Err(Status::unavailable("Connection not available"));
         };
 
-        let Some(ref stream) = self.stream else {
-            return Err(Status::unavailable("Stream not available"));
+        let Some(ref publisher) = self.publisher else {
+            return Err(Status::unavailable("Publisher not available"));
         };
 
         let inner = request.into_inner();
@@ -89,15 +89,18 @@ impl OrdersService for OrdersServer {
 
                     store
                         .save_orders(&symbol, &orders)
-                        // TODO: Reinsert the orders into the order book before returning
+                        // TODO: Reinsert the orders into the order book if failed to save to timeseries DB
                         .map_err(|e| Status::internal(format!("Failed to save orders: {}", e)))?;
 
+                    let orders_payload: Vec<orders::OrderPayload> =
+                        orders.iter().map(|order| order.into()).collect();
+
                     // PERF: Switch from JSON to Protobuf
-                    let payload = serde_json::to_vec(&orders).map_err(|e| {
+                    let payload = serde_json::to_vec(&orders_payload).map_err(|e| {
                         Status::internal(format!("Failed to serialize orders: {}", e))
                     })?;
 
-                    let ack = stream
+                    let ack = publisher
                         .publish("orders.processed", payload.into())
                         .await
                         .map_err(|e| {
