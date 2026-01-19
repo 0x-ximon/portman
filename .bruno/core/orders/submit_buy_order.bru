@@ -1,0 +1,31 @@
+meta {
+  name: Submit Buy Order
+  type: grpc
+  seq: 3
+}
+
+grpc {
+  url: {{BASE_URL}}
+  method: /proto.OrdersService/SubmitOrder
+  body: grpc
+  protoPath: ../.proto/orders.proto
+  auth: inherit
+  methodType: unary
+}
+
+body:grpc {
+  name: message 1
+  content: '''
+    {
+      "order": {
+        "id": 12346,
+        "side": "SIDE_BUY",
+        "type": "TYPE_LIMIT",
+        "status": "STATUS_PENDING",
+        "price": "150.75",
+        "quantity": "20"
+      },
+      "symbol": "ETH/USDT"
+    }
+  '''
+}
