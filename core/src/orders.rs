@@ -35,6 +35,7 @@ pub enum OrderStatus {
     Pending,
     Fulfilled,
     Cancelled,
+    Rejected,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -44,6 +45,7 @@ pub struct Order {
     pub price: OrderPrice,
     pub r#type: OrderType,
     pub status: OrderStatus,
+    pub filled: OrderQuantity,
     pub quantity: OrderQuantity,
 }
 
@@ -54,6 +56,7 @@ impl TryFrom<proto::Order> for Order {
         Ok(Self {
             id: recv_order.id,
 
+            filled: Decimal::ZERO,
             price: Decimal::from_str(&recv_order.price)?,
             quantity: Decimal::from_str(&recv_order.quantity)?,
 
@@ -73,9 +76,31 @@ impl TryFrom<proto::Order> for Order {
                 proto::Status::Pending => OrderStatus::Pending,
                 proto::Status::Fulfilled => OrderStatus::Fulfilled,
                 proto::Status::Cancelled => OrderStatus::Cancelled,
+                proto::Status::Rejected => OrderStatus::Rejected,
                 proto::Status::Unspecified => OrderStatus::Unknown,
             },
         })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderPayload {
+    id: i64,
+    status: String,
+}
+
+impl From<&Order> for OrderPayload {
+    fn from(order: &Order) -> Self {
+        OrderPayload {
+            id: order.id,
+            status: match order.status {
+                OrderStatus::Pending => "PENDING".to_string(),
+                OrderStatus::Fulfilled => "FULFILLED".to_string(),
+                OrderStatus::Cancelled => "CANCELLED".to_string(),
+                OrderStatus::Rejected => "REJECTED".to_string(),
+                OrderStatus::Unknown => "UNKNOWN".to_string(),
+            },
+        }
     }
 }
 
@@ -157,32 +182,30 @@ impl OrderBook {
         book: &mut RwLockWriteGuard<BTreeMap<Decimal, Level>>,
     ) -> anyhow::Result<Orders> {
         let mut removable_keys: Vec<Decimal> = Vec::new();
-        let mut remaining_quantity = order.quantity;
         let mut orders = Orders::new();
+        println!("Before: {:?}", book);
 
-        for (key, level) in book.iter_mut() {
-            if remaining_quantity == Decimal::ZERO {
-                break;
-            }
-
-            while let Some(opposite_order) = level.orders.front_mut() {
-                if remaining_quantity == Decimal::ZERO {
-                    break;
+        'outer: for (key, level) in book.iter_mut() {
+            while let Some(opp_order) = level.orders.front_mut() {
+                if order.filled == order.quantity {
+                    break 'outer;
                 }
 
-                let fill_qty = opposite_order.quantity.min(remaining_quantity);
+                let remaining = order.quantity - order.filled;
+                let opp_remaining = opp_order.quantity - opp_order.filled;
+                let fill_qty = remaining.min(opp_remaining);
 
-                remaining_quantity -= fill_qty;
-                opposite_order.quantity -= fill_qty;
-                level.liquidity -= fill_qty;
+                order.filled += fill_qty;
+                opp_order.filled += fill_qty;
 
-                if remaining_quantity == Decimal::ZERO {
-                    // BUG: Include opposite orders when done
-                } else if opposite_order.quantity == Decimal::ZERO {
-                    if let Some(completed_order) = level.orders.pop_front() {
+                if opp_order.filled == opp_order.quantity {
+                    if let Some(mut completed_order) = level.orders.pop_front() {
+                        completed_order.status = OrderStatus::Fulfilled;
                         orders.push(completed_order);
                     }
                 }
+
+                level.liquidity -= fill_qty;
             }
 
             if level.liquidity == Decimal::ZERO {
@@ -190,13 +213,19 @@ impl OrderBook {
             }
         }
 
-        order.status = OrderStatus::Fulfilled;
+        if order.filled == order.quantity {
+            order.status = OrderStatus::Fulfilled
+        } else {
+            // TODO: Handle partial fills
+            order.status = OrderStatus::Rejected
+        }
         orders.push(order);
 
         for key in removable_keys {
             book.remove(&key);
         }
 
+        println!("After: {:?}", book);
         Ok(orders)
     }
 

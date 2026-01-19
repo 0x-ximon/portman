@@ -1,8 +1,9 @@
 package handlers
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -10,7 +11,7 @@ import (
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5"
-	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"google.golang.org/grpc"
 )
 
@@ -226,7 +227,36 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(results)
 }
 
-func (h *OrderHandler) ProcessOrder(m *nats.Msg) {
-	fmt.Println("Received jetstream message: ", string(m.Data))
-	m.Ack()
+func (h *OrderHandler) ProcessOrder(msg jetstream.Msg) {
+	repo := repositories.New(h.Conn)
+	ctx := context.Background()
+
+	type Params struct {
+		ID     int64
+		Status repositories.OrderStatus
+	}
+
+	r := bytes.NewReader(msg.Data())
+	var params []Params
+
+	err := json.NewDecoder(r).Decode(&params)
+	if err != nil {
+		msg.Nak()
+		return
+	}
+
+	for _, param := range params {
+		args := repositories.UpdateOrderParams{
+			ID:     param.ID,
+			Status: param.Status,
+		}
+
+		err = repo.UpdateOrder(ctx, args)
+		if err != nil {
+			msg.Nak()
+			return
+		}
+	}
+
+	msg.Ack()
 }

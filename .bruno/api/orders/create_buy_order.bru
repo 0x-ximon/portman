@@ -1,0 +1,27 @@
+meta {
+  name: Create Buy Order
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{BASE_URL}}/orders
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "user_id": "{{USER_ID}}",
+    "ticker_symbol": "ETH/USDT",
+    "side": "BUY",
+    "type": "MARKET",
+    "price": 151.75,
+    "quantity": 5
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

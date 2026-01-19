@@ -116,3 +116,19 @@ func (q *Queries) ListOrders(ctx context.Context, userID uuid.UUID) ([]Order, er
 	}
 	return items, nil
 }
+
+const updateOrder = `-- name: UpdateOrder :exec
+UPDATE orders
+SET status = $2, updated_at = now()
+WHERE ID = $1
+`
+
+type UpdateOrderParams struct {
+	ID     int64       `json:"id"`
+	Status OrderStatus `json:"status"`
+}
+
+func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) error {
+	_, err := q.db.Exec(ctx, updateOrder, arg.ID, arg.Status)
+	return err
+}

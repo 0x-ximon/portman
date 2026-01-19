@@ -1,6 +1,3 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-
 use std::sync::RwLock;
 
 use tonic::transport;
@@ -18,7 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = config::Config::new().await?;
 
     let addr = cfg.addr;
-    let jetstream = cfg.jetstream;
+    let publisher = cfg.publisher;
     let db_conn = RwLock::new(cfg.db_conn);
 
     tracing_subscriber::fmt()
@@ -29,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .layer(TraceLayer::new_for_grpc())
         .add_service(OrdersServiceServer::new(OrdersServer::new(
             Some(db_conn),
-            Some(jetstream),
+            Some(publisher),
         )))
         .serve(addr)
         .await?;
