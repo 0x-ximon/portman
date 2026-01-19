@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 func init() {
@@ -44,6 +45,11 @@ func main() {
 	}
 	defer nc.Close()
 
+	js, err := jetstream.New(nc)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	chain := services.NewChain(
 		services.ContentType,
 		services.Auth,
@@ -58,10 +64,19 @@ func main() {
 	}
 
 	addr := net.JoinHostPort(os.Getenv("HOST"), port)
-	s := http.Server{
+	server := http.Server{
 		Addr:    addr,
 		Handler: chain(mux),
 	}
+
+	stream, err := js.CreateStream(ctx, jetstream.StreamConfig{
+		Name:     "orders",
+		Subjects: []string{"orders.*"},
+	})
+
+	cons, err := stream.CreateConsumer(ctx, jetstream.ConsumerConfig{
+		FilterSubject: "orders.processed",
+	})
 
 	auth := &handlers.AuthHandler{Conn: conn}
 	mux.HandleFunc("POST /auth/initiate", auth.Initiatiate)
@@ -83,8 +98,9 @@ func main() {
 	mux.HandleFunc("GET /orders", orders.ListOrders)
 	mux.HandleFunc("POST /orders", orders.CreateOrder)
 	mux.HandleFunc("GET /orders/{id}", orders.GetOrder)
-	nc.Subscribe("orders.processed", orders.ProcessOrder)
+
+	cons.Consume(orders.ProcessOrder)
 
 	log.Printf("Starting server on %s", addr)
-	s.ListenAndServe()
+	server.ListenAndServe()
 }
