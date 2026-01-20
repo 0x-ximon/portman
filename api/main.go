@@ -3,17 +3,12 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"net/http"
-	"os"
 
 	"github.com/0x-ximon/portman/api/handlers"
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/go-chi/chi/middleware"
-	"github.com/jackc/pgx/v5"
 	"github.com/joho/godotenv"
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
 )
 
 func init() {
@@ -27,29 +22,22 @@ func main() {
 	mux := http.NewServeMux()
 	ctx := context.Background()
 
-	conn, err := pgx.Connect(ctx, os.Getenv("DB_URL"))
+	cfg := Config{}
+	err := cfg.Load(ctx)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer conn.Close(ctx)
 
-	coreConn, err := services.NewCoreService().Connect()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer coreConn.Close()
+	dc := cfg.dbConn
+	defer dc.Close(ctx)
 
-	nc, err := nats.Connect(os.Getenv("NATS_URL"))
-	if err != nil {
-		log.Fatalln(err)
-	}
+	cc := cfg.coreConn
+	defer cc.Close()
+
+	nc := cfg.natsConn
 	defer nc.Close()
 
-	js, err := jetstream.New(nc)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
+	addr := cfg.addr
 	chain := services.NewChain(
 		services.ContentType,
 		services.Auth,
@@ -58,48 +46,39 @@ func main() {
 		middleware.Heartbeat("/health"),
 	)
 
-	port, ok := os.LookupEnv("PORT")
-	if !ok {
-		port = "3001"
-	}
-
-	addr := net.JoinHostPort(os.Getenv("HOST"), port)
 	server := http.Server{
 		Addr:    addr,
 		Handler: chain(mux),
 	}
 
-	stream, err := js.CreateStream(ctx, jetstream.StreamConfig{
-		Name:     "orders",
-		Subjects: []string{"orders.*"},
-	})
-
-	cons, err := stream.CreateConsumer(ctx, jetstream.ConsumerConfig{
-		FilterSubject: "orders.processed",
-	})
-
-	auth := &handlers.AuthHandler{Conn: conn}
+	auth := &handlers.AuthHandler{DbConn: dc}
 	mux.HandleFunc("POST /auth/initiate", auth.Initiatiate)
 	mux.HandleFunc("POST /auth/validate", auth.Validate)
 
-	users := &handlers.UsersHandler{Conn: conn}
+	users := &handlers.UsersHandler{DbConn: dc}
 	mux.HandleFunc("GET /users", users.ListUsers)
 	mux.HandleFunc("POST /users", users.CreateUser)
 	mux.HandleFunc("GET /users/{id}", users.GetUser)
 	mux.HandleFunc("DELETE /users/{id}", users.DeleteUser)
 
-	tickers := &handlers.TickerHandler{Conn: conn}
+	tickers := &handlers.TickerHandler{DbConn: dc}
 	mux.HandleFunc("GET /tickers", tickers.ListTickers)
 	mux.HandleFunc("POST /tickers", tickers.CreateTicker)
 	mux.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
 	mux.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
 
-	orders := &handlers.OrderHandler{Conn: conn, CoreConn: coreConn}
+	orders := &handlers.OrderHandler{DbConn: dc, CoreConn: cc}
 	mux.HandleFunc("GET /orders", orders.ListOrders)
 	mux.HandleFunc("POST /orders", orders.CreateOrder)
 	mux.HandleFunc("GET /orders/{id}", orders.GetOrder)
 
-	cons.Consume(orders.ProcessOrder)
+	// TODO: Move Stream Consumption into its own microservice
+	cons, err := cfg.GetConsumers(ctx)
+	if err != nil {
+		log.Println(err)
+	} else {
+		cons.ordersProcessed.Consume(orders.ProcessOrder)
+	}
 
 	log.Printf("Starting server on %s", addr)
 	server.ListenAndServe()

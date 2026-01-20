@@ -11,11 +11,11 @@ import (
 )
 
 type UsersHandler struct {
-	Conn *pgx.Conn
+	DbConn *pgx.Conn
 }
 
 func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
@@ -75,7 +75,7 @@ func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	var params repositories.CreateUserParams
@@ -184,7 +184,7 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	users, err := repo.ListUsers(ctx)
@@ -209,7 +209,7 @@ func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)

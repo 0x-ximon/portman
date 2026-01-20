@@ -10,11 +10,11 @@ import (
 )
 
 type TickerHandler struct {
-	Conn *pgx.Conn
+	DbConn *pgx.Conn
 }
 
 func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
@@ -51,7 +51,7 @@ func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	var params repositories.CreateTickerParams
@@ -89,7 +89,7 @@ func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TickerHandler) ListTickers(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	tickers, err := repo.ListTickers(ctx)
@@ -114,7 +114,7 @@ func (h *TickerHandler) ListTickers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)

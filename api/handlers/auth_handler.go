@@ -10,11 +10,11 @@ import (
 )
 
 type AuthHandler struct {
-	Conn *pgx.Conn
+	DbConn *pgx.Conn
 }
 
 func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	var params Credentials
@@ -119,7 +119,7 @@ func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	var params Credentials
