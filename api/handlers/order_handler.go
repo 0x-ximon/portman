@@ -32,12 +32,12 @@ var statusMap = map[repositories.OrderStatus]proto.Status{
 }
 
 type OrderHandler struct {
-	Conn     *pgx.Conn
+	DbConn   *pgx.Conn
 	CoreConn *grpc.ClientConn
 }
 
 func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
@@ -88,7 +88,7 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
@@ -189,7 +189,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
 	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
@@ -228,7 +228,7 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *OrderHandler) ProcessOrder(msg jetstream.Msg) {
-	repo := repositories.New(h.Conn)
+	repo := repositories.New(h.DbConn)
 	ctx := context.Background()
 
 	type Params struct {
