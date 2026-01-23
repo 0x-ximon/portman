@@ -1,0 +1,30 @@
+name: Bots [Python]
+
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        defaults:
+            run:
+                working-directory: bots
+
+        steps:
+            - uses: actions/checkout@v5
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v7
+
+            - name: Install Python
+              run: uv python install
+
+            - name: Install Dependencies
+              run: uv sync --locked --all-extras --dev
+
+            - name: Run tests
+              run: uv run pytest

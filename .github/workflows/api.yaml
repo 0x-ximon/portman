@@ -1,31 +1,31 @@
 name: API [Go]
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+    build:
+        runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: api
+        defaults:
+            run:
+                working-directory: api
 
-    steps:
-      - uses: actions/checkout@v5
+        steps:
+            - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: "api/go.mod"
+            - uses: actions/setup-go@v6
+              with:
+                  go-version-file: "api/go.mod"
 
-      - name: Install dependencies
-        run: go mod download
+            - name: Install dependencies
+              run: go mod download
 
-      - name: Build
-        run: go build -v .
+            - name: Build
+              run: go build -v .
 
-      - name: Run tests
-        run: go test -v .
+            - name: Run tests
+              run: go test -v .
