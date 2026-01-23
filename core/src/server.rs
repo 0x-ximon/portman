@@ -92,10 +92,10 @@ impl OrdersService for OrdersServer {
                         // TODO: Reinsert the orders into the order book if failed to save to timeseries DB
                         .map_err(|e| Status::internal(format!("Failed to save orders: {}", e)))?;
 
-                    let orders_payload: Vec<orders::OrderPayload> =
+                    let orders_payload: Vec<orders::OrderProcessedPayload> =
                         orders.iter().map(|order| order.into()).collect();
 
-                    // PERF: Switch from JSON to Protobuf
+                    // PERF: Switch from a JSON payload to Proto Buffer
                     let payload = serde_json::to_vec(&orders_payload).map_err(|e| {
                         Status::internal(format!("Failed to serialize orders: {}", e))
                     })?;
