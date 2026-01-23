@@ -83,27 +83,6 @@ impl TryFrom<proto::Order> for Order {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderPayload {
-    id: i64,
-    status: String,
-}
-
-impl From<&Order> for OrderPayload {
-    fn from(order: &Order) -> Self {
-        OrderPayload {
-            id: order.id,
-            status: match order.status {
-                OrderStatus::Pending => "PENDING".to_string(),
-                OrderStatus::Fulfilled => "FULFILLED".to_string(),
-                OrderStatus::Cancelled => "CANCELLED".to_string(),
-                OrderStatus::Rejected => "REJECTED".to_string(),
-                OrderStatus::Unknown => "UNKNOWN".to_string(),
-            },
-        }
-    }
-}
-
 pub type Orders = Vec<Order>;
 
 #[derive(Debug)]
@@ -243,5 +222,51 @@ impl OrderBook {
         level.orders.push_back(order);
 
         Ok(())
+    }
+}
+
+////////////////////////////////////////////////////////////////
+//                         ORDER PAYLOADS
+////////////////////////////////////////////////////////////////
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderProcessedPayload {
+    id: i64,
+    status: String,
+}
+
+impl From<&Order> for OrderProcessedPayload {
+    fn from(order: &Order) -> Self {
+        Self {
+            id: order.id,
+            status: match order.status {
+                OrderStatus::Pending => "PENDING".to_string(),
+                OrderStatus::Fulfilled => "FULFILLED".to_string(),
+                OrderStatus::Cancelled => "CANCELLED".to_string(),
+                OrderStatus::Rejected => "REJECTED".to_string(),
+                OrderStatus::Unknown => "UNKNOWN".to_string(),
+            },
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OrderBookUpdatedPayload {
+    quantity: Decimal,
+    side: String,
+}
+
+// PERF: Batch multiple orders into a single payload
+impl From<&Order> for OrderBookUpdatedPayload {
+    fn from(order: &Order) -> Self {
+        Self {
+            quantity: order.quantity,
+            side: match order.side {
+                OrderSide::Buy => "BUY".to_string(),
+                OrderSide::Sell => "SELL".to_string(),
+                OrderSide::Unknown => "UNKNOWN".to_string(),
+            },
+        }
     }
 }
