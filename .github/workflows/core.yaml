@@ -1,30 +1,30 @@
 name: Core [Rust]
 
 on:
-  push:
-    branches: ["main"]
-  pull_request:
-    branches: ["main"]
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
 
 env:
-  CARGO_TERM_COLOR: always
+    CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+    build:
+        runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: core
+        defaults:
+            run:
+                working-directory: core
 
-    steps:
-      - uses: actions/checkout@v5
+        steps:
+            - uses: actions/checkout@v5
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v3
+            - name: Install Protoc
+              uses: arduino/setup-protoc@v3
 
-      - name: Build
-        run: cargo build --verbose
+            - name: Build
+              run: cargo build --verbose
 
-      - name: Run tests
-        run: cargo test --verbose
+            - name: Run tests
+              run: cargo test --verbose
