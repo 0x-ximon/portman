@@ -1,4 +1,4 @@
-package services
+package main
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/0x-ximon/portman/api/repositories"
+	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -41,7 +42,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		if apiKey != "" {
 			user, err := repo.FindUserByApiKey(ctx, &apiKey)
 			if err == nil {
-				ctx := context.WithValue(ctx, ClaimsKey{}, &Claims{
+				ctx := context.WithValue(ctx, services.ClaimsKey{}, &services.Claims{
 					ID:            user.ID,
 					EmailAddress:  user.EmailAddress,
 					WalletAddress: user.WalletAddress,
@@ -65,13 +66,13 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		}
 		token := parts[1]
 
-		claims, err := ValidateJWT(token)
+		claims, err := services.ValidateJWT(token)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		ctx = context.WithValue(ctx, ClaimsKey{}, claims)
+		ctx = context.WithValue(ctx, services.ClaimsKey{}, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

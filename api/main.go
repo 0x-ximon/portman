@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	chi "github.com/go-chi/chi/middleware"
+
 	"github.com/0x-ximon/portman/api/handlers"
-	"github.com/0x-ximon/portman/api/services"
-	"github.com/go-chi/chi/middleware"
 	"github.com/joho/godotenv"
 )
 
@@ -37,13 +37,13 @@ func main() {
 	nc := cfg.natsConn
 	defer nc.Close()
 
-	mid := &services.Middleware{DbConn: dc}
+	mid := Middleware{DbConn: dc}
 	chain := mid.NewChain(
-		mid.ContentType,
 		mid.Auth,
+		mid.ContentType,
 
-		middleware.Logger,
-		middleware.Heartbeat("/health"),
+		chi.Logger,
+		chi.Heartbeat("/health"),
 	)
 
 	addr := cfg.addr
