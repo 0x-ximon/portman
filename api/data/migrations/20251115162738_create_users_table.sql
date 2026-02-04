@@ -13,10 +13,12 @@ CREATE TABLE
     email_address TEXT NOT NULL UNIQUE,
     wallet_address TEXT NOT NULL UNIQUE,
 
-    password TEXT NOT NULL,
-    role ROLE NOT NULL DEFAULT 'USER',
     free_balance NUMERIC NOT NULL DEFAULT 0.0,
     frozen_balance NUMERIC NOT NULL DEFAULT 0.0,
+
+    password TEXT NOT NULL,
+    api_key TEXT DEFAULT NULL,
+    role ROLE NOT NULL DEFAULT 'USER',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

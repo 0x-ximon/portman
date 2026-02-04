@@ -11,6 +11,10 @@ WHERE ID = $1 LIMIT 1;
 SELECT * FROM users
 WHERE email_address = $1 LIMIT 1;
 
+-- name: FindUserByApiKey :one
+SELECT * FROM users
+WHERE api_key = $1 LIMIT 1;
+
 -- name: ListUsers :many
 SELECT * FROM users;
 

@@ -9,6 +9,10 @@ CREATE TABLE
     base TEXT NOT NULL,
     quote TEXT NOT NULL,
     symbol TEXT UNIQUE NOT NULL,
+
+    ask NUMERIC(10, 6) NOT NULL DEFAULT 0.0,
+    bid NUMERIC(10, 6) NOT NULL DEFAULT 0.0,
+    last NUMERIC(10, 6) NOT NULL DEFAULT 0.0,
     status TICKER_STATUS NOT NULL DEFAULT 'CLOSED'
   )
 -- +goose StatementEnd

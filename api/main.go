@@ -37,15 +37,16 @@ func main() {
 	nc := cfg.natsConn
 	defer nc.Close()
 
-	addr := cfg.addr
-	chain := services.NewChain(
-		services.ContentType,
-		services.Auth,
+	mid := &services.Middleware{DbConn: dc}
+	chain := mid.NewChain(
+		mid.ContentType,
+		mid.Auth,
 
 		middleware.Logger,
 		middleware.Heartbeat("/health"),
 	)
 
+	addr := cfg.addr
 	server := http.Server{
 		Addr:    addr,
 		Handler: chain(mux),
@@ -66,6 +67,7 @@ func main() {
 	mux.HandleFunc("POST /tickers", tickers.CreateTicker)
 	mux.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
 	mux.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
+	mux.HandleFunc("GET /tickers/tick", tickers.Tick)
 
 	orders := &handlers.OrderHandler{DbConn: dc, CoreConn: cc}
 	mux.HandleFunc("GET /orders", orders.ListOrders)

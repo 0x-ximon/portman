@@ -242,11 +242,14 @@ type Order struct {
 }
 
 type Ticker struct {
-	ID     int32        `json:"id"`
-	Base   string       `json:"base"`
-	Quote  string       `json:"quote"`
-	Symbol string       `json:"symbol"`
-	Status TickerStatus `json:"status"`
+	ID     int32           `json:"id"`
+	Base   string          `json:"base"`
+	Quote  string          `json:"quote"`
+	Symbol string          `json:"symbol"`
+	Ask    decimal.Decimal `json:"ask"`
+	Bid    decimal.Decimal `json:"bid"`
+	Last   decimal.Decimal `json:"last"`
+	Status TickerStatus    `json:"status"`
 }
 
 type User struct {
@@ -256,10 +259,11 @@ type User struct {
 	PhoneNumber   string             `json:"phone_number"`
 	EmailAddress  string             `json:"email_address"`
 	WalletAddress string             `json:"wallet_address"`
-	Password      string             `json:"password"`
-	Role          Role               `json:"role"`
 	FreeBalance   decimal.Decimal    `json:"free_balance"`
 	FrozenBalance decimal.Decimal    `json:"frozen_balance"`
+	Password      string             `json:"password"`
+	ApiKey        *string            `json:"api_key"`
+	Role          Role               `json:"role"`
 	CreatedAt     time.Time          `json:"created_at"`
 	UpdatedAt     time.Time          `json:"updated_at"`
 	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`

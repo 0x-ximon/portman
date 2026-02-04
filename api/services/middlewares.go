@@ -4,11 +4,18 @@ import (
 	"context"
 	"net/http"
 	"strings"
+
+	"github.com/0x-ximon/portman/api/repositories"
+	"github.com/jackc/pgx/v5"
 )
 
 type middleware func(http.Handler) http.Handler
 
-func NewChain(xs ...middleware) middleware {
+type Middleware struct {
+	DbConn *pgx.Conn
+}
+
+func (m *Middleware) NewChain(xs ...middleware) middleware {
 	return func(next http.Handler) http.Handler {
 		for i := len(xs) - 1; i >= 0; i-- {
 			next = xs[i](next)
@@ -18,15 +25,33 @@ func NewChain(xs ...middleware) middleware {
 	}
 }
 
-func ContentType(next http.Handler) http.Handler {
+func (m *Middleware) ContentType(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
 	})
 }
 
-func Auth(next http.Handler) http.Handler {
+func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		repo := repositories.New(m.DbConn)
+		ctx := r.Context()
+
+		apiKey := r.Header.Get("X-Api-Key")
+		if apiKey != "" {
+			user, err := repo.FindUserByApiKey(ctx, &apiKey)
+			if err == nil {
+				ctx := context.WithValue(ctx, ClaimsKey{}, &Claims{
+					ID:            user.ID,
+					EmailAddress:  user.EmailAddress,
+					WalletAddress: user.WalletAddress,
+				})
+
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+		}
+
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			next.ServeHTTP(w, r)
@@ -46,7 +71,7 @@ func Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), ClaimsKey{}, claims)
+		ctx = context.WithValue(ctx, ClaimsKey{}, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
