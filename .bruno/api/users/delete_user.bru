@@ -1,17 +1,13 @@
 meta {
   name: Delete User
   type: http
-  seq: 4
+  seq: 3
 }
 
 delete {
-  url: {{BASE_URL}}/users/:id
+  url: {{BASE_URL}}/users
   body: none
   auth: inherit
-}
-
-params:path {
-  id: {{USER_ID}}
 }
 
 settings {
