@@ -1,5 +1,5 @@
 import asyncio
-from worker import Worker
+from core.worker import Worker
 
 
 class Manager:
@@ -8,5 +8,5 @@ class Manager:
     def __init__(self, amount: int):
         self.bots = [Worker(i) for i in range(amount)]
 
-    async def start(self):
+    async def start(self) -> None:
         await asyncio.gather(*(bot.run() for bot in self.bots))

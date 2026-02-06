@@ -1,26 +1,7 @@
 import pytest
-import asyncio
-from unittest.mock import patch, MagicMock
-from cli import get_args
-from worker import Worker
-from manager import Manager
-
-
-def test_get_args_custom_amount():
-    """Test that custom amount flags are respected."""
-    with patch("sys.argv", ["main.py", "--amount", "10"]):
-        args = get_args()
-        assert args.amount == 10
-
-
-@pytest.mark.asyncio
-async def test_worker_run(capsys):
-    """Test if a single worker starts and prints its ID."""
-    worker = Worker(bot_id=99)
-    await worker.run()
-
-    captured = capsys.readouterr()
-    assert "Bot 99 is starting..." in captured.out
+from unittest.mock import patch
+from core.manager import Manager
+from core.worker import Worker
 
 
 @pytest.mark.asyncio

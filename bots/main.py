@@ -1,10 +1,18 @@
 import asyncio
-from cli import get_args
-from manager import Manager
+from common.config import Config
+from common.typings import Err
+from core.manager import Manager
 
 
 async def main():
-    args = get_args()
+    config = Config()
+    result = config.load()
+    if isinstance(result, Err):
+        print(f"Could not load config: {result.error}")
+        return
+
+    args = config.args
+
     manager = Manager(args.amount)
     await manager.start()
 
