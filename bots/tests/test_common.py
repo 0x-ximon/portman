@@ -5,8 +5,10 @@ from common.config import Config
 from common.typings import Err
 
 
-def test_get_args_custom_amount():
+def test_config_load(monkeypatch):
     """Test that custom amount flags are respected."""
+    monkeypatch.setenv("API_URL", "https://api.test.com")
+
     with patch("sys.argv", ["main.py", "--amount", "10"]):
         config = Config()
 
