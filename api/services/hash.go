@@ -1,16 +1,24 @@
 package services
 
 import (
+	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type ClaimsKey struct{}
+type UserKey struct{}
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -19,7 +27,17 @@ type Claims struct {
 	WalletAddress string    `json:"wallet"`
 }
 
-type ClaimsKey struct{}
+func GetIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+	if user, ok := ctx.Value(UserKey{}).(*repositories.User); ok {
+		return user.ID, true
+	}
+
+	if claims, ok := ctx.Value(ClaimsKey{}).(*Claims); ok {
+		return claims.ID, true
+	}
+
+	return uuid.Nil, false
+}
 
 func GenerateOTP(length int) (string, error) {
 	bytes := make([]byte, length)
@@ -79,6 +97,18 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func GenerateKey(email string) (string, error) {
+	secret := os.Getenv("SYSTEM_SECRET")
+	if secret == "" {
+		return "", fmt.Errorf("SYSTEM_SECRET environment variable not set")
+	}
+
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(email))
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func HashPassword(password string) (string, error) {

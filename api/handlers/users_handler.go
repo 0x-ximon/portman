@@ -2,23 +2,37 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UsersHandler struct {
-	DbConn *pgx.Conn
+	DbConn *pgxpool.Pool
 }
 
 func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	{
+		user, ok := ctx.Value(services.UserKey{}).(*repositories.User)
+		if ok {
+			w.WriteHeader(http.StatusOK)
+			result := Payload{
+				Message: "user retrieved",
+				Data:    user,
+			}
+
+			json.NewEncoder(w).Encode(result)
+			return
+		}
+	}
+
+	claims, ok := ctx.Value(services.ClaimsKey{}).(*services.Claims)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		result := Payload{
@@ -30,35 +44,12 @@ func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := uuid.Parse(r.PathValue("id"))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		result := Payload{
-			Message: "invalid id",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	user, err := repo.GetUser(ctx, id)
+	user, err := repo.GetUser(ctx, claims.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Payload{
 			Message: "user not found",
 			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	if user.ID != claims.ID {
-		w.WriteHeader(http.StatusUnauthorized)
-		result := Payload{
-			Message: "unauthorized",
-			Error:   "user id mismatch",
 		}
 
 		json.NewEncoder(w).Encode(result)
@@ -104,6 +95,20 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	params.Password = encryptedPassword
 
+	// TODO: Don't force every user into api key generation at account creation
+	apiKey, err := services.GenerateKey(params.EmailAddress)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		result := Payload{
+			Message: "could not generate API",
+			Error:   err.Error(),
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+	params.ApiKey = &apiKey
+
 	user, err := repo.CreateUser(ctx, params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -112,10 +117,13 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			Error:   err.Error(),
 		}
 
+		fmt.Println(err)
+
 		json.NewEncoder(w).Encode(result)
 		return
 	}
 
+	// BUG: Bot accounts don't have valid emails for OTPs
 	otp, err := services.GenerateOTP(6)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -183,36 +191,11 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(result)
 }
 
-func (h *UsersHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
-	ctx := r.Context()
-
-	users, err := repo.ListUsers(ctx)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not list users",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	results := Payload{
-		Message: "users retrieved",
-		Data:    users,
-	}
-
-	json.NewEncoder(w).Encode(results)
-}
-
 func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	id, ok := services.GetIDFromContext(ctx)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		result := Payload{
@@ -224,29 +207,7 @@ func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := uuid.Parse(r.PathValue("id"))
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		result := Payload{
-			Message: "invalid id",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-	if id != claims.ID {
-		w.WriteHeader(http.StatusUnauthorized)
-		result := Payload{
-			Message: "unauthorized",
-			Error:   "user id mismatch",
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	err = repo.DeleteUser(ctx, id)
+	err := repo.DeleteUser(ctx, id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		results := Payload{

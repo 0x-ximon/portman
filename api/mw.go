@@ -1,4 +1,4 @@
-package services
+package main
 
 import (
 	"context"
@@ -6,13 +6,14 @@ import (
 	"strings"
 
 	"github.com/0x-ximon/portman/api/repositories"
-	"github.com/jackc/pgx/v5"
+	"github.com/0x-ximon/portman/api/services"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type middleware func(http.Handler) http.Handler
 
 type Middleware struct {
-	DbConn *pgx.Conn
+	DbConn *pgxpool.Pool
 }
 
 func (m *Middleware) NewChain(xs ...middleware) middleware {
@@ -41,12 +42,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		if apiKey != "" {
 			user, err := repo.FindUserByApiKey(ctx, &apiKey)
 			if err == nil {
-				ctx := context.WithValue(ctx, ClaimsKey{}, &Claims{
-					ID:            user.ID,
-					EmailAddress:  user.EmailAddress,
-					WalletAddress: user.WalletAddress,
-				})
-
+				ctx := context.WithValue(ctx, services.UserKey{}, &user)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
@@ -65,13 +61,13 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		}
 		token := parts[1]
 
-		claims, err := ValidateJWT(token)
+		claims, err := services.ValidateJWT(token)
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		ctx = context.WithValue(ctx, ClaimsKey{}, claims)
+		ctx = context.WithValue(ctx, services.ClaimsKey{}, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

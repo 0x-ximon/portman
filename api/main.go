@@ -5,9 +5,9 @@ import (
 	"log"
 	"net/http"
 
+	chi "github.com/go-chi/chi/middleware"
+
 	"github.com/0x-ximon/portman/api/handlers"
-	"github.com/0x-ximon/portman/api/services"
-	"github.com/go-chi/chi/middleware"
 	"github.com/joho/godotenv"
 )
 
@@ -29,7 +29,7 @@ func main() {
 	}
 
 	dc := cfg.dbConn
-	defer dc.Close(ctx)
+	defer dc.Close()
 
 	cc := cfg.coreConn
 	defer cc.Close()
@@ -37,13 +37,13 @@ func main() {
 	nc := cfg.natsConn
 	defer nc.Close()
 
-	mid := &services.Middleware{DbConn: dc}
+	mid := Middleware{DbConn: dc}
 	chain := mid.NewChain(
-		mid.ContentType,
 		mid.Auth,
+		mid.ContentType,
 
-		middleware.Logger,
-		middleware.Heartbeat("/health"),
+		chi.Logger,
+		chi.Heartbeat("/health"),
 	)
 
 	addr := cfg.addr
@@ -57,10 +57,9 @@ func main() {
 	mux.HandleFunc("POST /auth/validate", auth.Validate)
 
 	users := &handlers.UsersHandler{DbConn: dc}
-	mux.HandleFunc("GET /users", users.ListUsers)
+	mux.HandleFunc("GET /users", users.GetUser)
 	mux.HandleFunc("POST /users", users.CreateUser)
-	mux.HandleFunc("GET /users/{id}", users.GetUser)
-	mux.HandleFunc("DELETE /users/{id}", users.DeleteUser)
+	mux.HandleFunc("DELETE /users", users.DeleteUser)
 
 	tickers := &handlers.TickerHandler{DbConn: dc}
 	mux.HandleFunc("GET /tickers", tickers.ListTickers)

@@ -1,16 +1,20 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/0x-ximon/portman/api/repositories"
-	"github.com/jackc/pgx/v5"
+	"github.com/gorilla/websocket"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type TickerHandler struct {
-	DbConn *pgx.Conn
+	DbConn *pgxpool.Pool
 }
 
 func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
@@ -148,4 +152,29 @@ func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(results)
+}
+
+func (h *TickerHandler) Tick(w http.ResponseWriter, r *http.Request) {
+	repo := repositories.New(h.DbConn)
+	ctx := context.Background()
+
+	_, _ = repo, ctx
+
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			if os.Getenv("ENV") == "dev" {
+				return true
+			}
+
+			origin, allowedOrigin := r.Header.Get("Origin"), os.Getenv("ALLOWED_ORIGIN") // "https://agence.ximon.dev"
+			if origin == allowedOrigin {
+				return true
+			}
+
+			log.Printf("Blocked unauthorized WebSocket connection attempt from: %s", origin)
+			return false
+		},
+	}
+
+	_ = upgrader
 }

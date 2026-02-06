@@ -10,7 +10,7 @@ import (
 	"github.com/0x-ximon/portman/api/proto"
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go/jetstream"
 	"google.golang.org/grpc"
 )
@@ -32,7 +32,7 @@ var statusMap = map[repositories.OrderStatus]proto.Status{
 }
 
 type OrderHandler struct {
-	DbConn   *pgx.Conn
+	DbConn   *pgxpool.Pool
 	CoreConn *grpc.ClientConn
 }
 
@@ -40,7 +40,7 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	userID, ok := services.GetIDFromContext(ctx)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		result := Payload{
@@ -51,7 +51,6 @@ func (h *OrderHandler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(result)
 		return
 	}
-	userID := claims.ID
 
 	orderID, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
@@ -91,7 +90,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	userID, ok := services.GetIDFromContext(ctx)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		result := Payload{
@@ -116,7 +115,7 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := repo.GetUser(ctx, claims.ID)
+	user, err := repo.GetUser(ctx, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Payload{
@@ -192,7 +191,7 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	userID, ok := services.GetIDFromContext(ctx)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		result := Payload{
@@ -203,8 +202,6 @@ func (h *OrderHandler) ListOrders(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(result)
 		return
 	}
-
-	userID := claims.ID
 
 	orders, err := repo.ListOrders(ctx, userID)
 	if err != nil {
