@@ -12,19 +12,20 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (first_name, last_name, phone_number, email_address, wallet_address, role, password) 
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO users (first_name, last_name, phone_number, email_address, wallet_address, role, password, api_key) 
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id, first_name, last_name, phone_number, email_address, wallet_address, free_balance, frozen_balance, password, api_key, role, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
-	FirstName     string `json:"first_name"`
-	LastName      string `json:"last_name"`
-	PhoneNumber   string `json:"phone_number"`
-	EmailAddress  string `json:"email_address"`
-	WalletAddress string `json:"wallet_address"`
-	Role          Role   `json:"role"`
-	Password      string `json:"password"`
+	FirstName     string  `json:"first_name"`
+	LastName      string  `json:"last_name"`
+	PhoneNumber   string  `json:"phone_number"`
+	EmailAddress  string  `json:"email_address"`
+	WalletAddress string  `json:"wallet_address"`
+	Role          Role    `json:"role"`
+	Password      string  `json:"password"`
+	ApiKey        *string `json:"api_key"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -36,6 +37,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.WalletAddress,
 		arg.Role,
 		arg.Password,
+		arg.ApiKey,
 	)
 	var i User
 	err := row.Scan(

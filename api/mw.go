@@ -7,13 +7,13 @@ import (
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type middleware func(http.Handler) http.Handler
 
 type Middleware struct {
-	DbConn *pgx.Conn
+	DbConn *pgxpool.Pool
 }
 
 func (m *Middleware) NewChain(xs ...middleware) middleware {

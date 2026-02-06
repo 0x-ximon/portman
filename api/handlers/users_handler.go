@@ -2,34 +2,37 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UsersHandler struct {
-	DbConn *pgx.Conn
+	DbConn *pgxpool.Pool
 }
 
 func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
 
-	user, ok := r.Context().Value(services.UserKey{}).(*repositories.User)
-	if ok {
-		w.WriteHeader(http.StatusOK)
-		result := Payload{
-			Message: "user retrieved",
-			Data:    user,
-		}
+	{
+		user, ok := ctx.Value(services.UserKey{}).(*repositories.User)
+		if ok {
+			w.WriteHeader(http.StatusOK)
+			result := Payload{
+				Message: "user retrieved",
+				Data:    user,
+			}
 
-		json.NewEncoder(w).Encode(result)
-		return
+			json.NewEncoder(w).Encode(result)
+			return
+		}
 	}
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	claims, ok := ctx.Value(services.ClaimsKey{}).(*services.Claims)
 	if !ok {
 		w.WriteHeader(http.StatusUnauthorized)
 		result := Payload{
@@ -60,8 +63,6 @@ func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(result)
-	return
-
 }
 
 func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +95,20 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	params.Password = encryptedPassword
 
+	// TODO: Don't force every user into api key generation at account creation
+	apiKey, err := services.GenerateKey(params.EmailAddress)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		result := Payload{
+			Message: "could not generate API",
+			Error:   err.Error(),
+		}
+
+		json.NewEncoder(w).Encode(result)
+		return
+	}
+	params.ApiKey = &apiKey
+
 	user, err := repo.CreateUser(ctx, params)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -102,10 +117,13 @@ func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 			Error:   err.Error(),
 		}
 
+		fmt.Println(err)
+
 		json.NewEncoder(w).Encode(result)
 		return
 	}
 
+	// BUG: Bot accounts don't have valid emails for OTPs
 	otp, err := services.GenerateOTP(6)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

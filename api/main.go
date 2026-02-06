@@ -29,7 +29,7 @@ func main() {
 	}
 
 	dc := cfg.dbConn
-	defer dc.Close(ctx)
+	defer dc.Close()
 
 	cc := cfg.coreConn
 	defer cc.Close()

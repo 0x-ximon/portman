@@ -10,7 +10,7 @@ import (
 	"github.com/0x-ximon/portman/api/proto"
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go/jetstream"
 	"google.golang.org/grpc"
 )
@@ -32,7 +32,7 @@ var statusMap = map[repositories.OrderStatus]proto.Status{
 }
 
 type OrderHandler struct {
-	DbConn   *pgx.Conn
+	DbConn   *pgxpool.Pool
 	CoreConn *grpc.ClientConn
 }
 

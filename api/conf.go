@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/0x-ximon/portman/api/services"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"google.golang.org/grpc"
@@ -18,13 +18,13 @@ type Consumers struct {
 
 type Config struct {
 	addr     string
-	dbConn   *pgx.Conn
+	dbConn   *pgxpool.Pool
 	natsConn *nats.Conn
 	coreConn *grpc.ClientConn
 }
 
 func (c *Config) Load(ctx context.Context) error {
-	conn, err := pgx.Connect(ctx, os.Getenv("DB_URL"))
+	conn, err := pgxpool.New(ctx, os.Getenv("DB_URL"))
 	if err != nil {
 		return err
 	}

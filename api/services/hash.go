@@ -2,7 +2,10 @@ package services
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"strings"
@@ -94,6 +97,18 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func GenerateKey(email string) (string, error) {
+	secret := os.Getenv("SYSTEM_SECRET")
+	if secret == "" {
+		return "", fmt.Errorf("SYSTEM_SECRET environment variable not set")
+	}
+
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(email))
+
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func HashPassword(password string) (string, error) {

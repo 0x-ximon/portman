@@ -10,11 +10,11 @@ import (
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/gorilla/websocket"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type TickerHandler struct {
-	DbConn *pgx.Conn
+	DbConn *pgxpool.Pool
 }
 
 func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
