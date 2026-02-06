@@ -1,4 +1,5 @@
 import asyncio
+
 from common.config import Config
 from common.typings import Err
 from core.manager import Manager
@@ -11,10 +12,8 @@ async def main():
         print(f"Could not load config: {result.error}")
         return
 
-    args = config.args
-
-    manager = Manager(args.amount)
-    await manager.start()
+    manager = Manager()
+    await manager.start(config.api_url, config.bots_amount)
 
 
 if __name__ == "__main__":
