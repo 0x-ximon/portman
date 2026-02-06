@@ -42,12 +42,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		if apiKey != "" {
 			user, err := repo.FindUserByApiKey(ctx, &apiKey)
 			if err == nil {
-				ctx := context.WithValue(ctx, services.ClaimsKey{}, &services.Claims{
-					ID:            user.ID,
-					EmailAddress:  user.EmailAddress,
-					WalletAddress: user.WalletAddress,
-				})
-
+				ctx := context.WithValue(ctx, services.UserKey{}, &user)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}

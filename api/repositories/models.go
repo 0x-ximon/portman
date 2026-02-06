@@ -145,9 +145,9 @@ func (ns NullOrderType) Value() (driver.Value, error) {
 type Role string
 
 const (
-	RoleUSER  Role = "USER"
-	RoleBOT   Role = "BOT"
-	RoleADMIN Role = "ADMIN"
+	RoleREGULAR       Role = "REGULAR"
+	RoleAUTOMATED     Role = "AUTOMATED"
+	RoleADMINISTRATOR Role = "ADMINISTRATOR"
 )
 
 func (e *Role) Scan(src interface{}) error {

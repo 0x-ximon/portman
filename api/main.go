@@ -57,10 +57,9 @@ func main() {
 	mux.HandleFunc("POST /auth/validate", auth.Validate)
 
 	users := &handlers.UsersHandler{DbConn: dc}
-	mux.HandleFunc("GET /users", users.ListUsers)
+	mux.HandleFunc("GET /users", users.GetUser)
 	mux.HandleFunc("POST /users", users.CreateUser)
-	mux.HandleFunc("GET /users/{id}", users.GetUser)
-	mux.HandleFunc("DELETE /users/{id}", users.DeleteUser)
+	mux.HandleFunc("DELETE /users", users.DeleteUser)
 
 	tickers := &handlers.TickerHandler{DbConn: dc}
 	mux.HandleFunc("GET /tickers", tickers.ListTickers)

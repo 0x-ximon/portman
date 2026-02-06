@@ -1,16 +1,21 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
+
+type ClaimsKey struct{}
+type UserKey struct{}
 
 type Claims struct {
 	jwt.RegisteredClaims
@@ -19,7 +24,17 @@ type Claims struct {
 	WalletAddress string    `json:"wallet"`
 }
 
-type ClaimsKey struct{}
+func GetIDFromContext(ctx context.Context) (uuid.UUID, bool) {
+	if user, ok := ctx.Value(UserKey{}).(*repositories.User); ok {
+		return user.ID, true
+	}
+
+	if claims, ok := ctx.Value(ClaimsKey{}).(*Claims); ok {
+		return claims.ID, true
+	}
+
+	return uuid.Nil, false
+}
 
 func GenerateOTP(length int) (string, error) {
 	bytes := make([]byte, length)
