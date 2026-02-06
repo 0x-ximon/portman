@@ -7,7 +7,6 @@ from core.worker import Worker
 
 @pytest.mark.asyncio
 async def test_manager_start_execution():
-    """Verify manager triggers the run method for all bots."""
     amount = 3
     url = "http://localhost:3001"
     manager = Manager()
