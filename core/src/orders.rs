@@ -162,7 +162,6 @@ impl OrderBook {
     ) -> anyhow::Result<Orders> {
         let mut removable_keys: Vec<Decimal> = Vec::new();
         let mut orders = Orders::new();
-        println!("Before: {:?}", book);
 
         'outer: for (key, level) in book.iter_mut() {
             while let Some(opp_order) = level.orders.front_mut() {
@@ -204,7 +203,6 @@ impl OrderBook {
             book.remove(&key);
         }
 
-        println!("After: {:?}", book);
         Ok(orders)
     }
 
@@ -230,12 +228,12 @@ impl OrderBook {
 ////////////////////////////////////////////////////////////////
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderProcessedPayload {
+pub struct OrderProcessed {
     id: i64,
     status: String,
 }
 
-impl From<&Order> for OrderProcessedPayload {
+impl From<&Order> for OrderProcessed {
     fn from(order: &Order) -> Self {
         Self {
             id: order.id,
@@ -252,13 +250,13 @@ impl From<&Order> for OrderProcessedPayload {
 
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OrderBookUpdatedPayload {
+pub struct OrderBookUpdated {
     quantity: Decimal,
     side: String,
 }
 
 // PERF: Batch multiple orders into a single payload
-impl From<&Order> for OrderBookUpdatedPayload {
+impl From<&Order> for OrderBookUpdated {
     fn from(order: &Order) -> Self {
         Self {
             quantity: order.quantity,
@@ -267,6 +265,31 @@ impl From<&Order> for OrderBookUpdatedPayload {
                 OrderSide::Sell => "SELL".to_string(),
                 OrderSide::Unknown => "UNKNOWN".to_string(),
             },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Delta {
+    ask: Decimal,
+    bid: Decimal,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Tick {
+    delta: Delta,
+    last: Decimal,
+}
+
+impl From<Order> for Tick {
+    fn from(order: Order) -> Self {
+        Self {
+            delta: Delta {
+                // TODO: Handle Order Book Updates
+                ask: Decimal::default(),
+                bid: Decimal::default(),
+            },
+            last: order.price,
         }
     }
 }

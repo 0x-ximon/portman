@@ -92,7 +92,8 @@ impl OrdersService for OrdersServer {
                         // TODO: Reinsert the orders into the order book if failed to save to timeseries DB
                         .map_err(|e| Status::internal(format!("Failed to save orders: {}", e)))?;
 
-                    let orders_payload: Vec<orders::OrderProcessedPayload> =
+                    // Process and update the orders in DB
+                    let orders_payload: Vec<orders::OrderProcessed> =
                         orders.iter().map(|order| order.into()).collect();
 
                     // PERF: Switch from a JSON payload to Proto Buffer
@@ -113,6 +114,40 @@ impl OrdersService for OrdersServer {
                     ack.await.map_err(|e| {
                         Status::internal(format!("Acknowledgement not received: {}", e))
                     })?;
+
+                    // Stream ticks
+                    let mut results = Vec::new();
+                    for order in orders {
+                        let res = async {
+                            let tick: orders::Tick = order.into();
+
+                            let payload = serde_json::to_vec(&tick).map_err(|e| {
+                                Status::internal(format!("Failed to serialize orders: {}", e))
+                            })?;
+
+                            let ack = publisher
+                                .publish(format!("ticks.{}", symbol), payload.into())
+                                .await
+                                .map_err(|e| {
+                                    Status::internal(format!(
+                                        "Failed to publish order processed event: {}",
+                                        e
+                                    ))
+                                })?;
+
+                            ack.await.map_err(|e| {
+                                Status::internal(format!(
+                                    "Failed to publish last price event: {}",
+                                    e
+                                ))
+                            })?;
+
+                            Ok::<(), Status>(())
+                        }
+                        .await;
+
+                        results.push(res);
+                    }
                 }
 
                 orders::OrderType::Limit => {
