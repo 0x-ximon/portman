@@ -53,6 +53,27 @@ func (q *Queries) DeleteTicker(ctx context.Context, id int32) error {
 	return err
 }
 
+const findTickerBySymbol = `-- name: FindTickerBySymbol :one
+SELECT id, base, quote, symbol, ask, bid, last, status FROM tickers
+WHERE symbol = $1 LIMIT 1
+`
+
+func (q *Queries) FindTickerBySymbol(ctx context.Context, symbol string) (Ticker, error) {
+	row := q.db.QueryRow(ctx, findTickerBySymbol, symbol)
+	var i Ticker
+	err := row.Scan(
+		&i.ID,
+		&i.Base,
+		&i.Quote,
+		&i.Symbol,
+		&i.Ask,
+		&i.Bid,
+		&i.Last,
+		&i.Status,
+	)
+	return i, err
+}
+
 const getTicker = `-- name: GetTicker :one
 SELECT id, base, quote, symbol, ask, bid, last, status FROM tickers
 WHERE ID = $1 LIMIT 1

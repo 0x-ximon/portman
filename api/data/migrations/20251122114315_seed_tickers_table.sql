@@ -3,9 +3,9 @@
 INSERT INTO
     tickers (symbol, base, quote, status)
 VALUES
-    ('BTC/USDT', 'BTC', 'USDT', 'OPEN'),
-    ('ETH/USDT', 'ETH', 'USDT', 'OPEN'),
-    ('SOL/USDT', 'SOL', 'USDT', 'CLOSED');
+    ('BTCUSDT', 'BTC', 'USDT', 'OPEN'),
+    ('ETHUSDT', 'ETH', 'USDT', 'OPEN'),
+    ('SOLUSDT', 'SOL', 'USDT', 'CLOSED');
 -- +goose StatementEnd
 
 -- +goose Down

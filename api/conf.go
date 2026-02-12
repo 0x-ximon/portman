@@ -81,18 +81,6 @@ func (c *Config) GetConsumers(ctx context.Context) (*Consumers, error) {
 		consumers.ordersProcessed = cons
 	}
 
-	{
-		cons, err := s.CreateConsumer(ctx, jetstream.ConsumerConfig{
-			FilterSubject: "orders.processed",
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		consumers.ordersProcessed = cons
-	}
-
 	return &consumers, nil
 
 }

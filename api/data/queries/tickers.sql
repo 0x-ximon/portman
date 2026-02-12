@@ -7,6 +7,10 @@ RETURNING *;
 SELECT * FROM tickers
 WHERE ID = $1 LIMIT 1;
 
+-- name: FindTickerBySymbol :one
+SELECT * FROM tickers
+WHERE symbol = $1 LIMIT 1;
+
 -- name: ListTickers :many
 SELECT * FROM tickers
 ORDER BY symbol;

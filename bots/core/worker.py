@@ -1,3 +1,6 @@
+import websockets
+import asyncio
+import json
 import hashlib
 import hmac
 import httpx
@@ -5,22 +8,31 @@ import os
 
 from common.typings import Result, Ok, Err
 from common.models import User
+from decimal import Decimal
 
 
 class Worker:
     id: int
+    symbol: str
+    price: Decimal
+
     user: User
     client: httpx.AsyncClient
 
-    def __init__(self, bot_id: int, client: httpx.AsyncClient):
+    def __init__(self, bot_id: int, client: httpx.AsyncClient, symbol: str):
         self.id = bot_id
         self.client = client
+        self.symbol = symbol
+        self.price = Decimal("0")
 
     async def run(self):
         result = await self.connect()
         match result:
             case Ok(_):
                 print(f"Bot #{self.id} - Connected")
+                asyncio.create_task(self.handle_ticks(self.symbol))
+                await self.execute()
+
             case Err(error):
                 print(f"Bot #{self.id} - Failed to connect: {error}")
 
@@ -53,6 +65,29 @@ class Worker:
                         print(f"Bot #{self.id} - {type(error).__name__}: {error}")
 
                 return Err(error)
+
+    async def execute(self):
+        while True:
+            await asyncio.sleep(1)
+
+    async def handle_ticks(self, symbol: str) -> Result[None, Exception]:
+        try:
+            ws_url = str(self.client.base_url).replace("http", "ws") + "/tickers/tick"
+            async with websockets.connect(ws_url) as ws:
+                await ws.send("ETHUSDT")
+                async for message in ws:
+                    data = json.loads(message)
+                    self.price = Decimal(data["last"])
+
+            return Ok(None)
+
+        except websockets.exceptions.ConnectionClosedError:
+            print(f"Bot #{self.id} - Websocket connection closed.")
+            return Err(Exception("Websocket connection closed"))
+
+        except Exception as err:
+            print(f"Bot #{self.id} - {type(err).__name__}: {err}")
+            return Err(err)
 
     async def get_user(self) -> Result[User, Exception]:
         try:
