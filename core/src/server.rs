@@ -116,37 +116,27 @@ impl OrdersService for OrdersServer {
                     })?;
 
                     // Stream ticks
-                    let mut results = Vec::new();
-                    for order in orders {
-                        let res = async {
-                            let tick: orders::Tick = order.into();
+                    let client = publisher.client();
+                    let mut results: Vec<Result<(), Status>> = vec![];
 
+                    for order in orders {
+                        let result = async {
+                            let tick: orders::Tick = order.into();
                             let payload = serde_json::to_vec(&tick).map_err(|e| {
                                 Status::internal(format!("Failed to serialize orders: {}", e))
                             })?;
 
-                            let ack = publisher
-                                .publish(format!("ticks.{}", symbol), payload.into())
+                            client
+                                .publish(format!("ticks.{symbol}"), payload.into())
                                 .await
                                 .map_err(|e| {
-                                    Status::internal(format!(
-                                        "Failed to publish order processed event: {}",
-                                        e
-                                    ))
+                                    Status::internal(format!("Failed to publish tick: {}", e))
                                 })?;
 
-                            ack.await.map_err(|e| {
-                                Status::internal(format!(
-                                    "Failed to publish last price event: {}",
-                                    e
-                                ))
-                            })?;
-
-                            Ok::<(), Status>(())
+                            Ok(())
                         }
                         .await;
-
-                        results.push(res);
+                        results.push(result);
                     }
                 }
 
