@@ -61,7 +61,7 @@ func main() {
 	mux.HandleFunc("POST /users", users.CreateUser)
 	mux.HandleFunc("DELETE /users", users.DeleteUser)
 
-	tickers := &handlers.TickerHandler{DbConn: dc}
+	tickers := &handlers.TickerHandler{DbConn: dc, NatsConn: nc, CoreConn: cc}
 	mux.HandleFunc("GET /tickers", tickers.ListTickers)
 	mux.HandleFunc("POST /tickers", tickers.CreateTicker)
 	mux.HandleFunc("GET /tickers/{id}", tickers.GetTicker)

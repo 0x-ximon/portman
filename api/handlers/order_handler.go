@@ -154,8 +154,8 @@ func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		Symbol: order.TickerSymbol,
 	}
 
-	serviceClient := proto.NewOrdersServiceClient(h.CoreConn)
-	response, err := serviceClient.SubmitOrder(ctx, &request)
+	core := proto.NewOrdersServiceClient(h.CoreConn)
+	response, err := core.SubmitOrder(ctx, &request)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		result := Payload{
