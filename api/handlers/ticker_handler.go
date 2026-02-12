@@ -264,11 +264,13 @@ func (h *TickerHandler) Tick(w http.ResponseWriter, r *http.Request) {
 			}
 
 		case msg := <-msgChan:
-			if err := ws.WriteMessage(websocket.TextMessage, msg.Data); err != nil {
+			err := ws.WriteMessage(websocket.TextMessage, msg.Data)
+			if err != nil {
 				return
 			}
 
 		case <-ctx.Done():
+			sub.Unsubscribe()
 			return
 		}
 	}
