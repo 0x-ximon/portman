@@ -1,0 +1,21 @@
+name: UI [Zig]
+
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        defaults:
+            run:
+                working-directory: ui
+
+        steps:
+            - uses: actions/checkout@v5
+
+            - uses: https://codeberg.org/mlugg/setup-zig@v2
+            - run: zig build test
