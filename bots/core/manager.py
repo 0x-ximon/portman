@@ -3,7 +3,7 @@ import asyncio
 import httpx
 
 from core.worker import Worker
-from common.models import Ticker, Status
+from common.models import Ticker, TickerStatus
 
 
 class Manager:
@@ -30,7 +30,7 @@ class Manager:
         data = response.json()["data"]
         for t in data:
             ticker = Ticker.model_validate(t)
-            if ticker.status == Status.OPEN:
+            if ticker.status == TickerStatus.OPEN:
                 self.tickers.append(ticker)
 
     def random_ticker(self) -> str:

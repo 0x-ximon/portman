@@ -1,3 +1,4 @@
+import random
 import websockets
 import asyncio
 import json
@@ -7,8 +8,9 @@ import httpx
 import os
 
 from common.typings import Result, Ok, Err
-from common.models import User
+from common.models import User, Side, Type, TickerStatus, Order
 from decimal import Decimal
+from typing import Any
 
 
 class Worker:
@@ -67,8 +69,31 @@ class Worker:
                 return Err(error)
 
     async def execute(self):
+        if not self.user or not self.user.api_key:
+            return Err(Exception("User not initialized"))
+
+        user, api_key = self.user, self.user.api_key
+        headers: dict[str, str] = {"X-API-KEY": api_key}
+
         while True:
-            await asyncio.sleep(1)
+            try:
+                await asyncio.sleep(random.randint(0, 60))
+
+                payload = self.generate_order_payload()
+                response = await self.client.post(
+                    "/orders", headers=headers, json=payload
+                )
+                response.raise_for_status()
+
+                data = response.json()["data"]
+                order = Order.model_validate(data)
+                print(
+                    f"Bot #{self.id} submitted {order.side} order for {order.ticker_symbol} at {order.price}"
+                )
+
+            except Exception as err:
+                print(f"Bot #{self.id} - {type(err).__name__}: {err}")
+                break
 
     async def handle_ticks(self, symbol: str) -> Result[None, Exception]:
         try:
@@ -159,3 +184,22 @@ class Worker:
 
         except Exception as e:
             return Err(e)
+
+    def generate_order_payload(self) -> dict[str, Any]:
+        ticker_symbol = self.symbol
+        user_id = str(self.user.id)
+
+        price = float(Decimal(self.price))
+        quantity = float(Decimal("1.00"))
+
+        side = random.choice([Side.BUY, Side.SELL])
+        type = random.choice([Type.LIMIT, Type.MARKET])
+
+        return {
+            "user_id": user_id,
+            "ticker_symbol": ticker_symbol,
+            "quantity": quantity,
+            "price": price,
+            "side": side,
+            "type": type,
+        }
