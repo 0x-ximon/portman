@@ -5,6 +5,8 @@ const vxfw = vaxis.vxfw;
 
 pub const Model = struct {
     title: vxfw.Text,
+
+    // BUG: Hovering over the split view crashes the program
     layout: vxfw.SplitView,
     children: [1]vxfw.SubSurface = undefined,
 
