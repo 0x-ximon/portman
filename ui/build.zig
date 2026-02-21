@@ -12,6 +12,9 @@ pub fn build(b: *std.Build) void {
     const mod = b.addModule("ui", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
+        .imports = &.{
+            .{ .name = "vaxis", .module = vaxis.module("vaxis") },
+        },
     });
 
     const exe = b.addExecutable(.{
