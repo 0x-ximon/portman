@@ -17,9 +17,8 @@ pub fn main() !void {
     var app = try vxfw.App.init(allocator);
     defer app.deinit();
 
-    const model = try allocator.create(ui.Model);
-    defer allocator.destroy(model);
+    const model = try ui.Model.init(allocator, "Portman");
+    defer model.deinit();
 
-    model.* = .{};
     try app.run(model.widget(), .{});
 }
