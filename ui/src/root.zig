@@ -1,53 +1,52 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
+pub const SidePanel = struct {
+    border: vxfw.Border = undefined,
+    labels: [1]vxfw.Border.BorderLabel = undefined,
+
+    title: vxfw.Text = undefined,
+    menu: vxfw.ListView = undefined,
+    items: [1]vxfw.Widget = undefined,
+
+    fn widget(self: *SidePanel) vxfw.Widget {
+        return self.border.widget();
+    }
+};
+
+pub const MainPanel = struct {
+    border: vxfw.Border = undefined,
+    labels: [1]vxfw.Border.BorderLabel = undefined,
+
+    content: vxfw.Text = undefined,
+    container: vxfw.SizedBox = undefined,
+
+    fn widget(self: *MainPanel) vxfw.Widget {
+        return self.border.widget();
+    }
+};
+
+pub const Layout = struct {
+    last_width: ?u16 = 100,
+    split: vxfw.SplitView = undefined,
+    side_panel: SidePanel = undefined,
+    main_panel: MainPanel = undefined,
+
+    fn widget(self: *Layout) vxfw.Widget {
+        return self.split.widget();
+    }
+};
+
 pub const Model = struct {
-    title: vxfw.Text,
+    layout: Layout = undefined,
+    allocator: Allocator = undefined,
 
-    // BUG: Hovering over the split view crashes the program
-    layout: vxfw.SplitView,
-    children: [1]vxfw.SubSurface = undefined,
-
-    allocator: std.mem.Allocator,
-
-    pub fn init(allocator: std.mem.Allocator, title: []const u8) !*Model {
-        // TODO: Refactor the widget creation into separate methods
-        const left_content = vxfw.Text{ .text = "Left Side" };
-        const right_content = vxfw.Text{ .text = "Right Side" };
-
-        const left_widget = vxfw.SizedBox{
-            .size = .{ .width = 100, .height = 200 },
-            .child = left_content.widget(),
-        };
-
-        const right_widget = vxfw.SizedBox{
-            .size = .{ .width = 80, .height = 200 },
-            .child = right_content.widget(),
-        };
-
-        const lhs = vxfw.Border{
-            .labels = &.{.{ .text = "Ticker", .alignment = .top_center }},
-            .child = left_widget.widget(),
-        };
-
-        const rhs = vxfw.Border{
-            .labels = &.{.{ .text = "Order Book", .alignment = .top_center }},
-            .child = right_widget.widget(),
-        };
-
+    pub fn init(allocator: std.mem.Allocator) !*Model {
         const self = try allocator.create(Model);
-        self.* = .{
-            .allocator = allocator,
-            .title = .{ .text = title },
-            .layout = .{
-                .lhs = lhs.widget(),
-                .rhs = rhs.widget(),
-                .width = 100,
-            },
-        };
-
+        self.allocator = allocator;
         return self;
     }
 
@@ -65,11 +64,61 @@ pub const Model = struct {
 
     fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
         const self: *Model = @ptrCast(@alignCast(ptr));
-        _ = self;
-
         switch (event) {
             .init => {
-                // TODO: Implement ticker initialization by reading last saved state in cache
+                // Side Panel
+                self.layout.side_panel.title = .{ .text = "Portman" };
+                self.layout.side_panel.items = .{
+                    self.layout.side_panel.title.widget(),
+                };
+
+                self.layout.side_panel.menu = .{ .children = .{
+                    .slice = &self.layout.side_panel.items,
+                } };
+
+                self.layout.side_panel.labels = .{.{
+                    .text = " Side Panel ",
+                    .alignment = .top_center,
+                }};
+
+                self.layout.side_panel.border = .{
+                    .child = self.layout.side_panel.menu.widget(),
+                    .labels = &self.layout.side_panel.labels,
+                };
+
+                // Main Panel
+                self.layout.main_panel.content = .{ .text = 
+                    \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
+                    \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+                    \\ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore
+                    \\ eu fugiat nulla pariatur.
+                    \\
+                    \\ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est
+                    \\ laborum. Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo
+                    \\ pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris. Integer in mauris eu nibh
+                    \\ euismod gravida.
+                };
+
+                self.layout.main_panel.labels = .{
+                    .{ .text = " Main Panel ", .alignment = .top_center },
+                };
+
+                self.layout.main_panel.container = .{
+                    .child = self.layout.main_panel.content.widget(),
+                    .size = .{ .width = 200, .height = 100 },
+                };
+
+                self.layout.main_panel.border = .{
+                    .child = self.layout.main_panel.container.widget(),
+                    .labels = &self.layout.main_panel.labels,
+                };
+
+                // Layout
+                self.layout.split = .{
+                    .lhs = self.layout.side_panel.widget(),
+                    .rhs = self.layout.main_panel.widget(),
+                    .width = self.layout.last_width orelse 0,
+                };
             },
 
             .key_press => |key| {
@@ -85,132 +134,13 @@ pub const Model = struct {
 
     fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
         const self: *Model = @ptrCast(@alignCast(ptr));
-        const surf = try self.layout.widget().draw(ctx);
+        const current_width = ctx.max.width orelse 100;
 
-        self.children[0] = .{
-            .surface = surf,
-            .origin = .{ .row = 0, .col = 0 },
-        };
+        if (self.layout.last_width == null or self.layout.last_width.? != current_width) {
+            self.layout.split.width = @intCast((@as(u32, current_width) * 20) / 100);
+            self.layout.last_width = current_width;
+        }
 
-        return .{
-            .size = ctx.max.size(),
-            .widget = self.widget(),
-            .buffer = &.{},
-            .children = &self.children,
-        };
+        return self.layout.widget().draw(ctx);
     }
 };
-
-// pub const App = struct {
-//     // 1. Store your widgets in the App struct so their memory addresses remain stable
-//     term_view: vxfw.Text, // Using Text as a placeholder for your Terminal widget
-//     rhs_view: vxfw.Text,
-//     border: Border,
-//     split_view: SplitView,
-
-//     pub fn init() App {
-//         var app: App = undefined;
-
-//         // Initialize your child widgets [cite: 77, 78]
-//         app.term_view = .{ .text = "Terminal running here..." };
-//         app.rhs_view = .{ .text = "Side panel (30%)" };
-
-//         // 2. Wrap the terminal view in a border [cite: 30]
-//         app.border = .{
-//             .child = app.term_view.widget(), [cite: 3, 30]
-//             .style = .{}, // Optional: Add custom styling here [cite: 3]
-//         };
-
-//         // 3. Initialize the SplitView
-//         // We set an initial dummy width; it will be overwritten on the first render/resize
-//         app.split_view = .{
-//             .lhs = app.border.widget(), [cite: 37, 79]
-//             .rhs = app.rhs_view.widget(), [cite: 37, 79]
-//             .width = 70, // Target width to draw at [cite: 37, 79]
-//             .constrain = .lhs, // We constrain the left side so we control its exact width
-//         };
-
-//         return app;
-//     }
-
-//     /// Call this inside your main vaxis event loop whenever you receive a `.winsize` event
-//     pub fn handleResize(self: *App, window_cols: u16) void {
-//         // Calculate 70% of the total available columns
-//         const lhs_width: u16 = @intCast((@as(u32, window_cols) * 70) / 100);
-
-//         // Update the SplitView's absolute width dynamically [cite: 37, 57]
-//         self.split_view.width = lhs_width;
-//     }
-
-//     /// Returns the root widget to be drawn by vxfw
-//     pub fn widget(self: *App) vxfw.Widget {
-//         return self.split_view.widget(); [cite: 37, 80]
-//     }
-// };
-
-// // pub const App = struct {
-// //     term_text: vxfw.Text,
-// //     rhs_text: vxfw.Text,
-// //     border: Border,
-// //     split_view: SplitView,
-
-// //     // We use this to track window resizes
-// //     last_screen_width: ?u16 = null,
-
-// //     pub fn init() App {
-// //         var app: App = .{
-// //             .term_text = .{ .text = "Terminal View (LHS)" },
-// //             .rhs_text = .{ .text = "Side Panel (RHS)" },
-// //             .border = undefined,
-// //             .split_view = undefined,
-// //         };
-
-// //         // Wrap the terminal text in the Border widget
-// //         app.border = .{
-// //             .child = app.term_text.widget(),
-// //             // Optional: specify styling here
-// //             .style = .{},
-// //         };
-
-// //         // Initialize the SplitView
-// //         app.split_view = .{
-// //             .lhs = app.border.widget(),
-// //             .rhs = app.rhs_text.widget(),
-// //             .width = 0, // This gets calculated dynamically on the first draw
-// //             .constrain = .lhs,
-// //         };
-
-// //         return app;
-// //     }
-
-// //     /// Expose the App as a vxfw.Widget
-// //     pub fn widget(self: *App) vxfw.Widget {
-// //         return .{
-// //             .userdata = self,
-// //             .eventHandler = typeErasedEventHandler,
-// //             .drawFn = typeErasedDrawFn,
-// //         };
-// //     }
-
-// //     fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
-// //         const self: *App = @ptrCast(@alignCast(ptr));
-// //         // Route events down to the split_view so dragging the separator works
-// //         try self.split_view.widget().handleEvent(ctx, event);
-// //     }
-
-// //     fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
-// //         const self: *App = @ptrCast(@alignCast(ptr));
-// //         const current_width = ctx.max.width orelse 100;
-
-// //         // Recalculate the 70% split ONLY if the window has resized.
-// //         // This ensures that if the user clicks and drags the separator,
-// //         // we don't instantly overwrite their manual adjustments on the next frame.
-// //         if (self.last_screen_width == null or self.last_screen_width.? != current_width) {
-// //             self.split_view.width = @intCast((@as(u32, current_width) * 70) / 100);
-// //             self.last_screen_width = current_width;
-// //         }
-
-// //         // Draw the split view with the updated context
-// //         return self.split_view.widget().draw(ctx);
-// //     }
-// // };
