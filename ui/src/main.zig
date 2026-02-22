@@ -1,7 +1,9 @@
 const std = @import("std");
-const ui = @import("ui");
+
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
+
+const Model = @import("model.zig");
 
 pub fn main() !void {
     var debug_allocator = std.heap.DebugAllocator(.{}).init;
@@ -13,11 +15,10 @@ pub fn main() !void {
     }
 
     const allocator = debug_allocator.allocator();
-
     var app = try vxfw.App.init(allocator);
     defer app.deinit();
 
-    const model = try ui.Model.init(allocator);
+    const model = try Model.init(allocator);
     defer model.deinit();
 
     try app.run(model.widget(), .{});
