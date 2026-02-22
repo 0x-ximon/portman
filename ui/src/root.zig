@@ -3,6 +3,10 @@ const std = @import("std");
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
+pub const Chart = @import("widgets/chart.zig");
+pub const Router = @import("widgets/router.zig");
+pub const Navigator = @import("widgets/navigator.zig");
+
 // pub const SidePanel = struct {
 //     items: [1]vxfw.Widget = undefined,
 //     container: vxfw.ListView = undefined,
@@ -34,7 +38,7 @@ const vxfw = vaxis.vxfw;
 // };
 
 // pub const Layout = struct {
-//     last_width: ?u16 = 100,
+// last_width: ?u16 = 100,
 //     split: vxfw.SplitView = undefined,
 //     // side_panel: SidePanel = undefined,
 //     // main_panel: MainPanel = undefined,
@@ -142,16 +146,3 @@ const vxfw = vaxis.vxfw;
 //         else => {},
 //     }
 // }
-
-//     fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
-//         const self: *Model = @ptrCast(@alignCast(ptr));
-//         const current_width = ctx.max.width orelse 100;
-
-//         if (self.layout.last_width == null or self.layout.last_width.? != current_width) {
-//             self.layout.split.width = @intCast((@as(u32, current_width) * 20) / 100);
-//             self.layout.last_width = current_width;
-//         }
-
-//         return self.layout.widget().draw(ctx);
-//     }
-// };

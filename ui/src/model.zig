@@ -1,39 +1,32 @@
 const std = @import("std");
+const lib = @import("lib");
 
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
-pub const Chart = @import("components/chart.zig");
-pub const Router = @import("router.zig");
-
 const Model = @This();
 
 allocator: std.mem.Allocator,
-side_panel_text: vxfw.Text,
-router: Router,
 split: vxfw.SplitView,
+width: ?u16 = null,
+
+navigator: *lib.Navigator,
+router: *lib.Router,
 
 pub fn init(allocator: std.mem.Allocator) !*Model {
     const self = try allocator.create(Model);
-
-    // Start the app on the Home screen
-    self.router = .{ .active = .{ .home = .{} } };
-
-    // Placeholder for the side panel navigation
-    self.side_panel_text = .{ .text = "Navigation:\n[1] Home\n[2] Account\n[3] Config" };
-
-    self.split = .{
-        .lhs = self.side_panel_text.widget(),
-        .rhs = self.router.widget(), // The Router goes here!
-        .width = 20,
-        .constrain = .lhs,
-    };
-
     self.allocator = allocator;
+
+    self.navigator = try lib.Navigator.init(self.allocator);
+    self.router = try lib.Router.init(self.allocator);
+
     return self;
 }
 
 pub fn deinit(self: *Model) void {
+    self.navigator.deinit();
+    self.router.deinit();
+
     self.allocator.destroy(self);
 }
 
@@ -47,28 +40,46 @@ pub fn widget(self: *Model) vxfw.Widget {
 
 fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
     const self: *Model = @ptrCast(@alignCast(ptr));
+    const current_width = ctx.max.width orelse 100;
+
+    if (self.width == null or self.width.? != current_width) {
+        self.split.width = @intCast((@as(u32, current_width) * 15) / 100);
+        self.width = current_width;
+    }
+
     return self.split.widget().draw(ctx);
 }
 
 fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
     const self: *Model = @ptrCast(@alignCast(ptr));
+    switch (event) {
+        .init => {
+            self.split = .{
+                .lhs = self.navigator.widget(),
+                .rhs = self.router.widget(),
+                .width = 100,
+            };
+        },
 
-    // Handle global navigation hotkeys
-    if (event == .key_press) {
-        const key = event.key_press;
-        if (key.matches('c', .{ .ctrl = true })) {
-            ctx.quit = true;
-            return;
-        } else if (key.matches('1', .{})) {
-            self.router.active = .{ .home = .{} };
-            ctx.redraw = true;
-        } else if (key.matches('2', .{})) {
-            self.router.active = .{ .account = .{} };
-            ctx.redraw = true;
-        } else if (key.matches('3', .{})) {
-            self.router.active = .{ .config = .{} };
-            ctx.redraw = true;
-        }
+        .key_press => |key| {
+            if (key.matches('c', .{ .ctrl = true })) {
+                ctx.quit = true;
+                return;
+            }
+
+            if (key.matches('1', .{})) {
+                self.router.active = .{ .home = .{} };
+                ctx.redraw = true;
+            } else if (key.matches('2', .{})) {
+                self.router.active = .{ .account = .{} };
+                ctx.redraw = true;
+            } else if (key.matches('3', .{})) {
+                self.router.active = .{ .config = .{} };
+                ctx.redraw = true;
+            }
+        },
+
+        else => {},
     }
 
     // Ensure the split view and active screen get mouse/key events

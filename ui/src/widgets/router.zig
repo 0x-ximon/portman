@@ -3,9 +3,9 @@ const std = @import("std");
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
-const AccountScreen = @import("screens/account_screen.zig");
-const HomeScreen = @import("screens/home_screen.zig");
-const ConfigScreen = @import("screens/config_screen.zig");
+const AccountScreen = @import("../screens/account_screen.zig");
+const HomeScreen = @import("../screens/home_screen.zig");
+const ConfigScreen = @import("../screens/config_screen.zig");
 
 // Tentative UI Screens
 //  - Home
@@ -32,7 +32,20 @@ const Screen = union(enum) {
 
 pub const Router = @This();
 
+allocator: std.mem.Allocator,
 active: Screen,
+
+pub fn init(allocator: std.mem.Allocator) !*Router {
+    const self = try allocator.create(Router);
+    self.allocator = allocator;
+
+    self.active = .{ .home = .{} };
+    return self;
+}
+
+pub fn deinit(self: *Router) void {
+    self.allocator.destroy(self);
+}
 
 pub fn widget(self: *Router) vxfw.Widget {
     return .{
