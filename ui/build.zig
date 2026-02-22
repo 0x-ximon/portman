@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const mod = b.addModule("ui", .{
+    const lib = b.addModule("lib", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .imports = &.{
@@ -18,13 +18,13 @@ pub fn build(b: *std.Build) void {
     });
 
     const exe = b.addExecutable(.{
-        .name = "ui",
+        .name = "portman_ui",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/main.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "ui", .module = mod },
+                .{ .name = "lib", .module = lib },
                 .{ .name = "vaxis", .module = vaxis.module("vaxis") },
             },
         }),
@@ -43,7 +43,7 @@ pub fn build(b: *std.Build) void {
     }
 
     const mod_tests = b.addTest(.{
-        .root_module = mod,
+        .root_module = lib,
     });
 
     const run_mod_tests = b.addRunArtifact(mod_tests);
