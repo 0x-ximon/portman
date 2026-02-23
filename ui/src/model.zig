@@ -57,6 +57,7 @@ fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.
             self.split = .{
                 .lhs = self.navigator.widget(),
                 .rhs = self.router.widget(),
+                .style = .{ .invisible = true },
                 .width = 100,
             };
         },
