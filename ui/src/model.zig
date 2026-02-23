@@ -69,13 +69,13 @@ fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.
             }
 
             if (key.matches('1', .{})) {
-                self.router.active = .{ .home = .{} };
+                self.router.active = .{ .home = try .init(self.allocator) };
                 ctx.redraw = true;
             } else if (key.matches('2', .{})) {
-                self.router.active = .{ .account = .{} };
+                self.router.active = .{ .account = try .init(self.allocator) };
                 ctx.redraw = true;
             } else if (key.matches('3', .{})) {
-                self.router.active = .{ .config = .{} };
+                self.router.active = .{ .settings = try .init(self.allocator) };
                 ctx.redraw = true;
             }
         },

@@ -25,9 +25,9 @@ const SettingsScreen = @import("../screens/settings_screen.zig");
 //      - Network
 
 const Screen = union(enum) {
-    home: HomeScreen,
-    account: AccountScreen,
-    settings: SettingsScreen,
+    home: *HomeScreen,
+    account: *AccountScreen,
+    settings: *SettingsScreen,
 };
 
 pub const Router = @This();
@@ -39,11 +39,17 @@ pub fn init(allocator: std.mem.Allocator) !*Router {
     const self = try allocator.create(Router);
     self.allocator = allocator;
 
-    self.active = .{ .home = .{} };
+    self.active = .{ .home = try HomeScreen.init(self.allocator) };
     return self;
 }
 
 pub fn deinit(self: *Router) void {
+    switch (self.active) {
+        .home => |screen| screen.deinit(),
+        .account => |screen| screen.deinit(),
+        .settings => |screen| screen.deinit(),
+    }
+
     self.allocator.destroy(self);
 }
 
@@ -58,9 +64,9 @@ pub fn widget(self: *Router) vxfw.Widget {
 fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
     const self: *Router = @ptrCast(@alignCast(ptr));
     return switch (self.active) {
-        .home => |*screen| screen.widget().draw(ctx),
-        .account => |*screen| screen.widget().draw(ctx),
-        .settings => |*screen| screen.widget().draw(ctx),
+        .home => |screen| screen.widget().draw(ctx),
+        .account => |screen| screen.widget().draw(ctx),
+        .settings => |screen| screen.widget().draw(ctx),
     };
 }
 
@@ -68,8 +74,8 @@ fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.
     const self: *Router = @ptrCast(@alignCast(ptr));
     // Pass events down to the active screen so it can handle its own inputs
     try switch (self.active) {
-        .home => |*screen| screen.widget().handleEvent(ctx, event),
-        .account => |*screen| screen.widget().handleEvent(ctx, event),
-        .settings => |*screen| screen.widget().handleEvent(ctx, event),
+        .home => |screen| screen.widget().handleEvent(ctx, event),
+        .account => |screen| screen.widget().handleEvent(ctx, event),
+        .settings => |screen| screen.widget().handleEvent(ctx, event),
     };
 }
