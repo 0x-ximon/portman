@@ -5,7 +5,7 @@ const vxfw = vaxis.vxfw;
 
 const AccountScreen = @import("../screens/account_screen.zig");
 const HomeScreen = @import("../screens/home_screen.zig");
-const ConfigScreen = @import("../screens/config_screen.zig");
+const SettingsScreen = @import("../screens/settings_screen.zig");
 
 // Tentative UI Screens
 //  - Home
@@ -27,7 +27,7 @@ const ConfigScreen = @import("../screens/config_screen.zig");
 const Screen = union(enum) {
     home: HomeScreen,
     account: AccountScreen,
-    config: ConfigScreen,
+    settings: SettingsScreen,
 };
 
 pub const Router = @This();
@@ -60,7 +60,7 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
     return switch (self.active) {
         .home => |*screen| screen.widget().draw(ctx),
         .account => |*screen| screen.widget().draw(ctx),
-        .config => |*screen| screen.widget().draw(ctx),
+        .settings => |*screen| screen.widget().draw(ctx),
     };
 }
 
@@ -70,6 +70,6 @@ fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.
     try switch (self.active) {
         .home => |*screen| screen.widget().handleEvent(ctx, event),
         .account => |*screen| screen.widget().handleEvent(ctx, event),
-        .config => |*screen| screen.widget().handleEvent(ctx, event),
+        .settings => |*screen| screen.widget().handleEvent(ctx, event),
     };
 }
