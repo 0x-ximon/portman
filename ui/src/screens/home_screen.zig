@@ -7,18 +7,13 @@ const MainPanel = struct {
     allocator: std.mem.Allocator,
     container: vxfw.Widget,
 
-    content: [2]vxfw.FlexItem,
-    view: vxfw.FlexColumn,
-
     chart_content: vxfw.Text,
-    // chart_padding: vxfw.Padding,
     chart_border: vxfw.Border,
-    chart_item: vxfw.FlexItem,
+    chart_widget: vxfw.Widget,
 
     indicators_content: vxfw.Text,
-    // indicators_padding: vxfw.Padding,
     indicators_border: vxfw.Border,
-    indicators_item: vxfw.FlexItem,
+    indicators_widget: vxfw.Widget,
 
     pub fn init(allocator: std.mem.Allocator) !*MainPanel {
         const self = try allocator.create(MainPanel);
@@ -26,50 +21,30 @@ const MainPanel = struct {
 
         // Chart Initialization
         self.chart_content = .{ .text = 
-            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
-            \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-            \\ ex ea commodo consequat.
+            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et
+            \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            \\ aliquip ex ea commodo consequat.
         };
 
-        // self.chart_padding = .{
-        //     .child = self.chart_content.widget(),
-        //     .padding = .{ .left = 1, .right = 1, .top = 1, .bottom = 1 },
-        // };
-
         self.chart_border = .{
+            .labels = &.{.{ .text = "Ticker Chart", .alignment = .top_left }},
             .child = self.chart_content.widget(),
         };
 
-        self.chart_item = .{
-            .widget = self.chart_border.widget(),
-            .flex = 3,
-        };
+        self.chart_widget = self.chart_border.widget();
 
         // Indicators Initialization
         self.indicators_content = .{ .text = 
-            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
-            \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-            \\ ex ea commodo consequat.
+            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         };
 
-        // self.indicators_padding = .{
-        //     .child = self.indicators_content.widget(),
-        //     .padding = .{ .left = 1, .right = 1, .top = 1, .bottom = 1 },
-        // };
-
         self.indicators_border = .{
+            .labels = &.{.{ .text = "Technical Indicators", .alignment = .top_left }},
             .child = self.indicators_content.widget(),
         };
 
-        self.indicators_item = .{
-            .widget = self.indicators_border.widget(),
-            .flex = 1,
-        };
+        self.indicators_widget = self.indicators_border.widget();
 
-        self.content = .{ self.chart_item, self.indicators_item };
-        self.view = .{ .children = &self.content };
-
-        self.container = self.view.widget();
         return self;
     }
 
@@ -78,7 +53,48 @@ const MainPanel = struct {
     }
 
     pub fn widget(self: *MainPanel) vxfw.Widget {
-        return self.container;
+        return .{
+            .userdata = self,
+            .drawFn = MainPanel.typeErasedDrawFn,
+            .eventHandler = MainPanel.typeErasedEventHandler,
+        };
+    }
+
+    fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
+        const self: *MainPanel = @ptrCast(@alignCast(ptr));
+        const max_size = ctx.max.size();
+
+        const column: vxfw.FlexColumn = .{
+            .children = &.{
+                .init(self.chart_widget, 2),
+                .init(self.indicators_widget, 1),
+            },
+        };
+
+        const children = try ctx.arena.alloc(vxfw.SubSurface, 1);
+        children[0] = .{
+            .origin = .{ .row = 0, .col = 0 },
+            .surface = try column.draw(ctx.withConstraints(
+                .{ .width = max_size.width, .height = 0 },
+                ctx.max,
+            )),
+        };
+
+        return .{
+            .buffer = &.{},
+            .size = max_size,
+            .children = children,
+            .widget = self.widget(),
+        };
+    }
+
+    fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
+        _ = ctx; // autofix
+        const self: *MainPanel = @ptrCast(@alignCast(ptr));
+        _ = self; // autofix
+        switch (event) {
+            else => {},
+        }
     }
 };
 
@@ -86,18 +102,13 @@ const SidePanel = struct {
     allocator: std.mem.Allocator,
     container: vxfw.Widget,
 
-    content: [2]vxfw.FlexItem,
-    view: vxfw.FlexColumn,
-
     book_content: vxfw.Text,
-    // book_padding: vxfw.Padding,
     book_border: vxfw.Border,
-    book_item: vxfw.FlexItem,
+    book_widget: vxfw.Widget,
 
     watchlist_content: vxfw.Text,
-    // watchlist_padding: vxfw.Padding,
     watchlist_border: vxfw.Border,
-    watchlist_item: vxfw.FlexItem,
+    watchlist_widget: vxfw.Widget,
 
     pub fn init(allocator: std.mem.Allocator) !*SidePanel {
         const self = try allocator.create(SidePanel);
@@ -105,50 +116,29 @@ const SidePanel = struct {
 
         // Order Book Initialization
         self.book_content = .{ .text = 
-            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
-            \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-            \\ ex ea commodo consequat.
+            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et
+            \\ dolore magna aliqua.
         };
 
-        // self.book_padding = .{
-        //     .child = self.book_content.widget(),
-        //     .padding = .{ .left = 1, .right = 1, .top = 1, .bottom = 1 },
-        // };
-
         self.book_border = .{
+            .labels = &.{.{ .text = "Order Book", .alignment = .top_left }},
             .child = self.book_content.widget(),
         };
 
-        self.book_item = .{
-            .widget = self.book_border.widget(),
-            .flex = 3,
-        };
+        self.book_widget = self.book_border.widget();
 
         // Watchlist Initialization
         self.watchlist_content = .{ .text = 
-            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
-            \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-            \\ ex ea commodo consequat.
+            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit.
         };
 
-        // self.watchlist_padding = .{
-        //     .child = self.watchlist_content.widget(),
-        //     .padding = .{ .left = 1, .right = 1, .top = 1, .bottom = 1 },
-        // };
-
         self.watchlist_border = .{
+            .labels = &.{.{ .text = "Watchlist", .alignment = .top_left }},
             .child = self.watchlist_content.widget(),
         };
 
-        self.watchlist_item = .{
-            .widget = self.watchlist_border.widget(),
-            .flex = 1,
-        };
+        self.watchlist_widget = self.watchlist_border.widget();
 
-        self.content = .{ self.book_item, self.watchlist_item };
-        self.view = .{ .children = &self.content };
-
-        self.container = self.view.widget();
         return self;
     }
 
@@ -157,7 +147,48 @@ const SidePanel = struct {
     }
 
     pub fn widget(self: *SidePanel) vxfw.Widget {
-        return self.container;
+        return .{
+            .userdata = self,
+            .drawFn = SidePanel.typeErasedDrawFn,
+            .eventHandler = SidePanel.typeErasedEventHandler,
+        };
+    }
+
+    fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
+        const self: *SidePanel = @ptrCast(@alignCast(ptr));
+        const max_size = ctx.max.size();
+
+        const column: vxfw.FlexColumn = .{
+            .children = &.{
+                .init(self.book_widget, 2),
+                .init(self.watchlist_widget, 1),
+            },
+        };
+
+        const children = try ctx.arena.alloc(vxfw.SubSurface, 1);
+        children[0] = .{
+            .origin = .{ .row = 0, .col = 0 },
+            .surface = try column.draw(ctx.withConstraints(
+                .{ .width = max_size.width, .height = 0 },
+                ctx.max,
+            )),
+        };
+
+        return .{
+            .buffer = &.{},
+            .size = max_size,
+            .children = children,
+            .widget = self.widget(),
+        };
+    }
+
+    fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
+        _ = ctx; // autofix
+        const self: *SidePanel = @ptrCast(@alignCast(ptr));
+        _ = self; // autofix
+        switch (event) {
+            else => {},
+        }
     }
 };
 
@@ -165,12 +196,6 @@ const HomeScreen = @This();
 
 allocator: std.mem.Allocator,
 container: vxfw.Widget,
-
-// TODO: Implement Proper Responsive Layout with Flexible Widgets
-// Currently Blocked by https://github.com/rockorager/libvaxis/issues/229
-
-split: vxfw.SplitView,
-width: ?u16 = null,
 
 main_panel: *MainPanel,
 side_panel: *SidePanel,
@@ -181,13 +206,6 @@ pub fn init(allocator: std.mem.Allocator) !*HomeScreen {
 
     self.main_panel = try MainPanel.init(allocator);
     self.side_panel = try SidePanel.init(allocator);
-
-    self.split = .{
-        .lhs = self.main_panel.widget(),
-        .rhs = self.side_panel.widget(),
-        .style = .{ .invisible = true },
-        .width = 100,
-    };
 
     return self;
 }
@@ -202,28 +220,41 @@ pub fn deinit(self: *HomeScreen) void {
 pub fn widget(self: *HomeScreen) vxfw.Widget {
     return .{
         .userdata = self,
-        .drawFn = typeErasedDrawFn,
-        .eventHandler = typeErasedEventHandler,
+        .drawFn = HomeScreen.typeErasedDrawFn,
+        .eventHandler = HomeScreen.typeErasedEventHandler,
     };
 }
 
 fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
     const self: *HomeScreen = @ptrCast(@alignCast(ptr));
-    const current_width = ctx.max.width orelse 200;
+    const max_size = ctx.max.size();
 
-    if (self.width == null or self.width.? != current_width) {
-        self.split.width = @intCast((@as(u32, current_width) * 80) / 100);
-        self.width = current_width;
-    }
+    const row: vxfw.FlexRow = .{
+        .children = &.{
+            .init(self.main_panel.widget(), 3),
+            .init(self.side_panel.widget(), 1),
+        },
+    };
 
-    return self.split.widget().draw(ctx);
+    const children = try ctx.arena.alloc(vxfw.SubSurface, 1);
+    children[0] = .{
+        .origin = .{ .row = 0, .col = 0 },
+        .surface = try row.draw(ctx.withConstraints(
+            .{ .width = 0, .height = max_size.height },
+            ctx.max,
+        )),
+    };
+
+    return .{
+        .buffer = &.{},
+        .size = max_size,
+        .children = children,
+        .widget = self.widget(),
+    };
 }
 
 fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
     const self: *HomeScreen = @ptrCast(@alignCast(ptr));
-    switch (event) {
-        else => {},
-    }
-
-    try self.split.widget().handleEvent(ctx, event);
+    try self.main_panel.widget().handleEvent(ctx, event);
+    try self.side_panel.widget().handleEvent(ctx, event);
 }
