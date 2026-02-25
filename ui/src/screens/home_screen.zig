@@ -3,201 +3,227 @@ const std = @import("std");
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
-const TickerSection = struct {
+const MainPanel = struct {
     allocator: std.mem.Allocator,
     container: vxfw.Widget,
 
     content: [2]vxfw.FlexItem,
-    view: vxfw.FlexRow,
+    view: vxfw.FlexColumn,
 
     chart_content: vxfw.Text,
-    chart_padding: vxfw.Padding,
+    // chart_padding: vxfw.Padding,
     chart_border: vxfw.Border,
     chart_item: vxfw.FlexItem,
 
-    book_content: vxfw.Text,
-    book_padding: vxfw.Padding,
-    book_border: vxfw.Border,
-    book_item: vxfw.FlexItem,
+    indicators_content: vxfw.Text,
+    // indicators_padding: vxfw.Padding,
+    indicators_border: vxfw.Border,
+    indicators_item: vxfw.FlexItem,
 
-    pub fn init(allocator: std.mem.Allocator) !*TickerSection {
-        const self = try allocator.create(TickerSection);
+    pub fn init(allocator: std.mem.Allocator) !*MainPanel {
+        const self = try allocator.create(MainPanel);
         self.allocator = allocator;
 
         // Chart Initialization
         self.chart_content = .{ .text = 
             \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
             \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-            \\ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore
-            \\ eu fugiat nulla pariatur.
-            \\
-            \\ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est
-            \\ laborum. Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo
-            \\ pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris. Integer in mauris eu nibh
-            \\ euismod gravida.
+            \\ ex ea commodo consequat.
         };
 
-        self.chart_padding = .{ .child = self.chart_content.widget(), .padding = .{
-            .left = 1,
-            .right = 1,
-            .top = 1,
-            .bottom = 1,
-        } };
+        // self.chart_padding = .{
+        //     .child = self.chart_content.widget(),
+        //     .padding = .{ .left = 1, .right = 1, .top = 1, .bottom = 1 },
+        // };
 
         self.chart_border = .{
-            .child = self.chart_padding.widget(),
+            .child = self.chart_content.widget(),
         };
 
         self.chart_item = .{
             .widget = self.chart_border.widget(),
-            .flex = 2,
+            .flex = 3,
         };
 
-        // Book Initialization
-        self.book_content = .{ .text = 
+        // Indicators Initialization
+        self.indicators_content = .{ .text = 
             \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
             \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-            \\ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore
-            \\ eu fugiat nulla pariatur.
-            \\
-            \\ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est
-            \\ laborum. Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo
-            \\ pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris. Integer in mauris eu nibh
-            \\ euismod gravida.
+            \\ ex ea commodo consequat.
         };
 
-        self.book_padding = .{ .child = self.book_content.widget(), .padding = .{
-            .left = 1,
-            .right = 1,
-            .top = 1,
-            .bottom = 1,
-        } };
+        // self.indicators_padding = .{
+        //     .child = self.indicators_content.widget(),
+        //     .padding = .{ .left = 1, .right = 1, .top = 1, .bottom = 1 },
+        // };
 
-        self.book_border = .{
-            .child = self.book_padding.widget(),
+        self.indicators_border = .{
+            .child = self.indicators_content.widget(),
         };
 
-        self.book_item = .{
-            .widget = self.book_border.widget(),
+        self.indicators_item = .{
+            .widget = self.indicators_border.widget(),
+            .flex = 1,
         };
 
-        self.content = .{ self.chart_item, self.book_item };
+        self.content = .{ self.chart_item, self.indicators_item };
         self.view = .{ .children = &self.content };
 
         self.container = self.view.widget();
         return self;
     }
 
-    pub fn deinit(self: *TickerSection) void {
+    pub fn deinit(self: *MainPanel) void {
         self.allocator.destroy(self);
     }
 
-    pub fn widget(self: *TickerSection) vxfw.Widget {
+    pub fn widget(self: *MainPanel) vxfw.Widget {
         return self.container;
-    }
-
-    pub fn flex(self: *TickerSection) vxfw.FlexItem {
-        return .{ .widget = self.container };
     }
 };
 
-// const MarketSection = struct {
-//     allocator: std.mem.Allocator,
-//     container: vxfw.Widget,
+const SidePanel = struct {
+    allocator: std.mem.Allocator,
+    container: vxfw.Widget,
 
-//     content: [2]vxfw.Widget,
-//     padding: vxfw.Padding,
-//     view: vxfw.ListView,
-//     border: vxfw.Border,
+    content: [2]vxfw.FlexItem,
+    view: vxfw.FlexColumn,
 
-//     pub fn init(allocator: std.mem.Allocator) !*MarketSection {
-//         const self = try allocator.create(MarketSection);
-//         self.allocator = allocator;
+    book_content: vxfw.Text,
+    // book_padding: vxfw.Padding,
+    book_border: vxfw.Border,
+    book_item: vxfw.FlexItem,
 
-//         return self;
-//     }
+    watchlist_content: vxfw.Text,
+    // watchlist_padding: vxfw.Padding,
+    watchlist_border: vxfw.Border,
+    watchlist_item: vxfw.FlexItem,
 
-//     pub fn deinit(self: *MarketSection) void {
-//         self.allocator.destroy(self);
-//     }
+    pub fn init(allocator: std.mem.Allocator) !*SidePanel {
+        const self = try allocator.create(SidePanel);
+        self.allocator = allocator;
 
-//     pub fn widget(self: *MarketSection) vxfw.Widget {
-//         return self.container;
-//     }
+        // Order Book Initialization
+        self.book_content = .{ .text = 
+            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
+            \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+            \\ ex ea commodo consequat.
+        };
 
-//     pub fn flex(self: *MarketSection) vxfw.FlexItem {
-//         return self.flex;
-//     }
-// };
+        // self.book_padding = .{
+        //     .child = self.book_content.widget(),
+        //     .padding = .{ .left = 1, .right = 1, .top = 1, .bottom = 1 },
+        // };
+
+        self.book_border = .{
+            .child = self.book_content.widget(),
+        };
+
+        self.book_item = .{
+            .widget = self.book_border.widget(),
+            .flex = 3,
+        };
+
+        // Watchlist Initialization
+        self.watchlist_content = .{ .text = 
+            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
+            \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
+            \\ ex ea commodo consequat.
+        };
+
+        // self.watchlist_padding = .{
+        //     .child = self.watchlist_content.widget(),
+        //     .padding = .{ .left = 1, .right = 1, .top = 1, .bottom = 1 },
+        // };
+
+        self.watchlist_border = .{
+            .child = self.watchlist_content.widget(),
+        };
+
+        self.watchlist_item = .{
+            .widget = self.watchlist_border.widget(),
+            .flex = 1,
+        };
+
+        self.content = .{ self.book_item, self.watchlist_item };
+        self.view = .{ .children = &self.content };
+
+        self.container = self.view.widget();
+        return self;
+    }
+
+    pub fn deinit(self: *SidePanel) void {
+        self.allocator.destroy(self);
+    }
+
+    pub fn widget(self: *SidePanel) vxfw.Widget {
+        return self.container;
+    }
+};
 
 const HomeScreen = @This();
 
 allocator: std.mem.Allocator,
 container: vxfw.Widget,
 
-content: [2]vxfw.FlexItem,
-view: vxfw.FlexColumn,
+// TODO: Implement Proper Responsive Layout with Flexible Widgets
+// Currently Blocked by https://github.com/rockorager/libvaxis/issues/229
 
-top_item: vxfw.FlexItem,
-top_content: vxfw.Text,
-bottom_item: vxfw.FlexItem,
-bottom_content: vxfw.Text,
+split: vxfw.SplitView,
+width: ?u16 = null,
 
-ticker_section: *TickerSection,
-ticker_item: vxfw.FlexItem,
-// market_section: *MarketSection,
+main_panel: *MainPanel,
+side_panel: *SidePanel,
 
 pub fn init(allocator: std.mem.Allocator) !*HomeScreen {
     const self = try allocator.create(HomeScreen);
     self.allocator = allocator;
 
-    self.ticker_section = try TickerSection.init(allocator);
-    // self.market_section = try MarketSection.init(allocator);
-    //
+    self.main_panel = try MainPanel.init(allocator);
+    self.side_panel = try SidePanel.init(allocator);
 
-    self.ticker_item = self.ticker_section.flex();
-
-    self.bottom_content = .{ .text = 
-        \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididuntut labore et
-        \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip
-        \\ ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore
-        \\ eu fugiat nulla pariatur.
-        \\
-        \\ Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est
-        \\ laborum. Curabitur pretium tincidunt lacus. Nulla gravida orci a odio. Nullam varius, turpis et commodo
-        \\ pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris. Integer in mauris eu nibh
-        \\ euismod gravida.
+    self.split = .{
+        .lhs = self.main_panel.widget(),
+        .rhs = self.side_panel.widget(),
+        .style = .{ .invisible = true },
+        .width = 100,
     };
-    self.bottom_item = .{ .widget = self.bottom_content.widget() };
 
-    // BUG: Adding the ticker item to the struct causes it to crash
-    self.content = .{ self.ticker_item, self.bottom_item };
-    self.view = .{ .children = &self.content };
-
-    self.container = self.view.widget();
     return self;
 }
 
 pub fn deinit(self: *HomeScreen) void {
-    self.ticker_section.deinit();
-    // self.market_section.deinit();
+    self.main_panel.deinit();
+    self.side_panel.deinit();
 
     self.allocator.destroy(self);
 }
 
 pub fn widget(self: *HomeScreen) vxfw.Widget {
-    return self.container;
+    return .{
+        .userdata = self,
+        .drawFn = typeErasedDrawFn,
+        .eventHandler = typeErasedEventHandler,
+    };
 }
 
 fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
     const self: *HomeScreen = @ptrCast(@alignCast(ptr));
-    return self.container.draw(ctx);
+    const current_width = ctx.max.width orelse 200;
+
+    if (self.width == null or self.width.? != current_width) {
+        self.split.width = @intCast((@as(u32, current_width) * 80) / 100);
+        self.width = current_width;
+    }
+
+    return self.split.widget().draw(ctx);
 }
 
 fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
     const self: *HomeScreen = @ptrCast(@alignCast(ptr));
-    _ = ctx; // autofix
-    _ = event; // autofix
-    _ = self; // autofix
+    switch (event) {
+        else => {},
+    }
 
+    try self.split.widget().handleEvent(ctx, event);
 }

@@ -50,7 +50,7 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
     const current_width = ctx.max.width orelse 100;
 
     if (self.width == null or self.width.? != current_width) {
-        self.split.width = @intCast((@as(u32, current_width) * 10) / 100);
+        self.split.width = @intCast((@as(u32, current_width) * 15) / 100);
         self.width = current_width;
     }
 
