@@ -20,6 +20,13 @@ pub fn init(allocator: std.mem.Allocator) !*Model {
     self.navigator = try lib.Navigator.init(self.allocator);
     self.router = try lib.Router.init(self.allocator);
 
+    self.split = .{
+        .lhs = self.navigator.widget(),
+        .rhs = self.router.widget(),
+        .style = .{ .invisible = true },
+        .width = 100,
+    };
+
     return self;
 }
 
@@ -53,14 +60,7 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
 fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
     const self: *Model = @ptrCast(@alignCast(ptr));
     switch (event) {
-        .init => {
-            self.split = .{
-                .lhs = self.navigator.widget(),
-                .rhs = self.router.widget(),
-                .width = 100,
-            };
-        },
-
+        .init => {},
         .key_press => |key| {
             if (key.matches('c', .{ .ctrl = true })) {
                 ctx.quit = true;
@@ -68,13 +68,13 @@ fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.
             }
 
             if (key.matches('1', .{})) {
-                self.router.active = .{ .home = .{} };
+                self.router.active = .{ .home = try .init(self.allocator) };
                 ctx.redraw = true;
             } else if (key.matches('2', .{})) {
-                self.router.active = .{ .account = .{} };
+                self.router.active = .{ .account = try .init(self.allocator) };
                 ctx.redraw = true;
             } else if (key.matches('3', .{})) {
-                self.router.active = .{ .config = .{} };
+                self.router.active = .{ .settings = try .init(self.allocator) };
                 ctx.redraw = true;
             }
         },
