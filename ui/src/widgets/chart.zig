@@ -1,8 +1,28 @@
 const std = @import("std");
-const lib = @import("lib");
 
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
+
+const CartesianPlane = @import("cartesian.zig");
+
+pub const Color = enum(u8) {
+    black = 0,
+    red = 1,
+    green = 2,
+    yellow = 3,
+    blue = 4,
+    magenta = 5,
+    cyan = 6,
+    white = 7,
+    bright_black = 8,
+    bright_red = 9,
+    bright_green = 10,
+    bright_yellow = 11,
+    bright_blue = 12,
+    bright_magenta = 13,
+    bright_cyan = 14,
+    bright_white = 15,
+};
 
 pub const Candle = struct {
     high: f32,
@@ -26,8 +46,9 @@ pub const Candles = struct {
 
         for (self.items) |*c| {
             const change = (random.float(f32) - 0.45) * 10.0;
-            c.open = last_close;
-            c.close = last_close + change;
+            const gap = (random.float(f32) - 0.5) * 2.0; // Random gap between -1.0 and 1.0
+            c.open = last_close + (if (random.boolean()) gap else 0);
+            c.close = c.open + change;
 
             c.high = @max(c.open, c.close) + random.float(f32) * 2.0;
             c.low = @min(c.open, c.close) - random.float(f32) * 2.0;
@@ -71,48 +92,68 @@ pub fn widget(self: *Chart) vxfw.Widget {
 
 fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
     const self: *Chart = @ptrCast(@alignCast(ptr));
-
     const width = ctx.max.width orelse ctx.min.width;
     const height = ctx.max.height orelse @max(ctx.min.height, 10);
     const actual_size = vxfw.Size{ .width = width, .height = height };
 
     const surface = try vxfw.Surface.init(ctx.arena, self.widget(), actual_size);
 
-    // Calculate Scaling
+    // 1. Calculate Bounds
     var max_val: f32 = 0;
     var min_val: f32 = std.math.floatMax(f32);
     for (self.candles.items) |candle| {
         max_val = @max(max_val, candle.high);
         min_val = @min(min_val, candle.low);
     }
-    const range = max_val - min_val;
 
-    for (0..@min(self.candles.items.len, 100)) |x| {
-        const candle = self.candles.items[x];
+    // 2. Define Margins and Spacing
+    const candle_spacing = 1; // 1 cell gap
+    const candle_width = 1;
+    const stride = candle_width + candle_spacing;
+    const max_visible_candles = width / stride;
+
+    // Initialize our new helper
+    const plane = CartesianPlane{
+        .min_x = 0,
+        .max_x = @floatFromInt(max_visible_candles),
+        .min_y = min_val,
+        .max_y = max_val,
+        .size = actual_size,
+    };
+
+    // 3. Render Candles with gaps
+    for (0..@min(self.candles.items.len, max_visible_candles)) |i| {
+        const candle = self.candles.items[i];
         const bullish = candle.close >= candle.open;
 
-        // Map prices to Y coordinates (top is 0)
-        const y_high = valToY(candle.high, min_val, range, actual_size.height);
-        const y_low = valToY(candle.low, min_val, range, actual_size.height);
-        const y_max_body = valToY(@max(candle.open, candle.close), min_val, range, actual_size.height);
-        const y_min_body = valToY(@min(candle.open, candle.close), min_val, range, actual_size.height);
+        // Calculate X based on stride
+        const screen_x = @as(u16, @intCast(i)) * stride;
 
-        const color_idx = if (bullish) lib.Color.bright_blue else lib.Color.bright_black;
+        // Map Y coordinates using the Plane helper
+        const y_high = plane.toScreen(0, candle.high).row;
+        const y_low = plane.toScreen(0, candle.low).row;
+        const y_open = plane.toScreen(0, candle.open).row;
+        const y_close = plane.toScreen(0, candle.close).row;
+
+        const y_max_body = @min(y_open, y_close);
+        const y_min_body = @max(y_open, y_close);
+
+        const color_idx = if (bullish) Color.bright_blue else Color.bright_red;
         const cell_color = vaxis.Color{ .index = @intFromEnum(color_idx) };
 
-        // Draw Wick
-        for (y_high..y_low + 1) |y| {
-            if (y >= actual_size.height) continue;
-            surface.writeCell(@intCast(x), @intCast(y), .{
+        // Draw Wick (ensure y_high to y_low is drawn)
+        var y: u16 = y_high;
+        while (y <= y_low) : (y += 1) {
+            surface.writeCell(screen_x, y, .{
                 .char = .{ .grapheme = "│" },
                 .style = .{ .fg = cell_color },
             });
         }
 
-        // Draw Body
-        for (y_max_body..y_min_body + 1) |y| {
-            if (y >= actual_size.height) continue;
-            surface.writeCell(@intCast(x), @intCast(y), .{
+        // Draw Body (█)
+        y = y_max_body;
+        while (y <= y_min_body) : (y += 1) {
+            surface.writeCell(screen_x, y, .{
                 .char = .{ .grapheme = "█" },
                 .style = .{ .fg = cell_color },
             });
