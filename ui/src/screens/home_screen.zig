@@ -3,13 +3,13 @@ const std = @import("std");
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
+const Chart = @import("../widgets/chart.zig");
+
 const MainPanel = struct {
     allocator: std.mem.Allocator,
     container: vxfw.Widget,
 
-    chart_content: vxfw.Text,
-    chart_border: vxfw.Border,
-    chart_widget: vxfw.Widget,
+    chart: *Chart,
 
     indicators_content: vxfw.Text,
     indicators_border: vxfw.Border,
@@ -19,19 +19,7 @@ const MainPanel = struct {
         const self = try allocator.create(MainPanel);
         self.allocator = allocator;
 
-        // Chart Initialization
-        self.chart_content = .{ .text = 
-            \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et
-            \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-            \\ aliquip ex ea commodo consequat.
-        };
-
-        self.chart_border = .{
-            .labels = &.{.{ .text = "Ticker Chart", .alignment = .top_left }},
-            .child = self.chart_content.widget(),
-        };
-
-        self.chart_widget = self.chart_border.widget();
+        self.chart = try Chart.init(allocator);
 
         // Indicators Initialization
         self.indicators_content = .{ .text = 
@@ -49,6 +37,8 @@ const MainPanel = struct {
     }
 
     pub fn deinit(self: *MainPanel) void {
+        self.chart.deinit();
+
         self.allocator.destroy(self);
     }
 
@@ -66,7 +56,7 @@ const MainPanel = struct {
 
         const column: vxfw.FlexColumn = .{
             .children = &.{
-                .init(self.chart_widget, 2),
+                .init(self.chart.widget(), 2),
                 .init(self.indicators_widget, 1),
             },
         };
@@ -89,12 +79,8 @@ const MainPanel = struct {
     }
 
     fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
-        _ = ctx; // autofix
         const self: *MainPanel = @ptrCast(@alignCast(ptr));
-        _ = self; // autofix
-        switch (event) {
-            else => {},
-        }
+        try self.chart.widget().handleEvent(ctx, event);
     }
 };
 
@@ -195,8 +181,6 @@ const SidePanel = struct {
 const HomeScreen = @This();
 
 allocator: std.mem.Allocator,
-container: vxfw.Widget,
-
 main_panel: *MainPanel,
 side_panel: *SidePanel,
 
