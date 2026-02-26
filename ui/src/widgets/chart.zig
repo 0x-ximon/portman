@@ -63,7 +63,7 @@ pub fn init(allocator: std.mem.Allocator) !*Chart {
     const self = try allocator.create(Chart);
     self.allocator = allocator;
 
-    self.candles = try Candles.init(allocator, 100);
+    self.candles = try Candles.init(allocator, 200);
 
     // Chart Initialization
     self.chart_content = .{ .text = 
@@ -99,10 +99,12 @@ pub fn widget(self: *Chart) vxfw.Widget {
 
 fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
     const self: *Chart = @ptrCast(@alignCast(ptr));
-    const max_size = ctx.max.size();
 
-    const surface = try vxfw.Surface.init(ctx.arena, self.widget(), max_size);
-    // const subSurfaces = try ctx.arena.alloc(vxfw.SubSurface, 1);
+    const width = ctx.max.width orelse ctx.min.width;
+    const height = ctx.max.height orelse @max(ctx.min.height, 10);
+    const actual_size = vxfw.Size{ .width = width, .height = height };
+
+    const surface = try vxfw.Surface.init(ctx.arena, self.widget(), actual_size);
 
     // Calculate Scaling
     var max_val: f32 = 0;
@@ -113,15 +115,15 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
     }
     const range = max_val - min_val;
 
-    for (0..@min(self.candles.items.len, 20)) |x| {
+    for (0..@min(self.candles.items.len, 100)) |x| {
         const candle = self.candles.items[x];
         const bullish = candle.close >= candle.open;
 
         // Map prices to Y coordinates (top is 0)
-        const y_high = valToY(candle.high, min_val, range, max_size.height);
-        const y_low = valToY(candle.low, min_val, range, max_size.height);
-        const y_max_body = valToY(@max(candle.open, candle.close), min_val, range, max_size.height);
-        const y_min_body = valToY(@min(candle.open, candle.close), min_val, range, max_size.height);
+        const y_high = valToY(candle.high, min_val, range, actual_size.height);
+        const y_low = valToY(candle.low, min_val, range, actual_size.height);
+        const y_max_body = valToY(@max(candle.open, candle.close), min_val, range, actual_size.height);
+        const y_min_body = valToY(@min(candle.open, candle.close), min_val, range, actual_size.height);
 
         const color = if (bullish)
             vaxis.Color.rgbFromUint(@intFromEnum(Chart.Color.green))
@@ -130,7 +132,7 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
 
         // Draw Wick
         for (y_high..y_low + 1) |y| {
-            if (y >= max_size.height) continue;
+            if (y >= actual_size.height) continue;
             surface.writeCell(@intCast(x), @intCast(y), .{
                 .char = .{ .grapheme = "│" },
                 .style = .{ .fg = color },
@@ -139,7 +141,7 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
 
         // Draw Body
         for (y_max_body..y_min_body + 1) |y| {
-            if (y >= max_size.height) continue;
+            if (y >= actual_size.height) continue;
             surface.writeCell(@intCast(x), @intCast(y), .{
                 .char = .{ .grapheme = "█" },
                 .style = .{ .fg = color },
