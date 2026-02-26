@@ -1,15 +1,8 @@
 const std = @import("std");
+const lib = @import("lib");
 
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
-
-const Color = enum(u24) {
-    red = 0xFF0000,
-    green = 0x00FF00,
-    blue = 0x0000FF,
-    white = 0xFFFFFF,
-    black = 0x000000,
-};
 
 pub const Candle = struct {
     high: f32,
@@ -104,17 +97,15 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
         const y_max_body = valToY(@max(candle.open, candle.close), min_val, range, actual_size.height);
         const y_min_body = valToY(@min(candle.open, candle.close), min_val, range, actual_size.height);
 
-        const color = if (bullish)
-            vaxis.Color.rgbFromUint(@intFromEnum(Chart.Color.green))
-        else
-            vaxis.Color.rgbFromUint(@intFromEnum(Chart.Color.red));
+        const color_idx = if (bullish) lib.Color.bright_blue else lib.Color.bright_black;
+        const cell_color = vaxis.Color{ .index = @intFromEnum(color_idx) };
 
         // Draw Wick
         for (y_high..y_low + 1) |y| {
             if (y >= actual_size.height) continue;
             surface.writeCell(@intCast(x), @intCast(y), .{
                 .char = .{ .grapheme = "│" },
-                .style = .{ .fg = color },
+                .style = .{ .fg = cell_color },
             });
         }
 
@@ -123,7 +114,7 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
             if (y >= actual_size.height) continue;
             surface.writeCell(@intCast(x), @intCast(y), .{
                 .char = .{ .grapheme = "█" },
-                .style = .{ .fg = color },
+                .style = .{ .fg = cell_color },
             });
         }
     }
