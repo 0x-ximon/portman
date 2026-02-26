@@ -55,30 +55,11 @@ pub const Chart = @This();
 allocator: std.mem.Allocator,
 candles: *Candles,
 
-chart_content: vxfw.Text,
-chart_border: vxfw.Border,
-chart_widget: vxfw.Widget,
-
 pub fn init(allocator: std.mem.Allocator) !*Chart {
     const self = try allocator.create(Chart);
     self.allocator = allocator;
 
     self.candles = try Candles.init(allocator, 200);
-
-    // Chart Initialization
-    self.chart_content = .{ .text = 
-        \\ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et
-        \\ dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-        \\ aliquip ex ea commodo consequat.
-    };
-
-    self.chart_border = .{
-        .labels = &.{.{ .text = "Ticker Chart", .alignment = .top_left }},
-        .child = self.chart_content.widget(),
-    };
-
-    self.chart_widget = self.chart_border.widget();
-
     return self;
 }
 
@@ -88,8 +69,6 @@ pub fn deinit(self: *Chart) void {
 }
 
 pub fn widget(self: *Chart) vxfw.Widget {
-    // return self.chart_widget;
-
     return .{
         .userdata = self,
         .drawFn = Chart.typeErasedDrawFn,

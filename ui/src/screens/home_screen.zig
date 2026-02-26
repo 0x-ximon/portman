@@ -27,7 +27,7 @@ const MainPanel = struct {
         };
 
         self.indicators_border = .{
-            .labels = &.{.{ .text = "Technical Indicators", .alignment = .top_left }},
+            .labels = &.{.{ .text = "Technical Indicators", .alignment = .top_center }},
             .child = self.indicators_content.widget(),
         };
 
@@ -54,9 +54,14 @@ const MainPanel = struct {
         const self: *MainPanel = @ptrCast(@alignCast(ptr));
         const max_size = ctx.max.size();
 
+        const chart: vxfw.Border = .{
+            .child = self.chart.widget(),
+            .labels = &.{.{ .text = "Chart Ticker", .alignment = .top_center }},
+        };
+
         const column: vxfw.FlexColumn = .{
             .children = &.{
-                .init(self.chart.widget(), 2),
+                .init(chart.widget(), 2),
                 .init(self.indicators_widget, 1),
             },
         };
@@ -107,7 +112,7 @@ const SidePanel = struct {
         };
 
         self.book_border = .{
-            .labels = &.{.{ .text = "Order Book", .alignment = .top_left }},
+            .labels = &.{.{ .text = "Order Book", .alignment = .top_center }},
             .child = self.book_content.widget(),
         };
 
@@ -119,7 +124,7 @@ const SidePanel = struct {
         };
 
         self.watchlist_border = .{
-            .labels = &.{.{ .text = "Watchlist", .alignment = .top_left }},
+            .labels = &.{.{ .text = "Watchlist", .alignment = .top_center }},
             .child = self.watchlist_content.widget(),
         };
 
