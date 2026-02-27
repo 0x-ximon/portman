@@ -26,11 +26,13 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
     const children = try ctx.arena.alloc(vxfw.SubSurface, 2);
 
     children[0] = .{
+        .z_index = 0,
         .origin = .{ .row = 0, .col = 0 },
         .surface = try self.below.draw(ctx),
     };
 
     children[1] = .{
+        .z_index = 1,
         .origin = .{ .row = 0, .col = 0 },
         .surface = try self.above.draw(ctx),
     };
