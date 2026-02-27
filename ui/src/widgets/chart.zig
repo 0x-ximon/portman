@@ -39,19 +39,26 @@ pub const Candles = struct {
         const self = try allocator.create(Candles);
         self.items = try allocator.alloc(Candle, amount);
 
-        var prng = std.Random.DefaultPrng.init(69);
+        var seed: u64 = undefined;
+        try std.posix.getrandom(std.mem.asBytes(&seed));
+        var prng = std.Random.DefaultPrng.init(seed);
 
         const random = prng.random();
         var last_close: f32 = 100.0;
 
         for (self.items) |*c| {
-            const change = (random.float(f32) - 0.45) * 10.0;
-            const gap = (random.float(f32) - 0.5) * 2.0; // Random gap between -1.0 and 1.0
-            c.open = last_close + (if (random.boolean()) gap else 0);
+            const percent = (random.float(f32) - 0.5) * 10.0;
+            const change = percent * last_close / 100.0;
+
+            c.open = last_close;
             c.close = c.open + change;
 
-            c.high = @max(c.open, c.close) + random.float(f32) * 2.0;
-            c.low = @min(c.open, c.close) - random.float(f32) * 2.0;
+            c.high = @max(c.open, c.close) +
+                if (random.boolean()) (random.float(f32) * last_close * 0.05) else 0;
+
+            c.low = @min(c.open, c.close) -
+                if (random.boolean()) (random.float(f32) * last_close * 0.05) else 0;
+
             last_close = c.close;
         }
 
