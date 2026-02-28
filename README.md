@@ -1,8 +1,8 @@
-# Portman
-
 <p align="center">
   <img src="assets/icon.png" alt="icon" width="128"/>
 </p>
+
+# Portman
 
 Portman is a high-performance, terminal-native trading exchange and terminal built from the ground up. It delivers a lock-free order book, a "hacker" Terminal UI powered by the Kitty Protocol, and a programmable system that lets you script and deploy your own strategies. With 1:1 on-chain liquidity backing and integrated automated market-making, Portman is built for trust and uptime.
 
