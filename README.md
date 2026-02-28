@@ -10,9 +10,8 @@ Portman is a high-performance, terminal-native trading exchange and terminal bui
 
 Portman is designed as a distributed system where each component is written in the language best suited for its specific constraints.
 
-<p align="center">
-  <img src="assets/demo.png" alt="demo" />
-</p>
+![Portman Demo Dark](assets/demo_dark.png#gh-dark-mode-only)
+![Portman Demo Light](assets/demo_light.png#gh-light-mode-only)
 
 | Status  | Component | Language | Progress           |
 | :-----: | --------- | :------: | :----------------- |
