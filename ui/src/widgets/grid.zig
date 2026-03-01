@@ -63,7 +63,7 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
 
 fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
     const self: *Grid = @ptrCast(@alignCast(ptr));
-    _ = ctx; // autofix
     _ = event; // autofix
     _ = self; // autofix
+    _ = ctx; // autofix
 }

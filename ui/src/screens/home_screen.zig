@@ -9,8 +9,8 @@ const Layered = @import("../widgets/layered.zig");
 
 const MainPanel = struct {
     allocator: std.mem.Allocator,
-    container: vxfw.Widget,
 
+    layered_chart: Layered,
     chart: *Chart,
     grid: *Grid,
 
@@ -24,6 +24,11 @@ const MainPanel = struct {
 
         self.chart = try Chart.init(allocator);
         self.grid = try Grid.init(allocator);
+
+        self.layered_chart = Layered{
+            .below = self.grid.widget(),
+            .above = self.chart.widget(),
+        };
 
         // Indicators Initialization
         self.indicators_content = .{ .text = 
@@ -59,19 +64,14 @@ const MainPanel = struct {
         const self: *MainPanel = @ptrCast(@alignCast(ptr));
         const max_size = ctx.max.size();
 
-        var layered = Layered{
-            .below = self.grid.widget(),
-            .above = self.chart.widget(),
-        };
-
-        const composite: vxfw.Border = .{
-            .child = layered.widget(),
+        const candlesticks: vxfw.Border = .{
+            .child = self.layered_chart.widget(),
             .labels = &.{.{ .text = "Chart Ticker", .alignment = .top_center }},
         };
 
         const column: vxfw.FlexColumn = .{
             .children = &.{
-                .init(composite.widget(), 2),
+                .init(candlesticks.widget(), 2),
                 .init(self.indicators_widget, 1),
             },
         };
@@ -101,7 +101,6 @@ const MainPanel = struct {
 
 const SidePanel = struct {
     allocator: std.mem.Allocator,
-    container: vxfw.Widget,
 
     book_content: vxfw.Text,
     book_border: vxfw.Border,
