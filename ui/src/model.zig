@@ -1,6 +1,6 @@
 const std = @import("std");
-const lib = @import("lib");
 
+const lib = @import("lib");
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
