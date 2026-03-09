@@ -9,11 +9,17 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const zigzag = b.dependency("zigzag", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const lib = b.addModule("lib", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
         .imports = &.{
             .{ .name = "vaxis", .module = vaxis.module("vaxis") },
+            .{ .name = "zigzag", .module = zigzag.module("zigzag") },
         },
     });
 
@@ -26,6 +32,7 @@ pub fn build(b: *std.Build) void {
             .imports = &.{
                 .{ .name = "lib", .module = lib },
                 .{ .name = "vaxis", .module = vaxis.module("vaxis") },
+                .{ .name = "zigzag", .module = zigzag.module("zigzag") },
             },
         }),
     });
