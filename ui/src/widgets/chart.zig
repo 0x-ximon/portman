@@ -3,26 +3,8 @@ const std = @import("std");
 const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
-const CartesianPlane = @import("cartesian.zig");
-
-pub const Color = enum(u8) {
-    black = 0,
-    red = 1,
-    green = 2,
-    yellow = 3,
-    blue = 4,
-    magenta = 5,
-    cyan = 6,
-    white = 7,
-    bright_black = 8,
-    bright_red = 9,
-    bright_green = 10,
-    bright_yellow = 11,
-    bright_blue = 12,
-    bright_magenta = 13,
-    bright_cyan = 14,
-    bright_white = 15,
-};
+const CartesianPlane = @import("../cartesian.zig");
+const Global = @import("../global.zig");
 
 pub const Candle = struct {
     high: f32,
@@ -39,19 +21,26 @@ pub const Candles = struct {
         const self = try allocator.create(Candles);
         self.items = try allocator.alloc(Candle, amount);
 
-        var prng = std.Random.DefaultPrng.init(69);
+        var seed: u64 = undefined;
+        try std.posix.getrandom(std.mem.asBytes(&seed));
+        var prng = std.Random.DefaultPrng.init(seed);
 
         const random = prng.random();
         var last_close: f32 = 100.0;
 
         for (self.items) |*c| {
-            const change = (random.float(f32) - 0.45) * 10.0;
-            const gap = (random.float(f32) - 0.5) * 2.0; // Random gap between -1.0 and 1.0
-            c.open = last_close + (if (random.boolean()) gap else 0);
+            const percent = (random.float(f32) - 0.5) * 10.0;
+            const change = percent * last_close / 100.0;
+
+            c.open = last_close;
             c.close = c.open + change;
 
-            c.high = @max(c.open, c.close) + random.float(f32) * 2.0;
-            c.low = @min(c.open, c.close) - random.float(f32) * 2.0;
+            c.high = @max(c.open, c.close) +
+                if (random.boolean()) (random.float(f32) * last_close * 0.05) else 0;
+
+            c.low = @min(c.open, c.close) -
+                if (random.boolean()) (random.float(f32) * last_close * 0.05) else 0;
+
             last_close = c.close;
         }
 
@@ -92,13 +81,14 @@ pub fn widget(self: *Chart) vxfw.Widget {
 
 fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Error!vxfw.Surface {
     const self: *Chart = @ptrCast(@alignCast(ptr));
+
     const width = ctx.max.width orelse ctx.min.width;
     const height = ctx.max.height orelse @max(ctx.min.height, 10);
     const actual_size = vxfw.Size{ .width = width, .height = height };
 
     const surface = try vxfw.Surface.init(ctx.arena, self.widget(), actual_size);
 
-    // 1. Calculate Bounds
+    // Calculate Bounds
     var max_val: f32 = 0;
     var min_val: f32 = std.math.floatMax(f32);
     for (self.candles.items) |candle| {
@@ -106,9 +96,10 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
         min_val = @min(min_val, candle.low);
     }
 
-    // 2. Define Margins and Spacing
-    const candle_spacing = 1; // 1 cell gap
+    // Define Margins and Spacing
+    const candle_spacing = 1;
     const candle_width = 1;
+
     const stride = candle_width + candle_spacing;
     const max_visible_candles = width / stride;
 
@@ -138,7 +129,7 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
         const y_max_body = @min(y_open, y_close);
         const y_min_body = @max(y_open, y_close);
 
-        const color_idx = if (bullish) Color.bright_blue else Color.bright_red;
+        const color_idx = if (bullish) Global.Color.blue else Global.Color.bright_red;
         const cell_color = vaxis.Color{ .index = @intFromEnum(color_idx) };
 
         // Draw Wick (ensure y_high to y_low is drawn)
@@ -164,12 +155,10 @@ fn typeErasedDrawFn(ptr: *anyopaque, ctx: vxfw.DrawContext) std.mem.Allocator.Er
 }
 
 fn typeErasedEventHandler(ptr: *anyopaque, ctx: *vxfw.EventContext, event: vxfw.Event) anyerror!void {
-    _ = ctx; // autofix
     const self: *Chart = @ptrCast(@alignCast(ptr));
+    _ = event; // autofix
     _ = self; // autofix
-    switch (event) {
-        else => {},
-    }
+    _ = ctx; // autofix
 }
 
 fn valToY(val: f32, min: f32, range: f32, height: u16) u16 {

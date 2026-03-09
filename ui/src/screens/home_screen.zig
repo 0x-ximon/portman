@@ -4,12 +4,15 @@ const vaxis = @import("vaxis");
 const vxfw = vaxis.vxfw;
 
 const Chart = @import("../widgets/chart.zig");
+const Grid = @import("../widgets/grid.zig");
+const Layered = @import("../widgets/layered.zig");
 
 const MainPanel = struct {
     allocator: std.mem.Allocator,
-    container: vxfw.Widget,
 
+    layered_chart: Layered,
     chart: *Chart,
+    grid: *Grid,
 
     indicators_content: vxfw.Text,
     indicators_border: vxfw.Border,
@@ -20,6 +23,12 @@ const MainPanel = struct {
         self.allocator = allocator;
 
         self.chart = try Chart.init(allocator);
+        self.grid = try Grid.init(allocator);
+
+        self.layered_chart = Layered{
+            .below = self.grid.widget(),
+            .above = self.chart.widget(),
+        };
 
         // Indicators Initialization
         self.indicators_content = .{ .text = 
@@ -38,6 +47,7 @@ const MainPanel = struct {
 
     pub fn deinit(self: *MainPanel) void {
         self.chart.deinit();
+        self.grid.deinit();
 
         self.allocator.destroy(self);
     }
@@ -54,14 +64,14 @@ const MainPanel = struct {
         const self: *MainPanel = @ptrCast(@alignCast(ptr));
         const max_size = ctx.max.size();
 
-        const chart: vxfw.Border = .{
-            .child = self.chart.widget(),
+        const candlesticks: vxfw.Border = .{
+            .child = self.layered_chart.widget(),
             .labels = &.{.{ .text = "Chart Ticker", .alignment = .top_center }},
         };
 
         const column: vxfw.FlexColumn = .{
             .children = &.{
-                .init(chart.widget(), 2),
+                .init(candlesticks.widget(), 2),
                 .init(self.indicators_widget, 1),
             },
         };
@@ -91,7 +101,6 @@ const MainPanel = struct {
 
 const SidePanel = struct {
     allocator: std.mem.Allocator,
-    container: vxfw.Widget,
 
     book_content: vxfw.Text,
     book_border: vxfw.Border,
