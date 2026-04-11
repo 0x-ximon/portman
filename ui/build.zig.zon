@@ -9,8 +9,8 @@
             .hash = "vaxis-0.5.1-BWNV_IxJCQC5OGNaXQfNnqgn9_Vku0PMgey-dplubcQK",
         },
         .zigzag = .{
-            .url = "git+https://github.com/meszmate/zigzag.git#21667da0f4ba34d1eae3f26e52b2f250a2308062",
-            .hash = "zigzag-0.1.2-YXwYS20gCwBHkWzwF2vwHINAIttgmmhbLWaE0hve5UHg",
+            .url = "git+https://github.com/meszmate/zigzag.git#8fb028abe81cfa717d41ae0822e966e2f1b85a1d",
+            .hash = "zigzag-0.1.2-YXwYS8uVDwAQjlyYYtD7Is6MtmyLRbSyQ6fznFBJmExY",
         },
     },
     .paths = .{
