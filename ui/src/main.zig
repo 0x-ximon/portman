@@ -1,7 +1,6 @@
 const std = @import("std");
 
-const vaxis = @import("vaxis");
-const vxfw = vaxis.vxfw;
+const zz = @import("zigzag");
 
 const Model = @import("model.zig");
 
@@ -15,11 +14,8 @@ pub fn main() !void {
     }
 
     const allocator = debug_allocator.allocator();
-    var app = try vxfw.App.init(allocator);
-    defer app.deinit();
+    var program = try zz.Program(Model).init(allocator);
 
-    const model = try Model.init(allocator);
-    defer model.deinit();
-
-    try app.run(model.widget(), .{});
+    defer program.deinit();
+    try program.run();
 }
