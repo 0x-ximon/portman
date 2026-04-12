@@ -5,8 +5,8 @@ const zz = @import("zigzag");
 
 const Model = @This();
 
-router: zz.SubProgram(lib.Router, Msg),
-hinter: zz.SubProgram(lib.Hinter, Msg),
+router: *lib.Router,
+hinter: *lib.Hinter,
 
 pub const Msg = union(enum) {
     click: zz.MouseEvent,
@@ -14,16 +14,25 @@ pub const Msg = union(enum) {
 };
 
 pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
-    self.router = .{};
-    _ = self.router.init(ctx);
+    self.router = lib.Router.init(ctx.persistent_allocator) catch |err| {
+        std.log.err("router init failed: {}", .{err});
+        return .quit;
+    };
 
-    self.hinter = .{};
-    _ = self.hinter.init(ctx);
+    self.hinter = lib.Hinter.init(ctx.persistent_allocator) catch |err| {
+        std.log.err("hinter init failed: {}", .{err});
+        return .quit;
+    };
 
-    return .{ .set_title = lib.APP_NAME };
+    return .{ .set_title = "Portman" };
 }
 
-pub fn update(self: *Model, msg: Msg, ctx: *zz.Context) zz.Cmd(Msg) {
+pub fn deinit(self: *Model) void {
+    self.router.deinit();
+    self.hinter.deinit();
+}
+
+pub fn update(self: *Model, msg: Msg, _: *zz.Context) zz.Cmd(Msg) {
     switch (msg) {
         .key => |k| {
             switch (k.key) {
@@ -31,11 +40,14 @@ pub fn update(self: *Model, msg: Msg, ctx: *zz.Context) zz.Cmd(Msg) {
                 else => {},
             }
 
-            _ = self.router.update(.{ .key = k }, ctx);
-            _ = self.hinter.update(.{ .key = k }, ctx);
+            self.router.react(.{ .key = k });
+            self.hinter.react(.{ .key = k });
         },
 
-        .click => {},
+        .click => |c| {
+            self.router.react(.{ .click = c });
+            self.hinter.react(.{ .click = c });
+        },
     }
 
     return .none;
@@ -49,20 +61,8 @@ pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
         .{ .constraint = .{ .percentage = 10 } },
     }, .{ .direction = .column }) catch return "layout error";
 
-    var router_style = (zz.Style{})
-        .borderAll(zz.Border.rounded)
-        .bg(zz.Color.black())
-        .width(rows[0].width)
-        .height(rows[0].height);
-
-    var hinter_style = (zz.Style{})
-        .borderAll(zz.Border.rounded)
-        .bg(zz.Color.black())
-        .width(rows[1].width)
-        .height(rows[1].height);
-
-    const router = router_style.render(allocator, self.router.view(ctx)) catch "router style render failed";
-    const hinter = hinter_style.render(allocator, self.hinter.view(ctx)) catch "hinter style render failed";
+    const router = self.router.render(allocator, rows[0].width, rows[0].height);
+    const hinter = self.hinter.render(allocator, rows[1].width, rows[1].height);
 
     return zz.join.horizontal(allocator, .top, &.{ router, hinter }) catch "join failed";
 }

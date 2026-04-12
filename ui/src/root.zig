@@ -1,6 +1,4 @@
-const std = @import("std");
+const zz = @import("zigzag");
 
-pub const Router = @import("widgets/router.zig");
 pub const Hinter = @import("widgets/hinter.zig");
-
-pub const APP_NAME = "Portman";
+pub const Router = @import("widgets/router.zig");
