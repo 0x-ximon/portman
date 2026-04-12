@@ -5,13 +5,13 @@ const zz = @import("zigzag");
 
 const Model = @This();
 
+router: zz.SubProgram(lib.Router, Msg),
+hinter: zz.SubProgram(lib.Hinter, Msg),
+
 pub const Msg = union(enum) {
     click: zz.MouseEvent,
     key: zz.KeyEvent,
 };
-
-router: zz.SubProgram(lib.Router, Msg),
-hinter: zz.SubProgram(lib.Hinter, Msg),
 
 pub fn init(self: *Model, ctx: *zz.Context) zz.Cmd(Msg) {
     self.router = .{};
@@ -31,8 +31,8 @@ pub fn update(self: *Model, msg: Msg, ctx: *zz.Context) zz.Cmd(Msg) {
                 else => {},
             }
 
-            self.router.update(.{ .key = k }, ctx);
-            self.hinter.update(.{ .key = k }, ctx);
+            _ = self.router.update(.{ .key = k }, ctx);
+            _ = self.hinter.update(.{ .key = k }, ctx);
         },
 
         .click => {},
@@ -51,13 +51,13 @@ pub fn view(self: *const Model, ctx: *const zz.Context) []const u8 {
 
     var router_style = (zz.Style{})
         .borderAll(zz.Border.rounded)
-        .background(zz.Colors.black)
+        .bg(zz.Color.black())
         .width(rows[0].width)
         .height(rows[0].height);
 
     var hinter_style = (zz.Style{})
         .borderAll(zz.Border.rounded)
-        .background(zz.Colors.black)
+        .bg(zz.Color.black())
         .width(rows[1].width)
         .height(rows[1].height);
 
