@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -26,13 +29,6 @@ func (m *Middleware) NewChain(xs ...middleware) middleware {
 	}
 }
 
-func (m *Middleware) ContentType(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		next.ServeHTTP(w, r)
-	})
-}
-
 func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		repo := repositories.New(m.DbConn)
@@ -42,7 +38,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 		if apiKey != "" {
 			user, err := repo.FindUserByApiKey(ctx, &apiKey)
 			if err == nil {
-				ctx := context.WithValue(ctx, services.UserKey{}, &user)
+				ctx := context.WithValue(ctx, services.UserKey{}, user)
 				next.ServeHTTP(w, r.WithContext(ctx))
 				return
 			}
@@ -67,7 +63,28 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, services.ClaimsKey{}, claims)
+		ctx = context.WithValue(ctx, services.ClaimsKey{}, *claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (m *Middleware) Logging(next http.Handler) http.Handler {
+	logger := slog.New(slog.NewJSONHandler(services.GetLogWriter(), nil))
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		id := uuid.New().String()
+		reqLogger := logger.With(
+			slog.String("id", id),
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+		)
+
+		ctx := context.WithValue(r.Context(), services.LoggerKey{}, reqLogger)
+		next.ServeHTTP(w, r.WithContext(ctx))
+
+		reqLogger.Info("request completed",
+			slog.Duration("latency", time.Since(start)),
+		)
 	})
 }

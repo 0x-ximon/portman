@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 	"github.com/redis/go-redis/v9/maintnotifications"
 )
@@ -35,8 +34,8 @@ func NewCacheService() (*CacheService, error) {
 	return &CacheService{client: redis.NewClient(opt)}, nil
 }
 
-func (c *CacheService) StoreOTP(ctx context.Context, id uuid.UUID, otp string) error {
-	err := c.client.Set(ctx, id.String(), otp, 30*time.Minute).Err()
+func (c *CacheService) StoreOTP(ctx context.Context, key string, otp string) error {
+	err := c.client.Set(ctx, key, otp, 30*time.Minute).Err()
 	if err != nil {
 		return err
 	}
@@ -44,8 +43,8 @@ func (c *CacheService) StoreOTP(ctx context.Context, id uuid.UUID, otp string) e
 	return nil
 }
 
-func (c *CacheService) RetrieveOTP(ctx context.Context, id uuid.UUID) (string, error) {
-	otp, err := c.client.Get(ctx, id.String()).Result()
+func (c *CacheService) RetrieveOTP(ctx context.Context, key string) (string, error) {
+	otp, err := c.client.Get(ctx, key).Result()
 	if err != nil {
 		return "", err
 	}
@@ -53,8 +52,8 @@ func (c *CacheService) RetrieveOTP(ctx context.Context, id uuid.UUID) (string, e
 	return otp, nil
 }
 
-func (c *CacheService) DeleteOTP(ctx context.Context, id uuid.UUID) error {
-	err := c.client.Del(ctx, id.String()).Err()
+func (c *CacheService) DeleteOTP(ctx context.Context, key string) error {
+	err := c.client.Del(ctx, key).Err()
 	if err != nil {
 		return err
 	}

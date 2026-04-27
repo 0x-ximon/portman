@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Order Submitted</title>
+</head>
+<body style="font-family: Arial, sans-serif; background-color: #E0E6EB; margin: 0; padding: 20px;">
+    <h1 style="color: #155DFC;">Order Submitted</h1>
+    <p style="color: #59636E; margin-bottom: 10px;">Hi,</p>
+    <p style="color: #59636E; margin-bottom: 20px;">Your order has been successfully received and is currently being processed. Here are the details:</p>
+
+    <div style="background-color: #FFFFFF; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        <p style="color: #59636E; margin: 5px 0;"><strong>Order ID:</strong> {{ .ID }}</p>
+        <p style="color: #59636E; margin: 5px 0;"><strong>Ticker:</strong> {{ .TickerSymbol }}</p>
+        <p style="color: #59636E; margin: 5px 0;"><strong>Side:</strong> {{ .Side }}</p>
+        <p style="color: #59636E; margin: 5px 0;"><strong>Quantity:</strong> {{ .Quantity }}</p>
+        <p style="color: #59636E; margin: 5px 0;"><strong>Price:</strong> {{ .Price }}</p>
+        <p style="color: #59636E; margin: 5px 0;"><strong>Type:</strong> {{ .Type }}</p>
+        <p style="color: #59636E; margin: 5px 0;"><strong>Status:</strong> {{ .Status }}</p>
+    </div>
+
+    <p style="color: #59636E; margin-bottom: 10px;">You will receive another update once the status of your order changes.</p>
+    <p style="color: #59636E;">Thank you,</p>
+    <p style="color: #59636E;">Portman</p>
+</body>
+</html>

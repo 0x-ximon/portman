@@ -1,13 +1,14 @@
 package handlers
 
-type Credentials struct {
-	EmailAddress string `json:"email_address"`
-	Password     string `json:"password"`
-	OTP          string `json:"otp"`
+type Error struct {
+	Code   string `json:"code"`
+	Detail string `json:"detail"`
 }
 
+type Data = any
+
 type Payload struct {
-	Message string `json:"message"`
-	Error   string `json:"error,omitempty"`
-	Data    any    `json:"data,omitempty"`
+	Status string `json:"status"`
+	Error  *Error `json:"error,omitempty"`
+	Data   *Data  `json:"data,omitempty"`
 }

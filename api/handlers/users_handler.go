@@ -2,227 +2,155 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type UsersHandler struct {
-	DbConn *pgxpool.Pool
+	db *pgxpool.Pool
 }
 
-func (h *UsersHandler) GetUser(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
+func (h *UsersHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
 
-	{
-		user, ok := ctx.Value(services.UserKey{}).(*repositories.User)
-		if ok {
-			w.WriteHeader(http.StatusOK)
-			result := Payload{
-				Message: "user retrieved",
-				Data:    user,
-			}
-
-			json.NewEncoder(w).Encode(result)
-			return
-		}
-	}
-
-	claims, ok := ctx.Value(services.ClaimsKey{}).(*services.Claims)
-	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		result := Payload{
-			Message: "unauthorized",
-			Error:   "bearer token not found",
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	user, err := repo.GetUser(ctx, claims.ID)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "user not found",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Warn("failed to parse user id")
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "invalid id")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	result := Payload{
-		Message: "user retrieved",
-		Data:    user,
+	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
+	if ok && user.ID == id {
+		logger.Info("user retrieved successfully", "user_id", user.ID)
+		SendSuccess(w, user)
+		return
 	}
 
-	json.NewEncoder(w).Encode(result)
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
+	if !ok {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "bearer token not found")
+		return
+	}
+
+	if claims.ID != id {
+		logger.Warn("claims id does not match user id", "user_id", id)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user id mismatch")
+		return
+	}
+
+	user, err = repo.GetUser(ctx, id)
+	if err != nil {
+		logger.Warn("failed to get user", "user_id", id, "error", err)
+		SendFailure(w, http.StatusNotFound, codeNotFound, "user not found")
+		return
+	}
+
+	logger.Info("user retrieved successfully", "user_id", user.ID)
+	SendSuccess(w, user)
 }
 
-func (h *UsersHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
+func (h *UsersHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
 
 	var params repositories.CreateUserParams
-	err := json.NewDecoder(r.Body).Decode(&params)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		result := Payload{
-			Message: "invalid params",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		logger.Warn("failed to decode login body", "error", err)
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "Invalid request format")
 		return
 	}
 
 	encryptedPassword, err := services.HashPassword(params.Password)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not hash password",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Warn("failed to encrypt password", "error", err)
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "Invalid request format")
 		return
 	}
 	params.Password = encryptedPassword
 
-	// TODO: Don't force every user into api key generation at account creation
-	apiKey, err := services.GenerateKey(params.EmailAddress)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not generate API",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-	params.ApiKey = &apiKey
-
 	user, err := repo.CreateUser(ctx, params)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not create user",
-			Error:   err.Error(),
-		}
-
-		fmt.Println(err)
-
-		json.NewEncoder(w).Encode(result)
+		logger.Error("failed to create user", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
 		return
 	}
 
-	// BUG: Bot accounts don't have valid emails for OTPs
-	otp, err := services.GenerateOTP(6)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not generate otp",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	mailer, err := services.NewMailService()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not create mailer",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	cacher, err := services.NewCacheService()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not create cacher",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	if err := mailer.SendOTP(user.EmailAddress, otp); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not send otp",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	if err := cacher.StoreOTP(ctx, user.ID, otp); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not set otp",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	result := Payload{
-		Message: "user created",
-		Data:    user,
-	}
-
-	json.NewEncoder(w).Encode(result)
+	logger.Info("user created successfully", "user_id", user.ID)
+	SendSuccess(w, user)
 }
 
-func (h *UsersHandler) DeleteUser(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
+func (h *UsersHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
 
-	id, ok := services.GetIDFromContext(ctx)
-	if !ok {
-		w.WriteHeader(http.StatusUnauthorized)
-		result := Payload{
-			Message: "unauthorized",
-			Error:   "bearer token not found",
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	err := repo.DeleteUser(ctx, id)
+	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		results := Payload{
-			Message: "could not delete user",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(results)
+		logger.Warn("failed to parse user id")
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "invalid id")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	results := Payload{
-		Message: "user deleted",
+	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
+	if ok && user.ID != id {
+		logger.Warn("user id mismatch", "user_id", user.ID, "request_id", id)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user id mismatch")
+		return
 	}
 
-	json.NewEncoder(w).Encode(results)
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
+	if !ok || claims.ID != id {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "bearer token not found")
+		return
+	}
+
+	err = repo.DeleteUser(ctx, id)
+	if err != nil {
+		logger.Error("failed to delete user", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
+		return
+	}
+
+	logger.Info("user deleted successfully", "user_id", user.ID)
+	SendSuccess(w, nil)
+}
+
+func (h *UsersHandler) List(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
+
+	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
+	if ok && user.Role != repositories.RoleADMINISTRATOR {
+		logger.Warn("user is not an admin", "user_id", user.ID, "role", user.Role)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to list users")
+		return
+	}
+
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
+	if !ok || claims.Role != repositories.RoleADMINISTRATOR {
+		logger.Warn("user is not an admin", "user_id", claims.ID, "role", claims.Role)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to list users")
+		return
+	}
+
+	users, err := repo.ListUsers(ctx)
+	if err != nil {
+		logger.Error("database error during users lookup", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
+		return
+	}
+
+	logger.Info("users retrieved successfully")
+	SendSuccess(w, users)
 }

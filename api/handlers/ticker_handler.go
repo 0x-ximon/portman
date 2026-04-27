@@ -1,277 +1,201 @@
 package handlers
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"strconv"
 
-	"github.com/0x-ximon/portman/api/proto"
 	"github.com/0x-ximon/portman/api/repositories"
-	"github.com/gorilla/websocket"
+	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/nats-io/nats.go"
-	"google.golang.org/grpc"
 )
 
 type TickerHandler struct {
-	DbConn   *pgxpool.Pool
-	NatsConn *nats.Conn
-	CoreConn *grpc.ClientConn
+	db *pgxpool.Pool
 }
 
-func (h *TickerHandler) GetTicker(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
+func (h *TickerHandler) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		result := Payload{
-			Message: "invalid id",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Warn("failed to parse ticker id")
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "invalid id")
 		return
 	}
 
 	ticker, err := repo.GetTicker(ctx, int32(id))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "ticker not found",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Warn("failed to get ticker", "ticker_id", id, "error", err)
+		SendFailure(w, http.StatusNotFound, codeNotFound, "ticker  not found")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	result := Payload{
-		Message: "ticker retrieved",
-		Data:    ticker,
-	}
-
-	json.NewEncoder(w).Encode(result)
+	logger.Info("ticker retrieved successfully", "ticker_id", ticker.ID)
+	SendSuccess(w, ticker)
 }
 
-func (h *TickerHandler) CreateTicker(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
+func (h *TickerHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
 
 	var params repositories.CreateTickerParams
-	err := json.NewDecoder(r.Body).Decode(&params)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		result := Payload{
-			Message: "invalid params",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		logger.Warn("failed to decode create ticker body", "error", err)
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "Invalid request format")
 		return
 	}
 
-	request := proto.NewOrderBookRequest{
-		// TODO: Modify these hardcoded values
-		PricePrecision:    2,
-		QuantityPrecision: 2,
-		Symbol:            params.Symbol,
-	}
-
-	core := proto.NewOrdersServiceClient(h.CoreConn)
-	response, err := core.NewOrderBook(ctx, &request)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not create new order book in core",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	if response.Result != proto.Result_RESULT_SUCCESS {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "ticker not created",
-			Error:   "core rejected the ticker",
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
+	// TODO: Create the Ticker in the core
 
 	ticker, err := repo.CreateTicker(ctx, params)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not create ticker",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Error("failed to create ticker", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	result := Payload{
-		Message: "ticker created",
-		Data:    ticker,
-	}
-
-	json.NewEncoder(w).Encode(result)
+	logger.Info("ticker created successfully", "ticker_id", ticker.ID)
+	SendSuccess(w, ticker)
 }
 
-func (h *TickerHandler) ListTickers(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
+func (h *TickerHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-
-	tickers, err := repo.ListTickers(ctx)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not list tickers",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	results := Payload{
-		Message: "tickers retrieved",
-		Data:    tickers,
-	}
-
-	json.NewEncoder(w).Encode(results)
-}
-
-func (h *TickerHandler) DeleteTicker(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
-	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
 
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		results := Payload{
-			Message: "invalid id",
-			Error:   err.Error(),
-		}
+		logger.Warn("failed to parse ticker id")
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "invalid id")
+		return
+	}
 
-		json.NewEncoder(w).Encode(results)
+	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
+	if ok && user.Role != repositories.RoleADMINISTRATOR {
+		logger.Warn("user is not an admin", "user_id", user.ID, "role", user.Role)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to delete ticker")
+		return
+	}
+
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
+	if !ok || claims.Role != repositories.RoleADMINISTRATOR {
+		logger.Warn("user is not an admin", "user_id", claims.ID, "role", claims.Role)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to delete ticker")
 		return
 	}
 
 	err = repo.DeleteTicker(ctx, int32(id))
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		results := Payload{
-			Message: "could not delete ticker",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(results)
+		logger.Error("database error during ticker deletion", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	results := Payload{
-		Message: "ticker deleted",
-		Data:    nil,
-	}
-
-	json.NewEncoder(w).Encode(results)
+	logger.Info("ticker deleted successfully", "ticker_id", id)
+	SendSuccess(w, nil)
 }
 
-func (h *TickerHandler) Tick(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
-	ctx, cancel := context.WithCancel(r.Context())
-	defer cancel()
+func (h *TickerHandler) List(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
 
-	upgrader := websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool {
-			if os.Getenv("ENV") == "dev" {
-				return true
-			}
-
-			origin, allowedOrigin := r.Header.Get("Origin"), os.Getenv("ALLOWED_ORIGIN") // "https://agence.ximon.dev"
-			if origin == allowedOrigin {
-				return true
-			}
-
-			log.Printf("Blocked unauthorized WebSocket connection attempt from: %s", origin)
-			return false
-		},
-	}
-
-	ws, err := upgrader.Upgrade(w, r, nil)
+	tickers, err := repo.ListTickers(ctx)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "websocket upgrade error",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Error("database error during users lookup", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
 		return
 	}
-	defer ws.Close()
 
-	symbolChan := make(chan string, 1)
-	go func() {
-		for {
-			_, msg, err := ws.ReadMessage()
-			if err != nil {
-				cancel()
-				return
-			}
-
-			symbolChan <- string(msg)
-		}
-	}()
-
-	var sub *nats.Subscription
-	msgChan := make(chan *nats.Msg, 64)
-
-	for {
-		select {
-		case symbol := <-symbolChan:
-			if sub != nil {
-				sub.Unsubscribe()
-			}
-
-			// TODO: Properly handle Ticker WebSocket Subscription Errors
-			ticker, err := repo.FindTickerBySymbol(ctx, symbol)
-			if err != nil {
-				continue
-			}
-
-			if ticker.Status != repositories.TickerStatusOPEN {
-				continue
-			}
-
-			sub, err = h.NatsConn.ChanSubscribe(fmt.Sprintf("ticks.%s", symbol), msgChan)
-			if err != nil {
-				continue
-			}
-
-		case msg := <-msgChan:
-			err := ws.WriteMessage(websocket.TextMessage, msg.Data)
-			if err != nil {
-				return
-			}
-
-		case <-ctx.Done():
-			sub.Unsubscribe()
-			return
-		}
-	}
+	logger.Info("tickers retrieved successfully")
+	SendSuccess(w, tickers)
 }
+
+// func (h *TickerHandler) Tick(w http.ResponseWriter, r *http.Request) {
+// 	repo := repositories.New(h.DbConn)
+// 	ctx, cancel := context.WithCancel(r.Context())
+// 	defer cancel()
+
+// 	upgrader := websocket.Upgrader{
+// 		CheckOrigin: func(r *http.Request) bool {
+// 			if os.Getenv("ENV") == "dev" {
+// 				return true
+// 			}
+
+// 			origin, allowedOrigin := r.Header.Get("Origin"), os.Getenv("ALLOWED_ORIGIN") // "https://agence.ximon.dev"
+// 			if origin == allowedOrigin {
+// 				return true
+// 			}
+
+// 			log.Printf("Blocked unauthorized WebSocket connection attempt from: %s", origin)
+// 			return false
+// 		},
+// 	}
+
+// 	ws, err := upgrader.Upgrade(w, r, nil)
+// 	if err != nil {
+// 		w.WriteHeader(http.StatusInternalServerError)
+// 		result := Payload{
+// 			Message: "websocket upgrade error",
+// 			Error:   err.Error(),
+// 		}
+
+// 		json.NewEncoder(w).Encode(result)
+// 		return
+// 	}
+// 	defer ws.Close()
+
+// 	symbolChan := make(chan string, 1)
+// 	go func() {
+// 		for {
+// 			_, msg, err := ws.ReadMessage()
+// 			if err != nil {
+// 				cancel()
+// 				return
+// 			}
+
+// 			symbolChan <- string(msg)
+// 		}
+// 	}()
+
+// 	var sub *nats.Subscription
+// 	msgChan := make(chan *nats.Msg, 64)
+
+// 	for {
+// 		select {
+// 		case symbol := <-symbolChan:
+// 			if sub != nil {
+// 				sub.Unsubscribe()
+// 			}
+
+// 			// TODO: Properly handle Ticker WebSocket Subscription Errors
+// 			ticker, err := repo.FindTickerBySymbol(ctx, symbol)
+// 			if err != nil {
+// 				continue
+// 			}
+
+// 			if ticker.Status != repositories.TickerStatusOPEN {
+// 				continue
+// 			}
+
+// 			sub, err = h.NatsConn.ChanSubscribe(fmt.Sprintf("ticks.%s", symbol), msgChan)
+// 			if err != nil {
+// 				continue
+// 			}
+
+// 		case msg := <-msgChan:
+// 			err := ws.WriteMessage(websocket.TextMessage, msg.Data)
+// 			if err != nil {
+// 				return
+// 			}
+
+// 		case <-ctx.Done():
+// 			sub.Unsubscribe()
+// 			return
+// 		}
+// 	}
+// }

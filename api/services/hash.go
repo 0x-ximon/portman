@@ -1,7 +1,6 @@
 package services
 
 import (
-	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -22,21 +21,10 @@ type UserKey struct{}
 
 type Claims struct {
 	jwt.RegisteredClaims
-	ID            uuid.UUID `json:"id"`
-	EmailAddress  string    `json:"email"`
-	WalletAddress string    `json:"wallet"`
-}
-
-func GetIDFromContext(ctx context.Context) (uuid.UUID, bool) {
-	if user, ok := ctx.Value(UserKey{}).(*repositories.User); ok {
-		return user.ID, true
-	}
-
-	if claims, ok := ctx.Value(ClaimsKey{}).(*Claims); ok {
-		return claims.ID, true
-	}
-
-	return uuid.Nil, false
+	ID            uuid.UUID         `json:"id"`
+	EmailAddress  string            `json:"email"`
+	WalletAddress string            `json:"wallet"`
+	Role          repositories.Role `json:"role"`
 }
 
 func GenerateOTP(length int) (string, error) {
@@ -54,7 +42,7 @@ func GenerateOTP(length int) (string, error) {
 	return otp.String(), nil
 }
 
-func GenerateJWT(id uuid.UUID) (string, error) {
+func GenerateJWT(user *repositories.User) (string, error) {
 	jwtSecret, ok := os.LookupEnv("JWT_SECRET")
 	if !ok {
 		return "", fmt.Errorf("JWT_SECRET environment variable not set")
@@ -67,7 +55,10 @@ func GenerateJWT(id uuid.UUID) (string, error) {
 
 	expirationTime := jwt.NewNumericDate(t)
 	claims := &Claims{
-		ID: id,
+		ID:            user.ID,
+		Role:          user.Role,
+		WalletAddress: user.WalletAddress,
+		EmailAddress:  user.EmailAddress,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: expirationTime,
 		},

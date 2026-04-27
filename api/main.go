@@ -28,22 +28,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	dc := cfg.dbConn
-	defer dc.Close()
+	pool := cfg.pool
+	defer pool.Close()
 
-	cc := cfg.coreConn
-	defer cc.Close()
-
-	nc := cfg.natsConn
-	defer nc.Close()
-
-	mid := Middleware{DbConn: dc}
+	mid := Middleware{DbConn: pool}
 	chain := mid.NewChain(
+		mid.Logging,
 		mid.Auth,
-		mid.ContentType,
-
 		chi.Logger,
-		chi.Heartbeat("/health"),
 	)
 
 	addr := cfg.addr
@@ -52,35 +44,38 @@ func main() {
 		Handler: chain(mux),
 	}
 
-	auth := &handlers.AuthHandler{DbConn: dc}
-	mux.HandleFunc("POST /auth/initiate", auth.Initiatiate)
-	mux.HandleFunc("POST /auth/validate", auth.Validate)
-
-	users := &handlers.UsersHandler{DbConn: dc}
-	mux.HandleFunc("GET /users", users.GetUser)
-	mux.HandleFunc("POST /users", users.CreateUser)
-	mux.HandleFunc("DELETE /users", users.DeleteUser)
-
-	tickers := &handlers.TickerHandler{DbConn: dc, NatsConn: nc, CoreConn: cc}
-	mux.HandleFunc("GET /tickers", tickers.ListTickers)
-	mux.HandleFunc("POST /tickers", tickers.CreateTicker)
-	mux.HandleFunc("GET /tickers/{id}", tickers.GetTicker)
-	mux.HandleFunc("DELETE /tickers/{id}", tickers.DeleteTicker)
-	mux.HandleFunc("GET /tickers/tick", tickers.Tick)
-
-	orders := &handlers.OrderHandler{DbConn: dc, CoreConn: cc}
-	mux.HandleFunc("GET /orders", orders.ListOrders)
-	mux.HandleFunc("POST /orders", orders.CreateOrder)
-	mux.HandleFunc("GET /orders/{id}", orders.GetOrder)
-
-	// TODO: Move Stream Consumption into its own microservice
-	cons, err := cfg.GetConsumers(ctx)
-	if err != nil {
-		log.Println(err)
-	} else {
-		cons.ordersProcessed.Consume(orders.ProcessOrder)
+	// Handlers
+	deps := &handlers.Dependencies{
+		DB:     pool,
+		Mailer: cfg.mailer,
+		Cacher: cfg.cacher,
 	}
 
+	auth := deps.NewAuthHandler()
+	mux.HandleFunc("POST /auth/initiate", auth.Initiate)
+	mux.HandleFunc("POST /auth/validate", auth.Validate)
+
+	users := deps.NewUsersHandler()
+	mux.HandleFunc("GET /users", users.List)
+	mux.HandleFunc("POST /users", users.Create)
+	mux.HandleFunc("GET /users/{id}", users.Get)
+	mux.HandleFunc("DELETE /users/{id}", users.Delete)
+
+	tickers := deps.NewTickerHandler()
+	mux.HandleFunc("GET /tickers", tickers.List)
+	mux.HandleFunc("POST /tickers", tickers.Create)
+	mux.HandleFunc("GET /tickers/{id}", tickers.Get)
+	mux.HandleFunc("DELETE /tickers/{id}", tickers.Delete)
+	// mux.HandleFunc("GET /tickers/tick", tickers.Tick)
+
+	orders := deps.NewOrderHandler()
+	mux.HandleFunc("GET /orders", orders.List)
+	mux.HandleFunc("POST /orders", orders.Create)
+	mux.HandleFunc("GET /orders/{id}", orders.Get)
+	// mux.HandleFunc("GET /orders/process", orders.Process)
+
 	log.Printf("Starting server on %s", addr)
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
 }

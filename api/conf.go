@@ -2,14 +2,12 @@ package main
 
 import (
 	"context"
-	"net"
+	"fmt"
 	"os"
 
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
-	"google.golang.org/grpc"
 )
 
 type Consumers struct {
@@ -17,10 +15,11 @@ type Consumers struct {
 }
 
 type Config struct {
-	addr     string
-	dbConn   *pgxpool.Pool
-	natsConn *nats.Conn
-	coreConn *grpc.ClientConn
+	addr   string
+	base   string
+	pool   *pgxpool.Pool
+	mailer *services.MailService
+	cacher *services.CacheService
 }
 
 func (c *Config) Load(ctx context.Context) error {
@@ -28,59 +27,32 @@ func (c *Config) Load(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	c.dbConn = conn
+	c.pool = conn
 
-	coreConn, err := services.NewCoreService().Connect()
-	if err != nil {
-		return err
+	addr, ok := os.LookupEnv("ADDR")
+	if !ok || addr == "" {
+		addr = "127.0.0.1:3001"
 	}
-	c.coreConn = coreConn
-
-	natsConn, err := nats.Connect(os.Getenv("NATS_URL"))
-	if err != nil {
-		return err
-	}
-	c.natsConn = natsConn
-
-	port, ok := os.LookupEnv("PORT")
-	if !ok {
-		port = "3001"
-	}
-
-	addr := net.JoinHostPort(os.Getenv("HOST"), port)
 	c.addr = addr
 
+	base, ok := os.LookupEnv("BASE")
+	if !ok || base == "" {
+		base = "http://127.0.0.1:3001"
+	}
+	c.base = base
+	c.addr = addr
+
+	mailer, err := services.NewMailService()
+	if err != nil {
+		return fmt.Errorf("mailer setup failed: %w", err)
+	}
+	c.mailer = mailer
+
+	cacher, err := services.NewCacheService()
+	if err != nil {
+		return fmt.Errorf("cache setup failed: %w", err)
+	}
+	c.cacher = cacher
+
 	return nil
-}
-
-func (c *Config) GetConsumers(ctx context.Context) (*Consumers, error) {
-	js, err := jetstream.New(c.natsConn)
-	if err != nil {
-		return nil, err
-	}
-
-	s, err := js.CreateStream(ctx, jetstream.StreamConfig{
-		Name:     "orders",
-		Subjects: []string{"orders.*"},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	var consumers Consumers
-
-	{
-		cons, err := s.CreateConsumer(ctx, jetstream.ConsumerConfig{
-			FilterSubject: "orders.processed",
-		})
-
-		if err != nil {
-			return nil, err
-		}
-
-		consumers.ordersProcessed = cons
-	}
-
-	return &consumers, nil
-
 }

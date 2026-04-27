@@ -10,206 +10,114 @@ import (
 )
 
 type AuthHandler struct {
-	DbConn *pgxpool.Pool
+	db     *pgxpool.Pool
+	mailer *services.MailService
+	cacher *services.CacheService
 }
 
-func (h *AuthHandler) Initiatiate(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
+func (h *AuthHandler) Initiate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
+
+	type Credentials struct {
+		EmailAddress string `json:"email_address"`
+		Password     string `json:"password"`
+	}
 
 	var params Credentials
-	err := json.NewDecoder(r.Body).Decode(&params)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		result := Payload{
-			Message: "invalid params",
-			Error:   err.Error(),
-		}
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		logger.Warn("failed to decode login body", "error", err)
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "Invalid request format")
+		return
+	}
 
-		json.NewEncoder(w).Encode(result)
+	user, err := repo.FindUserByEmail(ctx, params.EmailAddress)
+	if err != nil {
+		logger.Warn("failed to get user", "email", params.EmailAddress, "error", err)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "invalid credentials")
+		return
+	}
+
+	if !services.ValidateHash(params.Password, user.Password) {
+		logger.Warn("invalid login attempt", "email", params.EmailAddress)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "invalid credentials")
 		return
 	}
 
 	otp, err := services.GenerateOTP(6)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not generate otp",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Error("otp generation failed", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
 		return
 	}
 
-	mailer, err := services.NewMailService()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not create mailer",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+	if err := h.mailer.SendOTP(params.EmailAddress, otp); err != nil {
+		logger.Error("email delivery failed", "user_id", params.EmailAddress, "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "Failed to send verification code")
 		return
 	}
 
-	cacher, err := services.NewCacheService()
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not create cacher",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+	if err := h.cacher.StoreOTP(ctx, params.EmailAddress, otp); err != nil {
+		logger.Error("cache storage failed", "email_address", params.EmailAddress, "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
 		return
 	}
 
-	user, err := repo.FindUserByEmail(ctx, params.EmailAddress)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "user not found",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	if !services.ValidateHash(params.Password, user.Password) {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "invalid credentials",
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	if err := mailer.SendOTP(user.EmailAddress, otp); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not send otp",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	if err := cacher.StoreOTP(ctx, user.ID, otp); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not set otp",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	result := Payload{
-		Message: "otp sent",
-	}
-
-	json.NewEncoder(w).Encode(result)
+	logger.Info("otp sent successfully", "email_address", params.EmailAddress)
+	SendSuccess(w, nil)
 }
 
 func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
-	repo := repositories.New(h.DbConn)
 	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
+
+	type Credentials struct {
+		EmailAddress string `json:"email_address"`
+		OTP          string `json:"otp"`
+	}
 
 	var params Credentials
-	err := json.NewDecoder(r.Body).Decode(&params)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		result := Payload{
-			Message: "invalid params",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+		logger.Warn("failed to decode login body", "error", err)
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "Invalid request format")
 		return
 	}
 
-	cacher, err := services.NewCacheService()
+	otp, err := h.cacher.RetrieveOTP(ctx, params.EmailAddress)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not create cacher",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	user, err := repo.FindUserByEmail(ctx, params.EmailAddress)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "user not found",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
-		return
-	}
-
-	otp, err := cacher.RetrieveOTP(ctx, user.ID)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not get otp",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Error("cache storage retrieval failed", "email_address", params.EmailAddress, "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
 		return
 	}
 
 	if otp != params.OTP {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "invalid otp",
-			Error:   "otp does not match",
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Warn("invalid otp verification attempt", "email_address", params.EmailAddress, "otp", params.OTP)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "Invalid OTP")
 		return
 	}
 
-	token, err := services.GenerateJWT(user.ID)
+	user, err := repo.FindUserByEmail(ctx, params.EmailAddress)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not generate token",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+		logger.Warn("failed to get user", "email", params.EmailAddress, "error", err)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "invalid credentials")
 		return
 	}
 
-	if err := cacher.DeleteOTP(ctx, user.ID); err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		result := Payload{
-			Message: "could not delete otp",
-			Error:   err.Error(),
-		}
-
-		json.NewEncoder(w).Encode(result)
+	jwt, err := services.GenerateJWT(&user)
+	if err != nil {
+		logger.Error("failed to generate jwt", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	result := Payload{
-		Message: "otp validated",
-		Data:    token,
+	if err := h.cacher.DeleteOTP(ctx, params.EmailAddress); err != nil {
+		logger.Error("failed to delete otp", "email_address", params.EmailAddress, "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
+		return
 	}
 
-	json.NewEncoder(w).Encode(result)
+	logger.Info("otp verified successfully", "email_address", params.EmailAddress)
+	SendSuccess(w, jwt)
 }
