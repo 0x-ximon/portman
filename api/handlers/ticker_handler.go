@@ -74,17 +74,16 @@ func (h *TickerHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
-	if ok && user.Role != repositories.RoleADMINISTRATOR {
-		logger.Warn("user is not an admin", "user_id", user.ID, "role", user.Role)
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to delete ticker")
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user claims not found")
 		return
 	}
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
-	if !ok || claims.Role != repositories.RoleADMINISTRATOR {
+	if claims.Role != repositories.RoleADMINISTRATOR {
 		logger.Warn("user is not an admin", "user_id", claims.ID, "role", claims.Role)
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to delete ticker")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to list users")
 		return
 	}
 

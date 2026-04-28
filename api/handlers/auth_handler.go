@@ -121,3 +121,34 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 	logger.Info("otp verified successfully", "email_address", params.EmailAddress)
 	SendSuccess(w, jwt)
 }
+
+func (h *AuthHandler) Exchange(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
+
+	// TODO: Switch to asymmetric encryption and validate signature
+	apiKey := r.Header.Get("X-API-KEY")
+	if apiKey == "" {
+		logger.Warn("api-key not set in headers")
+		SendFailure(w, http.StatusBadRequest, codeBadRequest, "Missing X-API-KEY header")
+		return
+	}
+
+	user, err := repo.FindUserByApiKey(ctx, &apiKey)
+	if err == nil {
+		logger.Warn("failed to get user", "error", err)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "invalid api-key")
+		return
+	}
+
+	jwt, err := services.GenerateJWT(&user)
+	if err != nil {
+		logger.Error("failed to generate jwt", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
+		return
+	}
+
+	logger.Info("api-key exchanged successfully", "email_address", user.EmailAddress)
+	SendSuccess(w, jwt)
+}

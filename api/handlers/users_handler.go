@@ -26,17 +26,10 @@ func (h *UsersHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
-	if ok && user.ID == id {
-		logger.Info("user retrieved successfully", "user_id", user.ID)
-		SendSuccess(w, user)
-		return
-	}
-
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
 	if !ok {
 		logger.Warn("failed to get claims from context")
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "bearer token not found")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user claims not found")
 		return
 	}
 
@@ -46,7 +39,7 @@ func (h *UsersHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err = repo.GetUser(ctx, id)
+	user, err := repo.GetUser(ctx, id)
 	if err != nil {
 		logger.Warn("failed to get user", "user_id", id, "error", err)
 		SendFailure(w, http.StatusNotFound, codeNotFound, "user not found")
@@ -100,17 +93,16 @@ func (h *UsersHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
-	if ok && user.ID != id {
-		logger.Warn("user id mismatch", "user_id", user.ID, "request_id", id)
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user id mismatch")
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user claims not found")
 		return
 	}
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
-	if !ok || claims.ID != id {
-		logger.Warn("failed to get claims from context")
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "bearer token not found")
+	if claims.ID != id {
+		logger.Warn("claims id does not match user id", "user_id", id)
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user id mismatch")
 		return
 	}
 
@@ -121,7 +113,7 @@ func (h *UsersHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Info("user deleted successfully", "user_id", user.ID)
+	logger.Info("user deleted successfully", "user_id", id)
 	SendSuccess(w, nil)
 }
 
@@ -130,15 +122,14 @@ func (h *UsersHandler) List(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.db)
 	logger := services.GetLogger(ctx)
 
-	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
-	if ok && user.Role != repositories.RoleADMINISTRATOR {
-		logger.Warn("user is not an admin", "user_id", user.ID, "role", user.Role)
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to list users")
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user claims not found")
 		return
 	}
 
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
-	if !ok || claims.Role != repositories.RoleADMINISTRATOR {
+	if claims.Role != repositories.RoleADMINISTRATOR {
 		logger.Warn("user is not an admin", "user_id", claims.ID, "role", claims.Role)
 		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to list users")
 		return

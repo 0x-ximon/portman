@@ -1,16 +1,17 @@
-import random
-import websockets
 import asyncio
-import json
 import hashlib
 import hmac
-import httpx
+import json
 import os
-
-from common.typings import Result, Ok, Err
-from common.models import User, Side, Type, TickerStatus, Order
+import random
 from decimal import Decimal
 from typing import Any
+
+import httpx
+import websockets
+
+from common.models import Order, Side, Type, User
+from common.typings import Err, Ok, Result
 
 
 class Worker:
@@ -80,16 +81,12 @@ class Worker:
                 await asyncio.sleep(random.randint(0, 60))
 
                 payload = self.generate_order_payload()
-                response = await self.client.post(
-                    "/orders", headers=headers, json=payload
-                )
+                response = await self.client.post("/orders", headers=headers, json=payload)
                 response.raise_for_status()
 
                 data = response.json()["data"]
                 order = Order.model_validate(data)
-                print(
-                    f"Bot #{self.id} submitted {order.side} order for {order.ticker_symbol} at {order.price}"
-                )
+                print(f"Bot #{self.id} submitted {order.side} order for {order.ticker_symbol} at {order.price}")
 
             except Exception as err:
                 print(f"Bot #{self.id} - {type(err).__name__}: {err}")

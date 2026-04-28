@@ -7,7 +7,6 @@ import (
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,36 +20,29 @@ func (h *OrderHandler) Get(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.db)
 	logger := services.GetLogger(ctx)
 
-	orderID, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 32)
 	if err != nil {
 		logger.Warn("failed to parse order id")
 		SendFailure(w, http.StatusBadRequest, codeBadRequest, "invalid id")
 		return
 	}
 
-	userID := uuid.Nil
-	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
-	if ok {
-		userID = user.ID
-	}
-
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
-	if !ok || userID == uuid.Nil {
-		logger.Warn("attempted order retrieval without authorization", "user_id", claims.ID)
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to retrieve order")
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user claims not found")
 		return
 	}
-	userID = claims.ID
 
-	params := repositories.GetOrderParams{ID: orderID, UserID: userID}
+	params := repositories.GetOrderParams{ID: id, UserID: claims.ID}
 	order, err := repo.GetOrder(ctx, params)
 	if err != nil {
-		logger.Warn("failed to get order", "order_id", orderID, "error", err)
+		logger.Warn("failed to get order", "order_id", id, "error", err)
 		SendFailure(w, http.StatusNotFound, codeNotFound, "order not found")
 		return
 	}
 
-	logger.Info("order retrieved successfully", "order_id", orderID, "user_id", userID)
+	logger.Info("order retrieved successfully", "order_id", id, "user_id", claims.ID)
 	SendSuccess(w, order)
 }
 
@@ -59,19 +51,12 @@ func (h *OrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.db)
 	logger := services.GetLogger(ctx)
 
-	userID := uuid.Nil
-	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
-	if ok {
-		userID = user.ID
-	}
-
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
-	if !ok || userID == uuid.Nil {
-		logger.Warn("attempted order retrieval without authorization", "user_id", claims.ID, "role", claims.Role)
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to retrieve order")
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user claims not found")
 		return
 	}
-	userID = claims.ID
 
 	var params repositories.CreateOrderParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
@@ -80,16 +65,16 @@ func (h *OrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := repo.GetUser(ctx, userID)
+	user, err := repo.GetUser(ctx, claims.ID)
 	if err != nil {
-		logger.Warn("failed to get user", "user_id", userID, "error", err)
+		logger.Warn("failed to get user", "user_id", claims.ID, "error", err)
 		SendFailure(w, http.StatusNotFound, codeNotFound, "user not found")
 		return
 	}
 
 	// TODO: Make this work on all currencies
 	if user.FreeBalance.LessThan(params.Price.Mul(params.Quantity)) {
-		logger.Warn("insufficient balance", "user_id", userID)
+		logger.Warn("insufficient balance", "user_id", user.ID)
 		SendFailure(w, http.StatusNotFound, codeNotFound, "insufficient balance")
 		return
 	}
@@ -112,28 +97,21 @@ func (h *OrderHandler) List(w http.ResponseWriter, r *http.Request) {
 	repo := repositories.New(h.db)
 	logger := services.GetLogger(ctx)
 
-	userID := uuid.Nil
-	user, ok := ctx.Value(services.UserKey{}).(repositories.User)
-	if ok {
-		userID = user.ID
-	}
-
-	claims, ok := r.Context().Value(services.ClaimsKey{}).(services.Claims)
-	if !ok || userID == uuid.Nil {
-		logger.Warn("attempted orders retrieval without authorization", "user_id", claims.ID, "role", claims.Role)
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to retrieve order")
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user claims not found")
 		return
 	}
-	userID = claims.ID
 
-	orders, err := repo.ListOrders(ctx, userID)
+	orders, err := repo.ListOrders(ctx, claims.ID)
 	if err != nil {
-		logger.Warn("failed to get orders", "user_id", userID, "error", err)
+		logger.Warn("failed to get orders", "user_id", claims.ID, "error", err)
 		SendFailure(w, http.StatusNotFound, codeNotFound, "orders not found")
 		return
 	}
 
-	logger.Info("orders retrieved successfully", "user_id", userID)
+	logger.Info("orders retrieved successfully", "user_id", claims.ID)
 	SendSuccess(w, orders)
 }
 

@@ -7,17 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type middleware func(http.Handler) http.Handler
 
-type Middleware struct {
-	DbConn *pgxpool.Pool
-}
+type Middleware struct{}
 
 func (m *Middleware) NewChain(xs ...middleware) middleware {
 	return func(next http.Handler) http.Handler {
@@ -31,18 +27,7 @@ func (m *Middleware) NewChain(xs ...middleware) middleware {
 
 func (m *Middleware) Auth(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		repo := repositories.New(m.DbConn)
 		ctx := r.Context()
-
-		apiKey := r.Header.Get("X-Api-Key")
-		if apiKey != "" {
-			user, err := repo.FindUserByApiKey(ctx, &apiKey)
-			if err == nil {
-				ctx := context.WithValue(ctx, services.UserKey{}, user)
-				next.ServeHTTP(w, r.WithContext(ctx))
-				return
-			}
-		}
 
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -63,7 +48,7 @@ func (m *Middleware) Auth(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx = context.WithValue(ctx, services.ClaimsKey{}, *claims)
+		ctx = context.WithValue(ctx, services.ClaimsKey{}, claims)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

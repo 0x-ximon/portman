@@ -17,7 +17,6 @@ import (
 )
 
 type ClaimsKey struct{}
-type UserKey struct{}
 
 type Claims struct {
 	jwt.RegisteredClaims

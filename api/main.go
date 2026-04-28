@@ -31,7 +31,7 @@ func main() {
 	pool := cfg.pool
 	defer pool.Close()
 
-	mid := Middleware{DbConn: pool}
+	mid := Middleware{}
 	chain := mid.NewChain(
 		mid.Logging,
 		mid.Auth,
@@ -54,6 +54,7 @@ func main() {
 	auth := deps.NewAuthHandler()
 	mux.HandleFunc("POST /auth/initiate", auth.Initiate)
 	mux.HandleFunc("POST /auth/validate", auth.Validate)
+	mux.HandleFunc("POST /auth/exchange", auth.Exchange)
 
 	users := deps.NewUsersHandler()
 	mux.HandleFunc("GET /users", users.List)
