@@ -1,8 +1,6 @@
-import pytest
-
 from unittest.mock import patch
+
 from common.config import Config
-from common.typings import Err
 
 
 def test_config_load(monkeypatch):
@@ -10,9 +8,6 @@ def test_config_load(monkeypatch):
 
     with patch("sys.argv", ["main.py", "--amount", "10"]):
         config = Config()
-
-        result = config.load()
-        if isinstance(result, Err):
-            pytest.fail(f"Could not load config: {result.error}")
+        config.load()
 
         assert config.bots_amount == 10

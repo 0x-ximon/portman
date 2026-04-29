@@ -67,7 +67,7 @@ func main() {
 	mux.HandleFunc("POST /tickers", tickers.Create)
 	mux.HandleFunc("GET /tickers/{id}", tickers.Get)
 	mux.HandleFunc("DELETE /tickers/{id}", tickers.Delete)
-	// mux.HandleFunc("GET /tickers/tick", tickers.Tick)
+	mux.HandleFunc("GET /tickers/tick", tickers.Tick)
 
 	orders := deps.NewOrderHandler()
 	mux.HandleFunc("GET /orders", orders.List)

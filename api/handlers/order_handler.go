@@ -72,12 +72,12 @@ func (h *OrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Make this work on all currencies
-	if user.FreeBalance.LessThan(params.Price.Mul(params.Quantity)) {
-		logger.Warn("insufficient balance", "user_id", user.ID)
-		SendFailure(w, http.StatusNotFound, codeNotFound, "insufficient balance")
-		return
-	}
+	// TODO: Enable this and make this work on all currencies
+	// if user.FreeBalance.LessThan(params.Price.Mul(params.Quantity)) {
+	// 	logger.Warn("insufficient balance", "user_id", user.ID)
+	// 	SendFailure(w, http.StatusNotFound, codeNotFound, "insufficient balance")
+	// 	return
+	// }
 
 	order, err := repo.CreateOrder(ctx, params)
 	if err != nil {

@@ -14,6 +14,7 @@ from logic.worker import Worker
 
 class Manager:
     tickers: list[Ticker] = []
+    tasks: list[asyncio.Task] = []
     logger: Any
 
     def __init__(self) -> None:
@@ -24,10 +25,28 @@ class Manager:
             base_url=base_url,
             headers={"Content-Type": "application/json"},
         ) as shared_client:
+            self.logger.info("starting all bots", count=bots_amount)
             await self.get_tickers(shared_client)
 
             bots = [Worker(i, shared_client, self.random_ticker()) for i in range(1, bots_amount + 1)]
-            await asyncio.gather(*(bot.run() for bot in bots))
+            self.tasks = [asyncio.create_task(bot.run()) for bot in bots]
+
+            try:
+                await asyncio.gather(*self.tasks)
+
+            except (asyncio.CancelledError, KeyboardInterrupt):
+                self.logger.info("shutdown signal received")
+
+            finally:
+                await self.stop()
+
+    async def stop(self):
+        self.logger.info("stopping all bots", count=len(self.tasks))
+        for task in self.tasks:
+            task.cancel()
+
+        await asyncio.gather(*self.tasks, return_exceptions=True)
+        self.logger.info("all bots stopped")
 
     def random_ticker(self) -> str:
         assert len(self.tickers) > 0, "no tickers available"

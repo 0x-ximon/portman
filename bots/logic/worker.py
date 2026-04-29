@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import os
+import random
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
@@ -11,9 +12,9 @@ import httpx
 import websockets
 from pydantic import BaseModel
 
-from common.exceptions import Code, NotFoundError, PortmanException
+from common.exceptions import ApiError, Code, NotFoundError, PortmanException
 from common.logging import logger
-from common.models import User
+from common.models import Order, Side, Type, User
 from common.typings import Failure, Payload, Success
 
 
@@ -46,11 +47,8 @@ class Worker:
             await self.connect()
             print(f"Bot #{self.bot_id} - Connected")
 
-            await self.retrieve()
-            print(f"Bot #{self.bot_id} - Retrieved")
-
             asyncio.create_task(self.handle_ticks(self.symbol))
-            # await self.execute()
+            await self.execute()
 
         except PortmanException:
             raise
@@ -91,6 +89,9 @@ class Worker:
                             self.logger.error("authentication failed", code=err.code, detail=err.detail)
                             raise PortmanException.into(err.code, err.detail)
 
+            if self.user is None:
+                await self.get_user()
+
         except PortmanException:
             raise
 
@@ -98,7 +99,7 @@ class Worker:
             self.logger.error("an unexpected error occurred", detail=str(e))
             raise PortmanException(f"something went wrong: {e}") from e
 
-    async def retrieve(self) -> None:
+    async def get_user(self) -> None:
         try:
             if self.user is not None:
                 return
@@ -153,70 +154,58 @@ class Worker:
             self.logger.error("an unexpected error occurred", detail=str(e))
             raise PortmanException(f"something went wrong: {e}") from e
 
-    async def get_user(self):
+    async def execute(self):
         try:
-            pass
+            assert self.id is not None, "id is not set"
+            assert self.jwt is not None, "jwt is not set"
+
+            self.logger.info("worker execution started")
+            while True:
+                headers = {"Authorization": f"Bearer {self.jwt}"}
+                payload = self.generate_order_payload()
+
+                response = await self.client.post("/orders", json=payload, headers=headers)
+                payload = Payload[Order].model_validate(response.json())
+
+                match payload.root:
+                    case Success(data=order):
+                        self.logger.info("submitted order", side=order.side, type=order.type)
+
+                    case Failure(error=err):
+                        self.logger.error("failed to create order", code=err.code, detail=err.detail)
+                        raise PortmanException.into(err.code, err.detail)
+
+                await asyncio.sleep(random.uniform(2, 5))
 
         except PortmanException:
+            raise
+
+        except asyncio.CancelledError:
+            self.logger.info("worker execution cancelled")
             raise
 
         except Exception as e:
             self.logger.error("an unexpected error occurred", detail=str(e))
             raise PortmanException(f"something went wrong: {e}") from e
 
-    # async def execute(self):
-    #     if not self.user or not self.user.api_key:
-    #         return Err(Exception("User not initialized"))
-
-    #     user, api_key = self.user, self.user.api_key
-    #     headers: dict[str, str] = {"X-API-KEY": api_key}
-
-    #     while True:
-    #         try:
-    #             await asyncio.sleep(random.randint(0, 60))
-
-    #             payload = self.generate_order_payload()
-    #             response = await self.client.post("/orders", headers=headers, json=payload)
-    #             response.raise_for_status()
-
-    #             data = response.json()["data"]
-    #             order = Order.model_validate(data)
-    #             print(f"Bot #{self.id} submitted {order.side} order for {order.ticker_symbol} at {order.price}")
-
-    #         except Exception as err:
-    #             print(f"Bot #{self.id} - {type(err).__name__}: {err}")
-    #             break
-
-    async def handle_ticks(self, symbol: str) -> Result[None, Exception]:
-
+    async def handle_ticks(self, symbol: str) -> None:
         try:
             ws_url = str(self.client.base_url).replace("http", "ws") + "/tickers/tick"
             async with websockets.connect(ws_url) as ws:
-                await ws.send("ETHUSDT")
+                await ws.send(symbol)
+
                 async for message in ws:
                     data = json.loads(message)
                     self.price = Decimal(data["last"])
+                    self.logger.info("received", detail=str(data))
 
-            return Ok(None)
-
-        except websockets.exceptions.ConnectionClosedError:
-            print(f"Bot #{self.id} - Websocket connection closed.")
-            return Err(Exception("Websocket connection closed"))
+        except websockets.exceptions.ConnectionClosedError as e:
+            self.logger.error("websocket connection closed", detail=str(e))
+            raise ApiError("websocket connection closed") from e
 
         except Exception as e:
             self.logger.error("an unexpected error occurred", detail=str(e))
             raise PortmanException(f"something went wrong: {e}") from e
-
-    # try:
-
-    #     response.raise_for_status()
-    #     data = response.json()["data"]
-
-    #     user = User.model_validate(data)
-    #     return Ok(user)
-
-    # except Exception as e:
-    #     return Err(e)
 
     def get_api_key(self) -> str:
         try:
@@ -239,22 +228,22 @@ class Worker:
             self.logger.error("an unexpected error occurred", detail=str(e))
             raise PortmanException(f"something went wrong: {e}") from e
 
-    # def generate_order_payload(self) -> dict[str, Any]:
-    #     assert self.user.id is not None, "user id is not set"
-    #     ticker_symbol = self.symbol
-    #     user_id = str(self.user.id)
+    def generate_order_payload(self) -> dict[str, Any]:
+        assert self.user is not None, "user is not set"
+        ticker_symbol = self.symbol
+        user_id = str(self.user.id)
 
-    #     price = float(Decimal(self.price))
-    #     quantity = float(Decimal("1.00"))
+        price = float(Decimal(self.price))
+        quantity = float(Decimal("1.00"))
 
-    #     side = random.choice([Side.BUY, Side.SELL])
-    #     type = random.choice([Type.LIMIT, Type.MARKET])
+        side = random.choice([Side.BUY, Side.SELL])
+        type = random.choice([Type.LIMIT, Type.MARKET])
 
-    #     return {
-    #         "user_id": user_id,
-    #         "ticker_symbol": ticker_symbol,
-    #         "quantity": quantity,
-    #         "price": price,
-    #         "side": side,
-    #         "type": type,
-    #     }
+        return {
+            "user_id": user_id,
+            "ticker_symbol": ticker_symbol,
+            "quantity": quantity,
+            "price": price,
+            "side": side,
+            "type": type,
+        }

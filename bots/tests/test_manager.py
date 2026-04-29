@@ -1,10 +1,3 @@
-import pytest
-
-from unittest.mock import patch
-from core.manager import Manager
-from core.worker import Worker
-
-
 # @pytest.mark.asyncio
 # async def test_manager_start_execution():
 #     amount = 3

@@ -1,12 +1,18 @@
 package handlers
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
+	"math/rand"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
+	"github.com/gorilla/websocket"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -114,86 +120,146 @@ func (h *TickerHandler) List(w http.ResponseWriter, r *http.Request) {
 	SendSuccess(w, tickers)
 }
 
-// func (h *TickerHandler) Tick(w http.ResponseWriter, r *http.Request) {
-// 	repo := repositories.New(h.DbConn)
-// 	ctx, cancel := context.WithCancel(r.Context())
-// 	defer cancel()
+func (h *TickerHandler) Tick(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
 
-// 	upgrader := websocket.Upgrader{
-// 		CheckOrigin: func(r *http.Request) bool {
-// 			if os.Getenv("ENV") == "dev" {
-// 				return true
-// 			}
+	repo := repositories.New(h.db)
+	logger := services.GetLogger(ctx)
 
-// 			origin, allowedOrigin := r.Header.Get("Origin"), os.Getenv("ALLOWED_ORIGIN") // "https://agence.ximon.dev"
-// 			if origin == allowedOrigin {
-// 				return true
-// 			}
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			if os.Getenv("ENV") == "dev" {
+				return true
+			}
 
-// 			log.Printf("Blocked unauthorized WebSocket connection attempt from: %s", origin)
-// 			return false
-// 		},
-// 	}
+			origin, allowedOrigin := r.Header.Get("Origin"), os.Getenv("ALLOWED_ORIGIN") // "https://agence.ximon.dev"
+			if origin == allowedOrigin {
+				return true
+			}
 
-// 	ws, err := upgrader.Upgrade(w, r, nil)
-// 	if err != nil {
-// 		w.WriteHeader(http.StatusInternalServerError)
-// 		result := Payload{
-// 			Message: "websocket upgrade error",
-// 			Error:   err.Error(),
+			logger.Warn("attempted unauthorized websocket connection", "origin", origin)
+			return false
+		},
+	}
+
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		logger.Warn("failed to upgrade connection to websocket", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "Something went wrong")
+		return
+	}
+	defer ws.Close()
+
+	symbolChan := make(chan string, 1)
+	go func() {
+		for {
+			_, msg, err := ws.ReadMessage()
+			if err != nil {
+				cancel()
+				return
+			}
+
+			symbolChan <- string(msg)
+		}
+	}()
+
+	type Msg struct {
+		Ask  int32 `json:"ask"`
+		Bid  int32 `json:"bid"`
+		Last int32 `json:"last"`
+	}
+
+	msgChan := make(chan *Msg, 64)
+	for {
+		select {
+		case symbol := <-symbolChan:
+			_, err := repo.FindTickerBySymbol(ctx, symbol)
+			if err != nil {
+				return
+			}
+
+			go func(startPrice int32) {
+				currentPrice := startPrice
+				t := time.NewTicker(2 * time.Second)
+				defer t.Stop()
+
+				for {
+					select {
+
+					case <-ctx.Done():
+						return
+
+					case <-t.C:
+						change := int32(rand.Intn(5) - 2)
+						currentPrice += change
+						if currentPrice < 1 {
+							currentPrice = 1
+						}
+
+						msgChan <- &Msg{
+							Last: currentPrice,
+							Ask:  currentPrice + 1,
+							Bid:  currentPrice - 1,
+						}
+					}
+				}
+			}(100)
+
+		case msg := <-msgChan:
+			var buffer bytes.Buffer
+			json.NewEncoder(&buffer).Encode(msg)
+			if err := ws.WriteMessage(websocket.TextMessage, buffer.Bytes()); err != nil {
+				return
+			}
+
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+// go func() {
+// 	for {
+// 		select {
+//
+// 		case <-ctx.Done():
+// 			return
+//
+// 		default:
+// 			msg := Msg{Ask: 120, Bid: 100, Last: 110}
+// 			time.Sleep(time.Second * 3)
+// 			msgChan <- &msg
 // 		}
-
-// 		json.NewEncoder(w).Encode(result)
-// 		return
 // 	}
-// 	defer ws.Close()
-
-// 	symbolChan := make(chan string, 1)
-// 	go func() {
-// 		for {
-// 			_, msg, err := ws.ReadMessage()
-// 			if err != nil {
-// 				cancel()
-// 				return
-// 			}
-
-// 			symbolChan <- string(msg)
-// 		}
-// 	}()
-
-// 	var sub *nats.Subscription
-// 	msgChan := make(chan *nats.Msg, 64)
+// }()
 
 // 	for {
 // 		select {
 // 		case symbol := <-symbolChan:
-// 			if sub != nil {
-// 				sub.Unsubscribe()
-// 			}
-
 // 			// TODO: Properly handle Ticker WebSocket Subscription Errors
 // 			ticker, err := repo.FindTickerBySymbol(ctx, symbol)
 // 			if err != nil {
-// 				continue
+// 				return
 // 			}
-
+//
 // 			if ticker.Status != repositories.TickerStatusOPEN {
 // 				continue
 // 			}
-
-// 			sub, err = h.NatsConn.ChanSubscribe(fmt.Sprintf("ticks.%s", symbol), msgChan)
-// 			if err != nil {
+//
+// 		case msg := <-msgChan:
+// 			var buffer bytes.Buffer
+// 			if err := json.NewEncoder(&buffer).Encode(msg); err != nil {
+// 				logger.Warn("failed to encode message", "error", err)
 // 				continue
 // 			}
-
-// 		case msg := <-msgChan:
-// 			err := ws.WriteMessage(websocket.TextMessage, msg.Data)
+//
+// 			err := ws.WriteMessage(websocket.TextMessage, buffer.Bytes())
 // 			if err != nil {
 // 				return
 // 			}
-
+//
 // 		case <-ctx.Done():
-// 			sub.Unsubscribe()
 // 			return
 // 		}
 // 	}
