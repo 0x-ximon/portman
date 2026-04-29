@@ -1,3 +1,3 @@
 from typing import Final
 
-BOTS_AMOUNT: Final[int] = 50
+BOTS_AMOUNT: Final[int] = 5

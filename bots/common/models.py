@@ -1,8 +1,9 @@
-from enum import Enum
-from uuid import UUID
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 from typing import Optional
+from uuid import UUID
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -17,7 +18,6 @@ class User(BaseModel):
 
     first_name: str = Field(alias="first_name")
     last_name: str = Field(alias="last_name")
-    phone_number: str = Field(alias="phone_number")
 
     email_address: str = Field(alias="email_address")
     wallet_address: str = Field(alias="wallet_address")

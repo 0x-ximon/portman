@@ -1,18 +1,25 @@
-from dataclasses import dataclass
-from typing import TypeVar, Generic, Union
+from typing import Generic, Literal, TypeVar, Union
+
+from pydantic import BaseModel, RootModel
+
+from common.exceptions import Code
 
 T = TypeVar("T")
-E = TypeVar("E")
 
 
-@dataclass
-class Ok(Generic[T]):
+class Error(BaseModel):
+    code: Code
+    detail: str
+
+
+class Success(BaseModel, Generic[T]):
+    status: Literal["success"]
     data: T
 
 
-@dataclass
-class Err(Generic[E]):
-    error: E
+class Failure(BaseModel):
+    status: Literal["failure"]
+    error: Error
 
 
-Result = Union[Ok[T], Err[E]]
+Payload = RootModel[Union[Success[T], Failure]]
