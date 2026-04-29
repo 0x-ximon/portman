@@ -1,3 +1,2 @@
-.sqlx/
-target/
-.env
+.zig-cache/
+zig-out/
