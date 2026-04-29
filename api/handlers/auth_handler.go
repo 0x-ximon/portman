@@ -6,6 +6,7 @@ import (
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -118,8 +119,14 @@ func (h *AuthHandler) Validate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	type Result struct {
+		ID  uuid.UUID `json:"id"`
+		JWT string    `json:"jwt"`
+	}
+
+	result := Result{ID: user.ID, JWT: jwt}
 	logger.Info("otp verified successfully", "email_address", params.EmailAddress)
-	SendSuccess(w, jwt)
+	SendSuccess(w, result)
 }
 
 func (h *AuthHandler) Exchange(w http.ResponseWriter, r *http.Request) {
@@ -136,9 +143,9 @@ func (h *AuthHandler) Exchange(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user, err := repo.FindUserByApiKey(ctx, &apiKey)
-	if err == nil {
+	if err != nil {
 		logger.Warn("failed to get user", "error", err)
-		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "invalid api-key")
+		SendFailure(w, http.StatusNotFound, codeNotFound, "user not found")
 		return
 	}
 
@@ -149,6 +156,12 @@ func (h *AuthHandler) Exchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	type Result struct {
+		ID  uuid.UUID `json:"id"`
+		JWT string    `json:"jwt"`
+	}
+
+	result := Result{ID: user.ID, JWT: jwt}
 	logger.Info("api-key exchanged successfully", "email_address", user.EmailAddress)
-	SendSuccess(w, jwt)
+	SendSuccess(w, result)
 }

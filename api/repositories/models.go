@@ -256,7 +256,6 @@ type User struct {
 	ID            uuid.UUID          `json:"id"`
 	FirstName     string             `json:"first_name"`
 	LastName      string             `json:"last_name"`
-	PhoneNumber   string             `json:"phone_number"`
 	EmailAddress  string             `json:"email_address"`
 	WalletAddress string             `json:"wallet_address"`
 	FreeBalance   decimal.Decimal    `json:"free_balance"`

@@ -62,6 +62,12 @@ func (h *UsersHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if params.Role == repositories.RoleADMINISTRATOR {
+		logger.Warn("attempt to elevate priviledges", "email", params.EmailAddress)
+		SendFailure(w, http.StatusForbidden, codeForbidden, "Invalid role")
+		return
+	}
+
 	encryptedPassword, err := services.HashPassword(params.Password)
 	if err != nil {
 		logger.Warn("failed to encrypt password", "error", err)
