@@ -1,71 +1,41 @@
 const std = @import("std");
+const net = std.Io.net;
 const Io = std.Io;
 
-const lib = @import("lib");
+const Order = extern struct {
+    order_id: u64,
+    price: i64,
+    quantity: u32,
+    side: u8,
+    _padding: [3]u8, // Matches the Go padding
+};
 
 pub fn main(init: std.process.Init) !void {
-    // Prints to stderr, unbuffered, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
-
-    // This is appropriate for anything that lives as long as the process.
-    const arena: std.mem.Allocator = init.arena.allocator();
-
-    // Accessing command line arguments:
-    const args = try init.minimal.args.toSlice(arena);
-    for (args) |arg| {
-        std.log.info("arg: {s}", .{arg});
-    }
-
-    // In order to do I/O operations need an `Io` instance.
+    const env = init.environ_map;
     const io = init.io;
 
-    // Stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    var stdout_buffer: [1024]u8 = undefined;
-    var stdout_file_writer: Io.File.Writer = .init(.stdout(), io, &stdout_buffer);
-    const stdout_writer = &stdout_file_writer.interface;
+    const host = env.get("HOST") orelse "127.0.0.1";
+    const port = try std.fmt.parseInt(u16, env.get("PORT") orelse "3002", 10);
 
-    try lib.printAnotherMessage(stdout_writer);
+    const address = try net.IpAddress.parse(host, port);
+    var server = try address.listen(io, .{});
+    defer server.deinit(io);
 
-    try stdout_writer.flush(); // Don't forget to flush!
-}
+    std.debug.print("Portman Core listening on {f}\n", .{server.socket.address});
 
-test "simple test" {
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(i32) = .empty;
-    defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(gpa, 42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+    while (true) {
+        const stream = try server.accept(io);
+        defer stream.socket.close(io);
 
-test "fuzz example" {
-    try std.testing.fuzz({}, testOne, .{});
-}
+        var buffer: [1024 * 64]u8 = undefined;
+        var buf_reader = stream.reader(io, &buffer);
+        var reader = &buf_reader.interface;
 
-fn testOne(context: void, smith: *std.testing.Smith) !void {
-    _ = context;
-    // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(u8) = .empty;
-    defer list.deinit(gpa);
-    while (!smith.eos()) switch (smith.value(enum { add_data, dup_data })) {
-        .add_data => {
-            const slice = try list.addManyAsSlice(gpa, smith.value(u4));
-            smith.bytes(slice);
-        },
-        .dup_data => {
-            if (list.items.len == 0) continue;
-            if (list.items.len > std.math.maxInt(u32)) return error.SkipZigTest;
-            const len = smith.valueRangeAtMost(u32, 1, @min(32, list.items.len));
-            const off = smith.valueRangeAtMost(u32, 0, @intCast(list.items.len - len));
-            try list.appendSlice(gpa, list.items[off..][0..len]);
-            try std.testing.expectEqualSlices(
-                u8,
-                list.items[off..][0..len],
-                list.items[list.items.len - len ..],
-            );
-        },
-    };
+        const msg = reader.takeDelimiterExclusive('\n') catch |err| blk: {
+            if (err == error.EndOfStream) {
+                break :blk "Connection Closed";
+            } else return err;
+        };
+        std.log.info("{s}", .{msg});
+    }
 }

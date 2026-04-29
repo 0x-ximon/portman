@@ -75,7 +75,7 @@ func main() {
 	mux.HandleFunc("GET /orders/{id}", orders.Get)
 	// mux.HandleFunc("GET /orders/process", orders.Process)
 
-	log.Printf("Starting server on %s", addr)
+	log.Printf("Portman API listening on %s\n", addr)
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
