@@ -1,13 +1,14 @@
 const std = @import("std");
-const mem = std.mem;
 const Io = std.Io;
+const mem = std.mem;
 
-const Book = @This();
 const Map = @import("map.zig").Map;
 
+const Book = @This();
+
 allocator: mem.Allocator,
-asks: *Map(u64, Level, 4),
-bids: *Map(u64, Level, 4),
+asks: Map(u64, *Level, 4),
+bids: Map(u64, *Level, 4),
 
 const Status = enum(u8) {
     open = 0,
@@ -49,35 +50,39 @@ const Level = struct {
     liquidity: u64,
     orders: std.ArrayList(Order),
 
-    pub fn init() Level {
-        return .{
+    pub fn init(allocator: mem.Allocator) !*Level {
+        const self = try allocator.create(Level);
+        self.* = .{
             .orders = .empty,
             .liquidity = 0,
         };
+
+        return self;
     }
 
     pub fn deinit(self: *Level, allocator: mem.Allocator) void {
         self.orders.deinit(allocator);
+        allocator.destroy(self);
     }
 };
 
 pub fn init(allocator: std.mem.Allocator) !*Book {
     const self = try allocator.create(Book);
-    self.allocator = allocator;
-    self.bids = try .init(allocator);
-    self.asks = try .init(allocator);
+    self.* = .{
+        .asks = .empty,
+        .bids = .empty,
+        .allocator = allocator,
+    };
+
     return self;
 }
 
 pub fn deinit(self: *Book) void {
     var bids_iter = self.bids.iterator();
-    while (bids_iter.next()) |entry| entry.value.deinit(self.allocator);
+    while (bids_iter.next()) |*entry| entry.value.deinit(self.allocator);
 
     var asks_iter = self.asks.iterator();
-    while (asks_iter.next()) |entry| entry.value.deinit(self.allocator);
-
-    self.bids.deinit(self.allocator);
-    self.asks.deinit(self.allocator);
+    while (asks_iter.next()) |*entry| entry.value.deinit(self.allocator);
 
     self.allocator.destroy(self);
 }
@@ -96,29 +101,19 @@ pub fn cancelOrder(_: *Book, _: *const Order) !void {}
 
 // Good Till Cancelled
 fn gtc(self: *Book, order: *const Order) !void {
-    switch (order.side) {
-        .buy => {
-            var level = self.bids.get(order.price) orelse blk: {
-                const l = Level.init();
-                try self.bids.put(self.allocator, order.price, l);
-                break :blk l;
-            };
+    const map = switch (order.side) {
+        .buy => &self.bids,
+        .sell => &self.asks,
+    };
 
-            try level.orders.append(self.allocator, order.*);
-            level.liquidity += order.quantity;
-        },
+    var level = map.get(order.price) orelse blk: {
+        const l = try Level.init(self.allocator);
+        try map.put(self.allocator, order.price, l);
+        break :blk l;
+    };
 
-        .sell => {
-            var level = self.asks.get(order.price) orelse blk: {
-                const l = Level.init();
-                try self.asks.put(self.allocator, order.price, l);
-                break :blk l;
-            };
-
-            try level.orders.append(self.allocator, order.*);
-            level.liquidity += order.quantity;
-        },
-    }
+    try level.orders.append(self.allocator, order.*);
+    level.liquidity += order.quantity;
 }
 
 // Fill or Kill

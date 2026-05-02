@@ -1,9 +1,10 @@
 const std = @import("std");
 const Io = std.Io;
 
-const Packet = @This();
 const Book = @import("book.zig");
 const Order = Book.Order;
+
+const Packet = @This();
 
 pub const Instruction = enum(u8) {
     NewOrder = 0,
