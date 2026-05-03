@@ -1,14 +1,19 @@
 const std = @import("std");
 const Io = std.Io;
 const mem = std.mem;
+const math = std.math;
 
 const Map = @import("map.zig").Map;
 
 const Book = @This();
 
+fn compare(a: u64, b: u64) math.Order {
+    return math.order(a, b);
+}
+
 allocator: mem.Allocator,
-asks: Map(u64, *Level, 4),
-bids: Map(u64, *Level, 4),
+asks: Map(u64, *Level, 4, compare),
+bids: Map(u64, *Level, 4, compare),
 
 const Status = enum(u8) {
     open = 0,
