@@ -1,4 +1,4 @@
-name: UI [Zig]
+name: TUI [Rust]
 
 on:
     push:
@@ -6,16 +6,22 @@ on:
     pull_request:
         branches: ["main"]
 
+env:
+    CARGO_TERM_COLOR: always
+
 jobs:
     build:
         runs-on: ubuntu-latest
 
         defaults:
             run:
-                working-directory: ui
+                working-directory: tui
 
         steps:
             - uses: actions/checkout@v5
 
-            - uses: mlugg/setup-zig@v2
-            - run: zig build test
+            - name: Build
+              run: cargo build --verbose
+
+            - name: Run tests
+              run: cargo test --verbose

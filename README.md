@@ -13,14 +13,14 @@ Portman is designed as a distributed system where each component is written in t
 ![Portman Demo Dark](assets/demo_dark.png#gh-dark-mode-only)
 ![Portman Demo Light](assets/demo_light.png#gh-light-mode-only)
 
-| Status  | Component | Language | Progress           |
-| :-----: | --------- | :------: | :----------------- |
-|  Beta   | Core      |   Rust   | `[██████----] 60%` |
-|         | API       |    Go    | `[████████--] 80%` |
-|         | Bots      |  Python  | `[█████-----] 50%` |
-|  Alpha  | UI        |   Zig    | `[██--------] 20%` |
-| Planned | Base      | Solidity | `[----------]  0%` |
-|         | Hooks     |   Lua    | `[----------]  0%` |
+| Status  | Component |  Language  | Progress           |
+| :-----: | --------- | :--------: | :----------------- |
+|  Beta   | API       |     Go     | `[████████--] 80%` |
+|         | Bots      |   Python   | `[█████-----] 50%` |
+|  Alpha  | TUI       |    Rust    | `[██--------] 20%` |
+|         | Core      |    Zig     | `[████------] 40%` |
+| Planned | Base      |  Solidity  | `[----------]  0%` |
+|         | Hooks     | TypeScript | `[----------]  0%` |
 
 ## FAQs
 
