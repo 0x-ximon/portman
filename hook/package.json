@@ -1,0 +1,14 @@
+{
+    "name": "portman_hook",
+    "author": "Simon Samuel",
+    "description": "",
+    "version": "1.0.0",
+    "main": "main.ts",
+    "scripts": {
+        "start": "node main.ts"
+    },
+    "license": "MIT",
+    "dependencies": {
+        "typescript": "^6.0.3"
+    }
+}
