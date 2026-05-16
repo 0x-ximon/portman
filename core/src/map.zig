@@ -6,11 +6,10 @@ pub fn Compare(comptime T: type) type {
     return fn (a: T, b: T) math.Order;
 }
 
-/// An ordered map implementation using a B-tree => BTreeMap.
-/// Based on Chapter 18 of The Introduction to Algorithms by CLRS.
+/// An Ordered Map backed by a B-tree => BTreeMap.
 /// K => Key type, V => Value type, D => Degree (min number of children per node)
 /// compare => Comparison function for keys
-pub fn Map(comptime K: type, comptime V: type, comptime D: u8, comptime compare: Compare(K)) type {
+pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compare: Compare(K)) type {
     return struct {
         const Self = @This();
 
@@ -22,15 +21,15 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: u8, comptime compare:
 
         pub fn put(self: *Self, allocator: mem.Allocator, key: K, value: V) !void {
             if (self.root) |root| {
-                root.insert(allocator, key, value);
-                return;
+                const node = try root.insert(allocator, key, value);
+                if (node) |n| self.root = n;
+            } else {
+                const node = try allocator.create(Node);
+                node.* = .{ .count = 1, .is_leaf = true };
+                node.entries[0] = .{ .key = key, .value = value };
+                self.root = node;
             }
 
-            const node = try allocator.create(Node);
-            node.* = .{ .count = 1, .is_leaf = true };
-            node.entries[0] = .{ .key = key, .value = value };
-
-            self.root = node;
             self.size = 1;
         }
 
@@ -58,19 +57,56 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: u8, comptime compare:
         };
 
         const Node = struct {
-            count: u8 = 0,
+            count: usize = 0,
             is_leaf: bool = false,
-            entries: [(2 * D) - 1]Entry = undefined,
-            children: [2 * D]?*Node = .{null} ** (2 * D),
+            entries: [2 * D]Entry = undefined,
+            children: [(2 * D) + 1]?*Node = .{null} ** ((2 * D) + 1),
 
-            pub fn insert(self: *Node, allocator: mem.Allocator, key: K, value: V) void {
-                _ = self;
-                _ = allocator;
-                _ = key;
-                _ = value;
+            fn insert(self: *Node, allocator: mem.Allocator, key: K, value: V) !?*Node {
+                switch (self.is_leaf) {
+                    true => {
+                        switch (self.isFull()) {
+                            // Invariant: A full leaf node during insertion should not exist
+                            true => unreachable,
+                            false => {
+                                const entry: Entry = .{ .key = key, .value = value };
+                                self.entries[self.count] = entry;
+                                self.count += 1;
+
+                                // Sort the entries using insertion sort
+                                for (self.count - 1..1) |i|
+                                    if (compare(self.entries[i].key, self.entries[i - 1].key) == .lt)
+                                        std.mem.swap(Entry, &self.entries[i], &self.entries[i - 1]);
+                            },
+                        }
+                    },
+
+                    false => {
+                        var i: usize = 0;
+                        while (i < self.count) : (i += 1) {
+                            switch (compare(key, self.entries[i].key)) {
+                                .lt => break,
+                                .gt => continue,
+                                .eq => {
+                                    self.entries[i].value = value;
+                                    return null;
+                                },
+                            }
+                        }
+
+                        var child = self.children[i] orelse unreachable;
+                        // TODO: Handle the splits
+                        // if (child.isFull()) child = try self.split(allocator, child, i);
+                        return try child.insert(allocator, key, value);
+                    },
+                }
+
+                return null;
             }
 
-            pub fn search(self: *Node, key: K) ?Entry {
+            fn delete(_: *Node, _: mem.Allocator, _: K, _: ?*Node, _: ?usize) void {}
+
+            fn search(self: *Node, key: K) ?Entry {
                 var i: usize = 0;
                 while (i < self.count) : (i += 1) {
                     switch (compare(key, self.entries[i].key)) {
@@ -80,11 +116,20 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: u8, comptime compare:
                     }
                 }
 
-                if (self.is_leaf or self.children[i] == null) return null;
-                return self.children[i].?.search(key);
+                if (self.is_leaf) return null;
+                const child = self.children[i] orelse unreachable;
+                return child.search(key);
             }
 
-            pub fn traverse(_: *Node) void {}
+            fn split(_: *Node, allocator: mem.Allocator, _: *Node, _: usize) !void {
+                _ = try allocator.create(Node);
+            }
+
+            fn traverse(_: *Node) void {}
+
+            fn isFull(self: *Node) bool {
+                return self.count == (2 * D);
+            }
         };
     };
 }
