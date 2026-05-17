@@ -27,7 +27,7 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compa
                 switch (root.count == max_entries) {
                     true => {
                         const node = try allocator.create(Node);
-                        node.* = .{ .count = 1, .is_leaf = false };
+                        node.* = .{ .count = 0, .is_leaf = false };
                         node.children[0] = root;
                         self.root = node;
 
@@ -123,9 +123,22 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compa
                             }
                         }
 
-                        const child = self.children[i] orelse unreachable;
-                        if (child.count == max_entries) try self.split(allocator, child, i);
-                        return try self.insert(allocator, key, value);
+                        var child = self.children[i] orelse unreachable;
+                        if (child.count == max_entries) {
+                            try self.split(allocator, child, i);
+                            switch (compare(key, self.entries[i].key)) {
+                                .gt => {
+                                    i += 1;
+                                    child = self.children[i] orelse unreachable;
+                                },
+                                .eq => {
+                                    self.entries[i].value = value;
+                                    return false;
+                                },
+                                .lt => {},
+                            }
+                        }
+                        return try child.insert(allocator, key, value);
                     },
                 }
 
@@ -157,15 +170,16 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compa
                     for (0..D) |i| other.children[i] = child.children[i + D];
                 }
 
-                child.* = .{ .count = D - 1, .is_leaf = child.is_leaf };
-                other.* = .{ .count = D - 1, .is_leaf = child.is_leaf };
+                child.count = D - 1;
+                other.count = D - 1;
+                other.is_leaf = child.is_leaf;
 
                 // Shift entries and children of parent
-                var j = self.count - 1;
+                var j = self.count;
                 while (j > index) : (j -= 1) self.entries[j] = self.entries[j - 1];
 
-                var k = self.count;
-                while (k > index) : (k -= 1) self.children[k] = self.children[k - 1];
+                var k = self.count + 1;
+                while (k > index + 1) : (k -= 1) self.children[k] = self.children[k - 1];
 
                 // Promote the middle entry and the new node to the parent
                 self.entries[index] = child.entries[D - 1];
