@@ -10,6 +10,9 @@ pub fn Compare(comptime T: type) type {
 /// K => Key type, V => Value type, D => Degree (min number of children per node)
 /// compare => Comparison function for keys
 pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compare: Compare(K)) type {
+    const max_children: comptime_int = 2 * D;
+    const max_entries: comptime_int = (2 * D) - 1;
+
     return struct {
         const Self = @This();
 
@@ -21,16 +24,29 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compa
 
         pub fn put(self: *Self, allocator: mem.Allocator, key: K, value: V) !void {
             if (self.root) |root| {
-                const node = try root.insert(allocator, key, value);
-                if (node) |n| self.root = n;
+                switch (root.count == max_entries) {
+                    true => {
+                        const node = try allocator.create(Node);
+                        node.* = .{ .count = 1, .is_leaf = false };
+                        node.children[0] = root;
+                        self.root = node;
+
+                        try node.split(allocator, root, 0);
+                        const inserted = try node.insert(allocator, key, value);
+                        if (inserted) self.size += 1;
+                    },
+                    false => {
+                        const inserted = try root.insert(allocator, key, value);
+                        if (inserted) self.size += 1;
+                    },
+                }
             } else {
                 const node = try allocator.create(Node);
                 node.* = .{ .count = 1, .is_leaf = true };
                 node.entries[0] = .{ .key = key, .value = value };
                 self.root = node;
+                self.size = 1;
             }
-
-            self.size = 1;
         }
 
         pub fn get(self: *Self, key: K) ?V {
@@ -59,22 +75,35 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compa
         const Node = struct {
             count: usize = 0,
             is_leaf: bool = false,
-            entries: [2 * D]Entry = undefined,
-            children: [(2 * D) + 1]?*Node = .{null} ** ((2 * D) + 1),
+            entries: [max_entries]Entry = undefined,
+            children: [max_children]?*Node = .{null} ** max_children,
 
-            fn insert(self: *Node, allocator: mem.Allocator, key: K, value: V) !?*Node {
+            fn insert(self: *Node, allocator: mem.Allocator, key: K, value: V) !bool {
                 switch (self.is_leaf) {
                     true => {
-                        switch (self.isFull()) {
+                        switch (self.count == max_entries) {
                             // Invariant: A full leaf node during insertion should not exist
                             true => unreachable,
                             false => {
+                                // Ensure the key does not already exist in the leaf node
+                                for (0..self.count) |i| {
+                                    switch (compare(key, self.entries[i].key)) {
+                                        .lt => break,
+                                        .gt => continue,
+                                        .eq => {
+                                            self.entries[i].value = value;
+                                            return false;
+                                        },
+                                    }
+                                }
+
                                 const entry: Entry = .{ .key = key, .value = value };
                                 self.entries[self.count] = entry;
                                 self.count += 1;
 
                                 // Sort the entries using insertion sort
-                                for (self.count - 1..1) |i|
+                                var i = self.count - 1;
+                                while (i > 0) : (i -= 1)
                                     if (compare(self.entries[i].key, self.entries[i - 1].key) == .lt)
                                         std.mem.swap(Entry, &self.entries[i], &self.entries[i - 1]);
                             },
@@ -89,19 +118,18 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compa
                                 .gt => continue,
                                 .eq => {
                                     self.entries[i].value = value;
-                                    return null;
+                                    return false;
                                 },
                             }
                         }
 
-                        var child = self.children[i] orelse unreachable;
-                        // TODO: Handle the splits
-                        // if (child.isFull()) child = try self.split(allocator, child, i);
-                        return try child.insert(allocator, key, value);
+                        const child = self.children[i] orelse unreachable;
+                        if (child.count == max_entries) try self.split(allocator, child, i);
+                        return try self.insert(allocator, key, value);
                     },
                 }
 
-                return null;
+                return true;
             }
 
             fn delete(_: *Node, _: mem.Allocator, _: K, _: ?*Node, _: ?usize) void {}
@@ -121,15 +149,31 @@ pub fn Map(comptime K: type, comptime V: type, comptime D: usize, comptime compa
                 return child.search(key);
             }
 
-            fn split(_: *Node, allocator: mem.Allocator, _: *Node, _: usize) !void {
-                _ = try allocator.create(Node);
+            fn split(self: *Node, allocator: mem.Allocator, child: *Node, index: usize) !void {
+                const other = try allocator.create(Node);
+                for (0..D - 1) |i| other.entries[i] = child.entries[i + D];
+
+                if (!child.is_leaf) {
+                    for (0..D) |i| other.children[i] = child.children[i + D];
+                }
+
+                child.* = .{ .count = D - 1, .is_leaf = child.is_leaf };
+                other.* = .{ .count = D - 1, .is_leaf = child.is_leaf };
+
+                // Shift entries and children of parent
+                var j = self.count - 1;
+                while (j > index) : (j -= 1) self.entries[j] = self.entries[j - 1];
+
+                var k = self.count;
+                while (k > index) : (k -= 1) self.children[k] = self.children[k - 1];
+
+                // Promote the middle entry and the new node to the parent
+                self.entries[index] = child.entries[D - 1];
+                self.children[index + 1] = other;
+                self.count += 1;
             }
 
             fn traverse(_: *Node) void {}
-
-            fn isFull(self: *Node) bool {
-                return self.count == (2 * D);
-            }
         };
     };
 }
