@@ -1,6 +1,7 @@
 const std = @import("std");
 const mem = std.mem;
 const math = std.math;
+const testing = std.testing;
 
 pub fn Compare(comptime T: type) type {
     return fn (a: T, b: T) math.Order;
@@ -195,8 +196,6 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
         }
 
         fn move(self: *Self, allocator: mem.Allocator, child: *Self, left: ?*Self, right: ?*Self, index: usize) !*Self {
-            _ = allocator;
-
             // Borrow from left if possible
             if (left) |other| {
                 if (!other.underfull()) {
@@ -271,27 +270,71 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
             if (left) |other| {
                 switch (child.*) {
                     .inner => |*node| {
-                        _ = node;
+                        other.inner.keys[other.inner.count] = self.inner.keys[index - 1];
+                        other.inner.count += 1;
+
+                        const start = other.inner.count;
+                        const stop = start + node.count;
+                        @memcpy(other.inner.keys[start..stop], node.keys[0..node.count]);
+                        @memcpy(other.inner.children[start .. stop + 1], node.children[0 .. node.count + 1]);
+
+                        other.inner.count += node.count;
                     },
                     .leaf => |*node| {
-                        _ = node;
+                        const start = other.leaf.count;
+                        const stop = start + node.count;
+                        @memcpy(other.leaf.entries[start..stop], node.entries[0..node.count]);
+
+                        other.leaf.count += node.count;
+                        other.leaf.next = node.next;
                     },
                 }
+
+                for (index - 1..self.inner.count - 1) |i| {
+                    self.inner.keys[i] = self.inner.keys[i + 1];
+                    self.inner.children[i + 1] = self.inner.children[i + 2];
+                }
+
+                self.inner.children[self.inner.count] = null;
+                self.inner.count -= 1;
+
+                allocator.destroy(child);
                 return other;
             }
 
             // Merge with right if possible
             if (right) |other| {
-                _ = other;
-
                 switch (child.*) {
                     .inner => |*node| {
-                        _ = node;
+                        node.keys[node.count] = self.inner.keys[index];
+                        node.count += 1;
+
+                        const start = node.count;
+                        const stop = start + other.inner.count;
+                        @memcpy(node.keys[start..stop], other.inner.keys[0..other.inner.count]);
+                        @memcpy(node.children[start .. stop + 1], other.inner.children[0 .. other.inner.count + 1]);
+
+                        node.count += other.inner.count;
                     },
                     .leaf => |*node| {
-                        _ = node;
+                        const start = node.count;
+                        const stop = node.count + other.leaf.count;
+                        @memcpy(node.entries[start..stop], other.leaf.entries[0..other.leaf.count]);
+
+                        node.count += other.leaf.count;
+                        node.next = other.leaf.next;
                     },
                 }
+
+                for (index..self.inner.count - 1) |i| {
+                    self.inner.keys[i] = self.inner.keys[i + 1];
+                    self.inner.children[i + 1] = self.inner.children[i + 2];
+                }
+
+                self.inner.children[self.inner.count] = null;
+                self.inner.count -= 1;
+
+                allocator.destroy(other);
                 return child;
             }
 
@@ -439,4 +482,37 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
             } else return .{ .node = null, .index = 0 };
         }
     };
+}
+
+test "Map" {
+    const allocator = testing.allocator;
+
+    const K: type = u8;
+    const V: type = u32;
+    const M: usize = 32;
+
+    const Context = struct {
+        const Self = @This();
+
+        fn compare(a: K, b: K) math.Order {
+            return math.order(a, b);
+        }
+    };
+
+    // const ctx = Context{};
+    var map: Map(K, V, M, Context.compare) = .empty;
+
+    try map.put(allocator, 1, 10);
+    try map.put(allocator, 2, 20);
+
+    const result = map.get(1) orelse 0;
+    try testing.expectEqual(map.size, 2);
+    try testing.expectEqual(result, 10);
+
+    try map.rid(allocator, 1);
+    try map.rid(allocator, 2);
+
+    try testing.expectEqual(map.size, 0);
+
+    // try testing.fuzz(Context, comptime testOne: fn ((unknown type), *Smith) anyerror!void, options: FuzzInputOptions)
 }
