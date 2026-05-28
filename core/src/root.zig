@@ -1,18 +1,12 @@
 const std = @import("std");
 const testing = std.testing;
 
-const Book = @import("book.zig");
-const Packet = @import("packet.zig");
+pub const Book = @import("book.zig");
+pub const Map = @import("map.zig");
+pub const Packet = @import("packet.zig");
 
-test "Integration" {
-    const allocator = testing.allocator;
-    const Context = struct {
-        const Self = @This();
-    };
-
-    const ctx = Context{};
-    _ = ctx;
-
-    const book = try Book.init(allocator);
-    defer book.deinit();
+test "Semantic Analysis Discovery" {
+    testing.refAllDecls(Book);
+    testing.refAllDecls(Map);
+    testing.refAllDecls(Packet);
 }

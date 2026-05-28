@@ -74,8 +74,8 @@ const Level = struct {
 pub fn init(allocator: std.mem.Allocator) !*Book {
     const self = try allocator.create(Book);
     self.* = .{
-        .asks = .empty,
-        .bids = .empty,
+        .asks = .init(),
+        .bids = .init(),
         .allocator = allocator,
     };
 
@@ -88,6 +88,9 @@ pub fn deinit(self: *Book) void {
 
     var asks_iter = self.asks.iter();
     while (asks_iter.next()) |*entry| entry.value.deinit(self.allocator);
+
+    self.bids.deinit(self.allocator);
+    self.asks.deinit(self.allocator);
 
     self.allocator.destroy(self);
 }

@@ -33,8 +33,8 @@ pub fn build(b: *std.Build) void {
         run_cmd.addArgs(args);
     }
 
-    const lib_tests = b.addTest(.{ .root_module = lib });
-    const exe_tests = b.addTest(.{ .root_module = exe.root_module });
+    const lib_tests = b.addTest(.{ .root_module = lib, .use_llvm = true });
+    const exe_tests = b.addTest(.{ .root_module = exe.root_module, .use_llvm = true });
 
     const run_lib_tests = b.addRunArtifact(lib_tests);
     const run_exe_tests = b.addRunArtifact(exe_tests);
