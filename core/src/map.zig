@@ -107,7 +107,7 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                         self.size = 0;
                     },
                     .inner => |*inner| {
-                        const node = inner.children[0] orelse return false;
+                        const node = inner.children[0] orelse unreachable;
                         allocator.destroy(root);
                         self.root = node;
                     },
@@ -255,13 +255,16 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                         }
 
                         var child = node.children[i] orelse unreachable;
+                        const deleted = try child.delete(allocator, key);
+                        if (!deleted) return false;
+
                         if (child.underfull()) {
                             const left = if (i == 0) null else node.children[i - 1];
                             const right = if (i >= node.count) null else node.children[i + 1];
-                            child = try self.move(allocator, child, left, right, i);
+                            try self.move(allocator, child, left, right, i);
                         }
 
-                        return try child.delete(allocator, key);
+                        return true;
                     },
                 }
             }
@@ -311,7 +314,7 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                 }
             }
 
-            fn move(self: *Node, allocator: mem.Allocator, child: *Node, left: ?*Node, right: ?*Node, index: usize) !*Node {
+            fn move(self: *Node, allocator: mem.Allocator, child: *Node, left: ?*Node, right: ?*Node, index: usize) !void {
                 // Borrow from left if possible
                 if (left) |other| {
                     if (!other.underfull()) {
@@ -346,7 +349,7 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                             },
                         }
 
-                        return child;
+                        return;
                     }
                 }
 
@@ -377,9 +380,9 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                                 self.inner.keys[index] = other.leaf.entries[0].key;
                             },
                         }
-                    }
 
-                    return child;
+                        return;
+                    }
                 }
 
                 // Merge with left if possible
@@ -413,7 +416,7 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                     self.inner.count -= 1;
 
                     allocator.destroy(child);
-                    return other;
+                    return;
                 }
 
                 // Merge with right if possible
@@ -447,7 +450,7 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                     self.inner.count -= 1;
 
                     allocator.destroy(other);
-                    return child;
+                    return;
                 }
 
                 unreachable; // This should never happen
@@ -468,8 +471,8 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
 
             fn underfull(self: *Node) bool {
                 return switch (self.*) {
-                    .inner => |*node| node.count == min_keys,
-                    .leaf => |*node| node.count == min_keys,
+                    .inner => |*node| node.count <= min_keys,
+                    .leaf => |*node| node.count <= min_keys,
                 };
             }
 
