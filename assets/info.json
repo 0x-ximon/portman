@@ -1,0 +1,16 @@
+{
+	"name": "Portman",
+	"logo": "icon.svg",
+	"description": "A high-performance, terminal-native trading exchange.",
+	"tags": ["Rust", "Zig", "Go", "Python", "SQL", "MDX", "Bruno"],
+	"media": {
+		"dark": {
+			"images": ["demo_dark.png"],
+			"videos": []
+		},
+		"light": {
+			"images": ["demo_light.png"],
+			"videos": []
+		}
+	}
+}
