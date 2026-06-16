@@ -1,2 +1,5 @@
 *.tmpl linguist-detectable=false
-*.bru linguist-detectable=false
+*.js linguist-detectable=false
+
+*.bru linguist-detectable=true
+*.mdx linguist-detectable=true
