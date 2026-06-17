@@ -1,16 +1,14 @@
 {
 	"name": "Portman",
 	"logo": "icon.svg",
+	"repo": "https://github.com/0x-ximon/portman",
 	"description": "A high-performance, terminal-native trading exchange.",
 	"tags": ["Rust", "Zig", "Go", "Python", "SQL", "MDX", "Bruno"],
 	"media": {
-		"dark": {
-			"images": ["demo_dark.png"],
-			"videos": []
-		},
-		"light": {
-			"images": ["demo_light.png"],
-			"videos": []
+		"videos": [],
+		"images": {
+			"dark": ["demo_dark.png"],
+			"light": ["demo_light.png"]
 		}
 	}
 }
