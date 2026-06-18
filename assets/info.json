@@ -2,10 +2,10 @@
 	"name": "Portman",
 	"description": "A high-performance, terminal-native trading exchange.",
 	"logo": "icon.svg",
-	"repo": "https://github.com/0x-ximon/portman",
 	"site": "https://portman.ximon.dev",
-	"docs": "https://ximon.dev/projects/portman/docs",
-	"logs": "https://ximon.dev/projects/portman/logs",
+	"docs": "https://ximon.dev/docs/portman",
+	"logs": "https://ximon.dev/logs/portman",
+	"repo": "https://github.com/0x-ximon/portman",
 	"media": {
 		"videos": [],
 		"images": {

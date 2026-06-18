@@ -1,3 +1,4 @@
 export default {
-  introduction: "Introduction",
+  index: "Introduction",
+  about: "About",
 };
