@@ -10,22 +10,26 @@ categories:
         - "major"
 
   - title: "Features"
-    semver-increment: "major"
+    semver-increment: "minor"
     when:
       labels:
-        - "feat"
+        - "feature"
         - "minor"
 
   - title: "Improvements"
     semver-increment: "patch"
     when:
       labels:
-        - "fix"
-        - "perf"
-        - "test"
-        - "chore"
-        - "refactor"
+        - "bug"
+        - "testing"
+        - "warning"
+        - "maintenance"
+        - "performance"
+        - "improvement"
+        - "documentation"
         - "patch"
+
+  - title: "Miscellaneous"
 
   - type: "pre-exclude"
     when:
