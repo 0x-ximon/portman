@@ -1,16 +1,8 @@
 {
 	"name": "Portman",
-	"description": "A high-performance, terminal-native trading exchange.",
-	"logo": "icon.svg",
-	"site": "https://portman.ximon.dev",
-	"docs": "https://ximon.dev/docs/portman",
-	"logs": "https://ximon.dev/logs/portman",
-	"repo": "https://github.com/0x-ximon/portman",
+	"summary": "A high-performance, terminal-native portfolio manager.",
 	"media": {
-		"videos": [],
-		"images": {
-			"dark": ["demo_dark.png"],
-			"light": ["demo_light.png"]
-		}
+		"images": ["demo_dark.png", "demo_light.png"],
+		"videos": []
 	}
 }
