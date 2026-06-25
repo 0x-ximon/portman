@@ -21,6 +21,7 @@ categories:
       - "perf"
       - "test"
       - "chore"
+      - "refactor"
       - "patch"
 
   - type: "pre-exclude"
