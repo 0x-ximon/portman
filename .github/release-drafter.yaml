@@ -1,0 +1,57 @@
+name-template: "v$RESOLVED_VERSION"
+tag-template: "v$RESOLVED_VERSION"
+
+exclude-labels:
+  - "skip-changelog"
+
+version-resolver:
+  major:
+    labels:
+      - "breaking"
+      - "major"
+
+  minor:
+    labels:
+      - "feat"
+      - "minor"
+
+  patch:
+    labels:
+      - "fix"
+      - "perf"
+      - "test"
+      - "chore"
+      - "patch"
+
+  default: patch
+
+categories:
+  - title: "Upgrades"
+    labels:
+      - "breaking"
+      - "major"
+
+  - title: "Features"
+    labels:
+      - "feat"
+      - "minor"
+
+  - title: "Improvements"
+    labels:
+      - "fix"
+      - "perf"
+      - "test"
+      - "chore"
+      - "patch"
+
+template: |
+  <Accordions>
+  $CHANGES
+  </Accordions>
+
+category-template: |
+  <Accordion title="$TITLE">
+  $ENTRIES
+  </Accordion>
+
+change-template: "- $TITLE ([#$NUMBER]($URL)) by @$AUTHOR"
