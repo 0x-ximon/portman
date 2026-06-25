@@ -1,4 +1,5 @@
 {
-	"index": "Introduction",
-	"about": "About"
+	"title": "Portman",
+	"description": "A Portfolio Mangaer",
+	"root": true
 }
