@@ -4,25 +4,28 @@ tag-template: "v$RESOLVED_VERSION"
 categories:
   - title: "Upgrades"
     semver-increment: "major"
-    labels:
-      - "breaking"
-      - "major"
+    when:
+      labels:
+        - "breaking"
+        - "major"
 
   - title: "Features"
     semver-increment: "major"
-    labels:
-      - "feat"
-      - "minor"
+    when:
+      labels:
+        - "feat"
+        - "minor"
 
   - title: "Improvements"
     semver-increment: "patch"
-    labels:
-      - "fix"
-      - "perf"
-      - "test"
-      - "chore"
-      - "refactor"
-      - "patch"
+    when:
+      labels:
+        - "fix"
+        - "perf"
+        - "test"
+        - "chore"
+        - "refactor"
+        - "patch"
 
   - type: "pre-exclude"
     when:
