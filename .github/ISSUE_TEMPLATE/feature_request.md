@@ -2,7 +2,7 @@
 name: Feature request
 about: Suggest an idea for Portman
 title: "[FEATURE] "
-labels: enhancement
+labels: feature
 assignees: "0x-ximon"
 ---
 
