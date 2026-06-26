@@ -42,7 +42,7 @@ template: |
 
 category-template: |
   <Accordion title="$TITLE">
-    $ENTRIES
+    $CHANGES
   </Accordion>
 
 change-template: "- $TITLE ([#$NUMBER]($URL)) by @$AUTHOR"
