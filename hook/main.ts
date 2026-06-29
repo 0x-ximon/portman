@@ -1,8 +1,5 @@
-export function add(a: number, b: number): number {
-  return a + b;
+async function main() {
+  console.log("Hello World");
 }
 
-// Learn more at https://docs.deno.com/runtime/manual/examples/module_metadata#concepts
-if (import.meta.main) {
-  console.log("Add 2 + 3 =", add(2, 3));
-}
+main().then(console.log).catch(console.error);

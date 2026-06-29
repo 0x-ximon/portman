@@ -3,17 +3,17 @@ const Io = std.Io;
 const mem = std.mem;
 const math = std.math;
 
-const Map = @import("map.zig").Map;
-
 const Book = @This();
+const Map = @import("map.zig")
+    .Map(u64, *Level, 32, compare);
 
 fn compare(a: u64, b: u64) math.Order {
     return math.order(a, b);
 }
 
 allocator: mem.Allocator,
-asks: Map(u64, *Level, 4, compare),
-bids: Map(u64, *Level, 4, compare),
+asks: Map,
+bids: Map,
 
 const Status = enum(u8) {
     open = 0,
@@ -74,8 +74,8 @@ const Level = struct {
 pub fn init(allocator: std.mem.Allocator) !*Book {
     const self = try allocator.create(Book);
     self.* = .{
-        .asks = .empty,
-        .bids = .empty,
+        .asks = .init(),
+        .bids = .init(),
         .allocator = allocator,
     };
 
@@ -83,11 +83,14 @@ pub fn init(allocator: std.mem.Allocator) !*Book {
 }
 
 pub fn deinit(self: *Book) void {
-    var bids_iter = self.bids.iterator();
+    var bids_iter = self.bids.iter();
     while (bids_iter.next()) |*entry| entry.value.deinit(self.allocator);
 
-    var asks_iter = self.asks.iterator();
+    var asks_iter = self.asks.iter();
     while (asks_iter.next()) |*entry| entry.value.deinit(self.allocator);
+
+    self.bids.deinit(self.allocator);
+    self.asks.deinit(self.allocator);
 
     self.allocator.destroy(self);
 }
