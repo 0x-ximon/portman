@@ -20,6 +20,8 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
     const min_children = M; // 4
     const max_children = (2 * M); // 8
 
+    const Direction = enum { ascending, descending };
+
     return struct {
         const Self = @This();
         const KV = struct { key: K, value: V };
@@ -129,11 +131,39 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
         }
 
         /// Returns an iterator over the map's entries.
-        pub fn iter(self: *Self) Iterator {
+        pub fn iter(self: *Self, direction: Direction) Iterator {
+            switch (direction) {
+                .ascending => {
+                    const node = self.head();
+                    return .{ .node = node, .index = 0 };
+                },
+                .descending => {
+                    const node = self.tail();
+                    return .{ .node = node, .index = if (node) |n| n.leaf.count else 0 };
+                },
+            }
+        }
+
+        // Returns the first node in the map, or null if the map is empty.
+        fn head(self: *Self) ?*Node {
             if (self.root) |root| {
-                const first = root.traverse();
-                return .{ .node = first, .index = 0 };
-            } else return .{ .node = null, .index = 0 };
+                var node: *Node = root;
+                while (node.* == .inner) node = node.inner.children[0] orelse unreachable;
+                return node;
+            }
+
+            return null;
+        }
+
+        // Returns the last node in the map, or null if the map is empty.
+        fn tail(self: *Self) ?*Node {
+            if (self.root) |root| {
+                var node: *Node = root;
+                while (node.* == .inner) node = node.inner.children[node.inner.count] orelse unreachable;
+                return node;
+            }
+
+            return null;
         }
 
         const Node = union((enum { inner, leaf })) {
@@ -148,6 +178,7 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
 
             const Leaf = struct {
                 count: usize = 0, // current number of entries
+                prev: ?*Node = null,
                 next: ?*Node = null,
                 entries: [max_keys]KV = undefined,
             };
@@ -275,8 +306,11 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                 switch (child.*) {
                     .leaf => |*node| {
                         // Child gets 4, Other gets 3, First of Other gets promoted to self
-                        other.* = .{ .leaf = .{ .count = min_keys, .next = node.next } };
+                        other.* = .{ .leaf = .{ .count = min_keys, .prev = child, .next = node.next } };
                         @memcpy(other.leaf.entries[0..min_keys], node.entries[M..max_keys]);
+
+                        // Whatever used to follow `child` now follows `other` instead.
+                        if (other.leaf.next) |next_node| next_node.leaf.prev = other;
 
                         node.count = M;
                         node.next = other;
@@ -406,6 +440,8 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
 
                             other.leaf.count += node.count;
                             other.leaf.next = node.next;
+
+                            if (other.leaf.next) |next_node| next_node.leaf.prev = other;
                         },
                     }
 
@@ -440,6 +476,8 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
 
                             node.count += other.leaf.count;
                             node.next = other.leaf.next;
+
+                            if (node.next) |next_node| next_node.leaf.prev = child;
                         },
                     }
 
@@ -454,12 +492,6 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
                 }
 
                 unreachable; // This should never happen
-            }
-
-            fn traverse(self: *Node) *Node {
-                var node = self;
-                while (node.* == .inner) node = node.inner.children[0] orelse unreachable;
-                return node;
             }
 
             fn full(self: *Node) bool {
@@ -515,6 +547,32 @@ pub fn Map(comptime K: type, comptime V: type, comptime M: usize, comptime compa
 
                 return null;
             }
+
+            pub fn prev(self: *Iterator) ?KV {
+                if (self.node) |node| {
+                    switch (node.*) {
+                        .inner => unreachable,
+                        .leaf => |leaf| {
+                            if (self.index > 0) {
+                                self.index -= 1;
+                                return leaf.entries[self.index];
+                            }
+
+                            if (leaf.prev) |prev_node| {
+                                self.node = prev_node;
+                                self.index = prev_node.leaf.count - 1;
+                                return prev_node.leaf.entries[self.index];
+                            }
+
+                            self.node = null;
+                            self.index = 0;
+                            return null;
+                        },
+                    }
+                }
+
+                return null;
+            }
         };
     };
 }
@@ -535,13 +593,14 @@ const Context = struct {
         ViolatedOrderInvariant,
         ViolatedNullInvariant,
         ViolatedDepthInvariant,
+        ViolatedLinkInvariant,
     };
 
     fn compare(a: K, b: K) math.Order {
         return math.order(a, b);
     }
 
-    fn nodesInvariantsHold(_: Self, allocator: mem.Allocator, map: *T) Errors!void {
+    fn nodesInvariantsHold(allocator: mem.Allocator, map: *T) Errors!void {
         // Traverse the tree from the root via BFS
         const root = map.root orelse return;
         var deepest: ?usize = null;
@@ -601,29 +660,54 @@ const Context = struct {
 
                     // All leaves must hold at least M - 1 entries and at most 2M - 1 entries
                     if (leaf.count < min_entries or leaf.count > max_entries) return Errors.ViolatedKeyInvariant;
+
+                    // The doubly linked list must be internally consistent: whatever a
+                    // leaf points to via `next`/`prev` must point back to this leaf.
+                    if (leaf.next) |next_node| {
+                        if (next_node.leaf.prev != pair.node) return Errors.ViolatedLinkInvariant;
+                    }
+                    if (leaf.prev) |prev_node| {
+                        if (prev_node.leaf.next != pair.node) return Errors.ViolatedLinkInvariant;
+                    }
                 },
             }
         }
     }
 
-    fn orderInvariantsHold(_: Self, map: *T) Errors!void {
-        var iter = map.iter();
+    fn orderInvariantsHold(map: *T) Errors!void {
         const size = map.count();
 
-        var visited: u64 = 0;
-        var last: ?E = null;
+        {
+            var iter = map.iter(.ascending);
+            var visited: u64 = 0;
+            var node: ?E = null;
 
-        while (iter.next()) |curr| {
-            if (last) |prev| if (compare(prev.key, curr.key) != .lt) return Errors.ViolatedOrderInvariant;
-            visited += 1;
-            last = curr;
+            while (iter.next()) |next| {
+                if (node) |curr| if (compare(curr.key, next.key) != .lt) return Errors.ViolatedOrderInvariant;
+                visited += 1;
+                node = next;
+            }
+
+            if (visited != size) return Errors.ViolatedNullInvariant;
         }
 
-        if (visited != size) return Errors.ViolatedNullInvariant;
+        {
+            var iter = map.iter(.descending);
+            var visited: u64 = 0;
+            var node: ?E = null;
+
+            while (iter.prev()) |prev| {
+                if (node) |curr| if (compare(curr.key, prev.key) != .gt) return Errors.ViolatedOrderInvariant;
+                visited += 1;
+                node = prev;
+            }
+
+            if (visited != size) return Errors.ViolatedNullInvariant;
+        }
     }
 };
 
-fn testMap(ctx: Context, smith: *std.testing.Smith) !void {
+fn testMap(_: Context, smith: *std.testing.Smith) !void {
     const allocator = testing.allocator;
 
     var oracle = std.AutoHashMap(Context.K, Context.V).init(allocator);
@@ -667,8 +751,8 @@ fn testMap(ctx: Context, smith: *std.testing.Smith) !void {
         }
 
         // Validate Invariants Integrity
-        try ctx.nodesInvariantsHold(allocator, &map);
-        try ctx.orderInvariantsHold(&map);
+        try Context.nodesInvariantsHold(allocator, &map);
+        try Context.orderInvariantsHold(&map);
     }
 }
 

@@ -84,10 +84,10 @@ pub fn init(allocator: std.mem.Allocator) !*Book {
 }
 
 pub fn deinit(self: *Book) void {
-    var bids_iter = self.bids.iter();
+    var bids_iter = self.bids.iter(.ascending);
     while (bids_iter.next()) |*entry| entry.value.deinit(self.allocator);
 
-    var asks_iter = self.asks.iter();
+    var asks_iter = self.asks.iter(.descending);
     while (asks_iter.next()) |*entry| entry.value.deinit(self.allocator);
 
     self.bids.deinit(self.allocator);
