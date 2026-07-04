@@ -30,6 +30,7 @@ const Mode = enum(u8) {
     gtc = 0,
     fok = 1,
     ioc = 2,
+    aon = 3,
 };
 
 const Flags = packed struct(u8) {
@@ -83,10 +84,10 @@ pub fn init(allocator: std.mem.Allocator) !*Book {
 }
 
 pub fn deinit(self: *Book) void {
-    var bids_iter = self.bids.iter();
+    var bids_iter = self.bids.iter(.ascending);
     while (bids_iter.next()) |*entry| entry.value.deinit(self.allocator);
 
-    var asks_iter = self.asks.iter();
+    var asks_iter = self.asks.iter(.descending);
     while (asks_iter.next()) |*entry| entry.value.deinit(self.allocator);
 
     self.bids.deinit(self.allocator);
@@ -100,6 +101,7 @@ pub fn newOrder(self: *Book, order: *const Order) !void {
         .gtc => try gtc(self, order),
         .fok => try fok(self, order),
         .ioc => try ioc(self, order),
+        .aon => try aon(self, order),
     }
 }
 
@@ -134,6 +136,14 @@ fn fok(_: *Book, order: *const Order) !void {
 
 // Immediate or Cancel
 fn ioc(_: *Book, order: *const Order) !void {
+    switch (order.side) {
+        .buy => {},
+        .sell => {},
+    }
+}
+
+// All or None
+fn aon(_: *Book, order: *const Order) !void {
     switch (order.side) {
         .buy => {},
         .sell => {},
