@@ -25,9 +25,6 @@ categories:
         - "maintenance"
 
   - title: "Miscellaneous"
-    when:
-      labels:
-        -
 
   - type: "pre-exclude"
     when:
