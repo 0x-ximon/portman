@@ -23,5 +23,5 @@ jobs:
               "perf": "performance",
               "docs": "documentation",
               "chore": "maintenance",
-              "refactor": "maintenance",
+              "refactor": "maintenance"
             }
