@@ -3,7 +3,7 @@ const Io = std.Io;
 const mem = std.mem;
 const math = std.math;
 
-const Book = @This();
+const Self = @This();
 const Map = @import("map.zig")
     .Map(u64, *Level, 32, compare);
 
@@ -52,6 +52,10 @@ pub const Order = extern struct {
     flags: Flags,
 };
 
+const Errors = error{
+    InsufficientLiquidity,
+};
+
 const Level = struct {
     liquidity: u64,
     orders: std.ArrayList(Order),
@@ -72,8 +76,8 @@ const Level = struct {
     }
 };
 
-pub fn init(allocator: std.mem.Allocator) !*Book {
-    const self = try allocator.create(Book);
+pub fn init(allocator: std.mem.Allocator) !*Self {
+    const self = try allocator.create(Self);
     self.* = .{
         .asks = .init(),
         .bids = .init(),
@@ -83,7 +87,7 @@ pub fn init(allocator: std.mem.Allocator) !*Book {
     return self;
 }
 
-pub fn deinit(self: *Book) void {
+pub fn deinit(self: *Self) void {
     var bids_iter = self.bids.iter(.ascending);
     while (bids_iter.next()) |*entry| entry.value.deinit(self.allocator);
 
@@ -96,21 +100,24 @@ pub fn deinit(self: *Book) void {
     self.allocator.destroy(self);
 }
 
-pub fn newOrder(self: *Book, order: *const Order) !void {
+pub fn newOrder(self: *Self, order: *Order) !void {
     switch (order.mode) {
         .gtc => try gtc(self, order),
-        .fok => try fok(self, order),
+        .fok => {
+            const orders = try fok(self, order);
+            _ = orders;
+        },
         .ioc => try ioc(self, order),
         .aon => try aon(self, order),
     }
 }
 
-pub fn updateOrder(_: *Book, _: *const Order) !void {}
+pub fn updateOrder(_: *Self, _: *Order) !void {}
 
-pub fn cancelOrder(_: *Book, _: *const Order) !void {}
+pub fn cancelOrder(_: *Self, _: *Order) !void {}
 
 // Good Till Cancelled
-fn gtc(self: *Book, order: *const Order) !void {
+fn gtc(self: *Self, order: *Order) !void {
     const map = switch (order.side) {
         .buy => &self.bids,
         .sell => &self.asks,
@@ -127,15 +134,104 @@ fn gtc(self: *Book, order: *const Order) !void {
 }
 
 // Fill or Kill
-fn fok(_: *Book, order: *const Order) !void {
+fn fok(self: *Self, order: *Order) ![]Order {
     switch (order.side) {
-        .buy => {},
-        .sell => {},
+        .buy => {
+            const map = &self.asks;
+            var available: u64 = 0;
+
+            // Pass 1: Verify liquidity
+            var iter = map.iter(.ascending);
+            while (iter.next()) |*entry| {
+                if (available >= order.quantity) break;
+                if (entry.key > order.price) {
+                    order.status = .cancelled;
+                    return Errors.InsufficientLiquidity;
+                }
+
+                available += entry.value.liquidity;
+            }
+
+            if (available < order.quantity) {
+                order.status = .cancelled;
+                return Errors.InsufficientLiquidity;
+            }
+
+            // Pass 2: Fill the order
+            iter = map.iter(.ascending);
+            const settled = std.ArrayList(Order).empty;
+
+            while (iter.next()) |*entry| {
+                var indexes = std.ArrayList(usize).empty;
+                for (0.., entry.value.orders.items) |index, *item| {
+                    if (math.order(item.quantity, order.quantity) == .lt) {
+                        order.quantity -= item.quantity;
+                        item.quantity = 0;
+                        indexes.append(self.allocator, index) catch {};
+                    } else {
+                        item.quantity -= order.quantity;
+                        order.status = .filled;
+                        order.quantity = 0;
+                    }
+                }
+
+                entry.value.orders.orderedRemoveMany(indexes.items);
+                if (order.status == .filled) break;
+            }
+
+            return settled.items;
+        },
+
+        .sell => {
+            const map = &self.bids;
+            var available: u64 = 0;
+
+            // Pass 1: Verify liquidity
+            var iter = map.iter(.descending);
+            while (iter.prev()) |*entry| {
+                if (available >= order.quantity) break;
+                if (entry.key < order.price) {
+                    order.status = .cancelled;
+                    return Errors.InsufficientLiquidity;
+                }
+
+                available += entry.value.liquidity;
+            }
+
+            if (available < order.quantity) {
+                order.status = .cancelled;
+                return Errors.InsufficientLiquidity;
+            }
+
+            // Pass 2: Fill the order
+            iter = map.iter(.descending);
+            const settled = std.ArrayList(Order).empty;
+
+            while (iter.next()) |*entry| {
+                var indexes = std.ArrayList(usize).empty;
+                for (0.., entry.value.orders.items) |index, *item| {
+                    if (math.order(item.quantity, order.quantity) == .lt) {
+                        order.quantity -= item.quantity;
+                        item.quantity = 0;
+                        indexes.append(self.allocator, index) catch {};
+                    } else {
+                        item.quantity -= order.quantity;
+                        order.status = .filled;
+                        order.quantity = 0;
+                    }
+                }
+
+                entry.value.orders.orderedRemoveMany(indexes.items);
+                if (order.status == .filled) break;
+            }
+
+            return settled.items;
+        },
     }
 }
 
 // Immediate or Cancel
-fn ioc(_: *Book, order: *const Order) !void {
+fn ioc(_: *Self, order: *const Order) !void {
     switch (order.side) {
         .buy => {},
         .sell => {},
@@ -143,7 +239,7 @@ fn ioc(_: *Book, order: *const Order) !void {
 }
 
 // All or None
-fn aon(_: *Book, order: *const Order) !void {
+fn aon(_: *Self, order: *const Order) !void {
     switch (order.side) {
         .buy => {},
         .sell => {},

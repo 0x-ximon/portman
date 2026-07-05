@@ -28,10 +28,10 @@ pub fn info(reader: *Io.Reader) !*const Header {
     return header;
 }
 
-pub fn recv(reader: *Io.Reader, length: usize) ![]const Order {
+pub fn recv(reader: *Io.Reader, length: usize) ![]Order {
     const bytes = try reader.take(length);
     const count = length / @sizeOf(Order);
-    const orders = @as([*]const Order, @ptrCast(@alignCast(bytes.ptr)))[0..count];
+    const orders = @as([*]Order, @ptrCast(@alignCast(bytes.ptr)))[0..count];
     return orders;
 }
 

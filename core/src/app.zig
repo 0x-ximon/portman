@@ -77,7 +77,7 @@ fn handle(self: *App, io: Io, allocator: mem.Allocator) !void {
 
         switch (header.instruction) {
             .NewOrder => try book.newOrder(order),
-            .CancelOrder => try book.newOrder(order),
+            .CancelOrder => try book.cancelOrder(order),
             .UpdateOrder => try book.updateOrder(order),
         }
 
