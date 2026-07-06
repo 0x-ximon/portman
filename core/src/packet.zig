@@ -7,7 +7,7 @@ const Order = Book.Order;
 const Packet = @This();
 
 pub const Instruction = enum(u8) {
-    NewOrder = 0,
+    ProcessOrder = 0,
     CancelOrder = 1,
     UpdateOrder = 2,
 };

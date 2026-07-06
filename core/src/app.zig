@@ -76,9 +76,9 @@ fn handle(self: *App, io: Io, allocator: mem.Allocator) !void {
         };
 
         switch (header.instruction) {
-            .NewOrder => try book.newOrder(order),
             .CancelOrder => try book.cancelOrder(order),
             .UpdateOrder => try book.updateOrder(order),
+            .ProcessOrder => _ = try book.processOrder(order),
         }
 
         std.log.info("order processed: {any}", .{order});
