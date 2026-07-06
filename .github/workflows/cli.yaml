@@ -15,7 +15,7 @@ jobs:
 
         defaults:
             run:
-                working-directory: tui
+                working-directory: cli
 
         steps:
             - uses: actions/checkout@v5
