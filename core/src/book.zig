@@ -135,49 +135,9 @@ fn gtc(self: *Self, order: *Order) ![]Order {
                 var indexes = std.ArrayList(usize).empty;
                 defer indexes.deinit(self.allocator);
 
-                for (0.., level.orders.items) |index, *item| {
-                    switch (math.order(item.quantity, order.quantity)) {
-                        .lt => {
-                            level.liquidity -= item.quantity;
-                            order.quantity -= item.quantity;
-
-                            item.quantity = 0;
-                            item.status = .filled;
-                            order.status = .partial;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                        },
-                        .eq => {
-                            level.liquidity -= order.quantity;
-                            order.status = .filled;
-                            item.status = .filled;
-                            order.quantity = 0;
-                            item.quantity = 0;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-
-                            break;
-                        },
-
-                        .gt => {
-                            level.liquidity -= order.quantity;
-                            item.quantity -= order.quantity;
-
-                            order.quantity = 0;
-                            item.status = .partial;
-                            order.status = .filled;
-
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-                            break;
-                        },
-                    }
-                }
-
+                try self.match(order, level, &indexes, &settled);
                 level.orders.orderedRemoveMany(indexes.items);
+
                 if (level.liquidity == 0) try cleared.append(self.allocator, .{ .key = price, .value = level });
                 if (order.quantity == 0) break;
             }
@@ -214,49 +174,9 @@ fn gtc(self: *Self, order: *Order) ![]Order {
                 var indexes = std.ArrayList(usize).empty;
                 defer indexes.deinit(self.allocator);
 
-                for (0.., level.orders.items) |index, *item| {
-                    switch (math.order(item.quantity, order.quantity)) {
-                        .lt => {
-                            level.liquidity -= item.quantity;
-                            order.quantity -= item.quantity;
-
-                            item.quantity = 0;
-                            item.status = .filled;
-                            order.status = .partial;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                        },
-                        .eq => {
-                            level.liquidity -= order.quantity;
-                            order.status = .filled;
-                            item.status = .filled;
-                            order.quantity = 0;
-                            item.quantity = 0;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-
-                            break;
-                        },
-
-                        .gt => {
-                            level.liquidity -= order.quantity;
-                            item.quantity -= order.quantity;
-
-                            order.quantity = 0;
-                            item.status = .partial;
-                            order.status = .filled;
-
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-                            break;
-                        },
-                    }
-                }
-
+                try self.match(order, level, &indexes, &settled);
                 level.orders.orderedRemoveMany(indexes.items);
+
                 if (level.liquidity == 0) try cleared.append(self.allocator, .{ .key = price, .value = level });
                 if (order.quantity == 0) break;
             }
@@ -329,49 +249,9 @@ fn fok(self: *Self, order: *Order) ![]Order {
                 var indexes = std.ArrayList(usize).empty;
                 defer indexes.deinit(self.allocator);
 
-                for (0.., level.orders.items) |index, *item| {
-                    switch (math.order(item.quantity, order.quantity)) {
-                        .lt => {
-                            level.liquidity -= item.quantity;
-                            order.quantity -= item.quantity;
-
-                            item.quantity = 0;
-                            item.status = .filled;
-                            order.status = .partial;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                        },
-                        .eq => {
-                            level.liquidity -= order.quantity;
-                            order.status = .filled;
-                            item.status = .filled;
-                            order.quantity = 0;
-                            item.quantity = 0;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-
-                            break;
-                        },
-
-                        .gt => {
-                            level.liquidity -= order.quantity;
-                            item.quantity -= order.quantity;
-
-                            order.quantity = 0;
-                            item.status = .partial;
-                            order.status = .filled;
-
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-                            break;
-                        },
-                    }
-                }
-
+                try self.match(order, level, &indexes, &settled);
                 level.orders.orderedRemoveMany(indexes.items);
+
                 if (level.liquidity == 0) try cleared.append(self.allocator, .{ .key = price, .value = level });
                 if (order.quantity == 0) break;
             }
@@ -416,49 +296,9 @@ fn fok(self: *Self, order: *Order) ![]Order {
                 var indexes = std.ArrayList(usize).empty;
                 defer indexes.deinit(self.allocator);
 
-                for (0.., level.orders.items) |index, *item| {
-                    switch (math.order(item.quantity, order.quantity)) {
-                        .lt => {
-                            level.liquidity -= item.quantity;
-                            order.quantity -= item.quantity;
-
-                            item.quantity = 0;
-                            item.status = .filled;
-                            order.status = .partial;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                        },
-                        .eq => {
-                            level.liquidity -= order.quantity;
-                            order.status = .filled;
-                            item.status = .filled;
-                            order.quantity = 0;
-                            item.quantity = 0;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-
-                            break;
-                        },
-
-                        .gt => {
-                            level.liquidity -= order.quantity;
-                            item.quantity -= order.quantity;
-
-                            order.quantity = 0;
-                            item.status = .partial;
-                            order.status = .filled;
-
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-                            break;
-                        },
-                    }
-                }
-
+                try self.match(order, level, &indexes, &settled);
                 level.orders.orderedRemoveMany(indexes.items);
+
                 if (level.liquidity == 0) try cleared.append(self.allocator, .{ .key = price, .value = level });
                 if (order.quantity == 0) break;
             }
@@ -497,49 +337,9 @@ fn ioc(self: *Self, order: *Order) ![]Order {
                 var indexes = std.ArrayList(usize).empty;
                 defer indexes.deinit(self.allocator);
 
-                for (0.., level.orders.items) |index, *item| {
-                    switch (math.order(item.quantity, order.quantity)) {
-                        .lt => {
-                            level.liquidity -= item.quantity;
-                            order.quantity -= item.quantity;
-
-                            item.quantity = 0;
-                            item.status = .filled;
-                            order.status = .partial;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                        },
-                        .eq => {
-                            level.liquidity -= order.quantity;
-                            order.status = .filled;
-                            item.status = .filled;
-                            order.quantity = 0;
-                            item.quantity = 0;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-
-                            break;
-                        },
-
-                        .gt => {
-                            level.liquidity -= order.quantity;
-                            item.quantity -= order.quantity;
-
-                            order.quantity = 0;
-                            item.status = .partial;
-                            order.status = .filled;
-
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-                            break;
-                        },
-                    }
-                }
-
+                try self.match(order, level, &indexes, &settled);
                 level.orders.orderedRemoveMany(indexes.items);
+
                 if (level.liquidity == 0) try cleared.append(self.allocator, .{ .key = price, .value = level });
                 if (order.quantity == 0) break;
             }
@@ -564,49 +364,9 @@ fn ioc(self: *Self, order: *Order) ![]Order {
                 var indexes = std.ArrayList(usize).empty;
                 defer indexes.deinit(self.allocator);
 
-                for (0.., level.orders.items) |index, *item| {
-                    switch (math.order(item.quantity, order.quantity)) {
-                        .lt => {
-                            level.liquidity -= item.quantity;
-                            order.quantity -= item.quantity;
-
-                            item.quantity = 0;
-                            item.status = .filled;
-                            order.status = .partial;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                        },
-                        .eq => {
-                            level.liquidity -= order.quantity;
-                            order.status = .filled;
-                            item.status = .filled;
-                            order.quantity = 0;
-                            item.quantity = 0;
-
-                            try indexes.append(self.allocator, index);
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-
-                            break;
-                        },
-
-                        .gt => {
-                            level.liquidity -= order.quantity;
-                            item.quantity -= order.quantity;
-
-                            order.quantity = 0;
-                            item.status = .partial;
-                            order.status = .filled;
-
-                            try settled.append(self.allocator, item.*);
-                            try settled.append(self.allocator, order.*);
-                            break;
-                        },
-                    }
-                }
-
+                try self.match(order, level, &indexes, &settled);
                 level.orders.orderedRemoveMany(indexes.items);
+
                 if (level.liquidity == 0) try cleared.append(self.allocator, .{ .key = price, .value = level });
                 if (order.quantity == 0) break;
             }
@@ -620,4 +380,54 @@ fn ioc(self: *Self, order: *Order) ![]Order {
     }
 
     return settled.toOwnedSlice(self.allocator);
+}
+
+fn match(
+    self: *Self,
+    order: *Order,
+    level: *Level,
+    indexes: *std.ArrayList(usize),
+    settled: *std.ArrayList(Order),
+) !void {
+    for (0.., level.orders.items) |index, *item| {
+        switch (math.order(item.quantity, order.quantity)) {
+            .lt => {
+                level.liquidity -= item.quantity;
+                order.quantity -= item.quantity;
+
+                item.quantity = 0;
+                item.status = .filled;
+                order.status = .partial;
+
+                try indexes.append(self.allocator, index);
+                try settled.append(self.allocator, item.*);
+            },
+            .eq => {
+                level.liquidity -= order.quantity;
+                order.status = .filled;
+                item.status = .filled;
+                order.quantity = 0;
+                item.quantity = 0;
+
+                try indexes.append(self.allocator, index);
+                try settled.append(self.allocator, item.*);
+                try settled.append(self.allocator, order.*);
+
+                break;
+            },
+
+            .gt => {
+                level.liquidity -= order.quantity;
+                item.quantity -= order.quantity;
+
+                order.quantity = 0;
+                item.status = .partial;
+                order.status = .filled;
+
+                try settled.append(self.allocator, item.*);
+                try settled.append(self.allocator, order.*);
+                break;
+            },
+        }
+    }
 }
