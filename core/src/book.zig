@@ -188,6 +188,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
                             order.quantity -= item.quantity;
 
                             item.quantity = 0;
+                            item.status = .filled;
                             order.status = .partial;
 
                             try indexes.append(self.allocator, index);
@@ -196,6 +197,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
                         .eq => {
                             level.liquidity -= order.quantity;
                             order.status = .filled;
+                            item.status = .filled;
                             order.quantity = 0;
                             item.quantity = 0;
 
@@ -211,6 +213,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
                             item.quantity -= order.quantity;
 
                             order.quantity = 0;
+                            item.status = .partial;
                             order.status = .filled;
 
                             try settled.append(self.allocator, item.*);
@@ -272,6 +275,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
                             order.quantity -= item.quantity;
 
                             item.quantity = 0;
+                            item.status = .filled;
                             order.status = .partial;
 
                             try indexes.append(self.allocator, index);
@@ -280,6 +284,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
                         .eq => {
                             level.liquidity -= order.quantity;
                             order.status = .filled;
+                            item.status = .filled;
                             order.quantity = 0;
                             item.quantity = 0;
 
@@ -295,6 +300,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
                             item.quantity -= order.quantity;
 
                             order.quantity = 0;
+                            item.status = .partial;
                             order.status = .filled;
 
                             try settled.append(self.allocator, item.*);
@@ -350,6 +356,7 @@ fn ioc(self: *Self, order: *Order) ![]Order {
                             order.quantity -= item.quantity;
 
                             item.quantity = 0;
+                            item.status = .filled;
                             order.status = .partial;
 
                             try indexes.append(self.allocator, index);
@@ -358,6 +365,7 @@ fn ioc(self: *Self, order: *Order) ![]Order {
                         .eq => {
                             level.liquidity -= order.quantity;
                             order.status = .filled;
+                            item.status = .filled;
                             order.quantity = 0;
                             item.quantity = 0;
 
@@ -373,6 +381,7 @@ fn ioc(self: *Self, order: *Order) ![]Order {
                             item.quantity -= order.quantity;
 
                             order.quantity = 0;
+                            item.status = .partial;
                             order.status = .filled;
 
                             try settled.append(self.allocator, item.*);
@@ -414,6 +423,7 @@ fn ioc(self: *Self, order: *Order) ![]Order {
                             order.quantity -= item.quantity;
 
                             item.quantity = 0;
+                            item.status = .filled;
                             order.status = .partial;
 
                             try indexes.append(self.allocator, index);
@@ -422,6 +432,7 @@ fn ioc(self: *Self, order: *Order) ![]Order {
                         .eq => {
                             level.liquidity -= order.quantity;
                             order.status = .filled;
+                            item.status = .filled;
                             order.quantity = 0;
                             item.quantity = 0;
 
@@ -437,6 +448,7 @@ fn ioc(self: *Self, order: *Order) ![]Order {
                             item.quantity -= order.quantity;
 
                             order.quantity = 0;
+                            item.status = .partial;
                             order.status = .filled;
 
                             try settled.append(self.allocator, item.*);
