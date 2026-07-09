@@ -2,6 +2,7 @@ const std = @import("std");
 const Io = std.Io;
 const mem = std.mem;
 const math = std.math;
+const testing = std.testing;
 
 const Self = @This();
 const Map = @import("map.zig")
@@ -16,7 +17,7 @@ asks: Map,
 bids: Map,
 
 const Status = enum(u8) {
-    open = 0,
+    pending = 0,
     filled = 1,
     partial = 2,
     cancelled = 3,
@@ -430,4 +431,96 @@ fn match(
             },
         }
     }
+}
+
+const Context = struct {
+    const Ctx = @This();
+
+    const E = error{
+        CrossedBook,
+        LiquidityMismatch,
+        DeadOrderResting,
+        InvalidSettledState,
+    };
+
+    fn bookInvariantsHold(book: *Self) !void {
+        try verifyLiquidity(&book.bids);
+        try verifyLiquidity(&book.asks);
+
+        var bid_iter = book.bids.iter(.descending);
+        var ask_iter = book.asks.iter(.ascending);
+
+        var best_bid = bid_iter.prev();
+        var best_ask = ask_iter.next();
+
+        while (best_bid != null and best_ask != null) {
+            const bid = best_bid orelse unreachable;
+            const ask = best_ask orelse unreachable;
+
+            // Bids should never be greater than Ask
+            if (bid.key >= ask.key) return E.CrossedBook;
+
+            best_bid = bid_iter.prev();
+            best_ask = ask_iter.next();
+        }
+    }
+
+    fn verifyLiquidity(map: *Map) !void {
+        var iter = map.iter(.ascending);
+        while (iter.next()) |entry| {
+            const level = entry.value;
+            var expected_liquidity: u64 = 0;
+
+            for (level.orders.items) |o| {
+                // A resting order should never be fully filled or have 0 quantity
+                if (o.quantity == 0 or o.status == .filled) return E.DeadOrderResting;
+                expected_liquidity += o.quantity;
+            }
+
+            // The cached level liquidity must exactly equal the sum of resting quantities
+            if (expected_liquidity != level.liquidity) return E.LiquidityMismatch;
+        }
+    }
+};
+
+fn testBook(_: Context, smith: *std.testing.Smith) !void {
+    const allocator = testing.allocator;
+    const book = try init(allocator);
+    defer book.deinit();
+
+    while (!smith.eos()) {
+        var order: Order = .{
+            .status = .pending,
+            .qty_precision = 3,
+            .price_precision = 3,
+            .id = smith.value(u64),
+            .side = smith.value(Side),
+            .mode = smith.value(Mode),
+            .flags = smith.value(Flags),
+            .asset = smith.valueRangeAtMost(u16, 1000, 1010),
+            .price = smith.valueRangeAtMost(u64, 100_000, 150_000),
+            .quantity = smith.valueRangeAtMost(u64, 1000, 1_000_000_000),
+        };
+
+        if (book.processOrder(&order)) |settled| {
+            defer allocator.free(settled);
+
+            for (settled) |s| {
+                if (s.status != .filled and s.status != .partial)
+                    return Context.E.InvalidSettledState;
+
+                if (s.status == .filled and s.quantity != 0)
+                    return Context.E.InvalidSettledState;
+            }
+        } else |err| {
+            try testing.expectEqual(order.status, .cancelled);
+            try testing.expect(err == Errors.InsufficientLiquidity);
+        }
+
+        try Context.bookInvariantsHold(book);
+    }
+}
+
+test "Book: Fuzz" {
+    try testing.fuzz(Context{}, testBook, .{});
 }
