@@ -506,6 +506,10 @@ fn testBook(_: Context, smith: *std.testing.Smith) !void {
 
         if (book.processOrder(&order)) |settled| {
             defer allocator.free(settled);
+            const m = switch (order.side) {
+                .buy => &book.asks,
+                .sell => &book.bids,
+            };
 
             for (settled) |s| {
                 if (s.status != .filled and s.status != .partial)
@@ -513,6 +517,15 @@ fn testBook(_: Context, smith: *std.testing.Smith) !void {
 
                 if (s.status == .filled and s.quantity != 0)
                     return Context.E.InvalidSettledState;
+
+                // Verify settled orders Level no longer exist in the order book
+                // or the level does not have the specific order or are partially filled
+                if (m.get(s.price)) |l| {
+                    for (l.orders.items) |o| {
+                        if (o.id == s.id and o.status != .partial)
+                            return Context.E.InvalidSettledState;
+                    }
+                }
             }
         } else |err| {
             try testing.expectEqual(order.status, .cancelled);
