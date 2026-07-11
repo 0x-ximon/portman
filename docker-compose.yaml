@@ -1,0 +1,41 @@
+services:
+  portman-database:
+    image: postgres:18-alpine
+    container_name: portman-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: portman
+    networks: 
+      - portman_network
+    volumes:
+      - portman_volume:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+
+  portman-cache:
+    image: redis:8-alpine
+    container_name: portman-cache
+    restart: unless-stopped
+    networks: 
+      - portman_network
+    ports:
+      - "6379:6379"
+
+  portman-queue:
+    image: nats:2-alpine
+    container_name: portman-queue
+    restart: unless-stopped
+    networks: 
+      - portman_network
+    ports:
+      - "4222:4222"
+
+networks:
+  portman_network:
+    name: portman_network
+
+volumes:
+  portman_volume:
+    name: portman_volume
