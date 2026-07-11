@@ -89,11 +89,11 @@ pub fn init(allocator: std.mem.Allocator) !*Self {
 }
 
 pub fn deinit(self: *Self) void {
-    var bids_iter = self.bids.iter(.ascending);
-    while (bids_iter.next()) |*entry| entry.value.deinit(self.allocator);
-
-    var asks_iter = self.asks.iter(.descending);
+    var asks_iter = self.asks.iter(.ascending);
     while (asks_iter.next()) |*entry| entry.value.deinit(self.allocator);
+
+    var bids_iter = self.bids.iter(.descending);
+    while (bids_iter.prev()) |*entry| entry.value.deinit(self.allocator);
 
     self.bids.deinit(self.allocator);
     self.asks.deinit(self.allocator);
@@ -155,6 +155,7 @@ fn gtc(self: *Self, order: *Order) ![]Order {
 
                 var level = map.get(order.price) orelse blk: {
                     const l = try Level.init(self.allocator);
+                    errdefer l.deinit(self.allocator);
                     try map.put(self.allocator, order.price, l);
                     break :blk l;
                 };
@@ -164,7 +165,7 @@ fn gtc(self: *Self, order: *Order) ![]Order {
             }
         },
         .sell => {
-            var map = &self.asks;
+            var map = &self.bids;
 
             var iter = map.iter(.descending);
             while (iter.prev()) |*entry| {
@@ -194,6 +195,7 @@ fn gtc(self: *Self, order: *Order) ![]Order {
 
                 var level = map.get(order.price) orelse blk: {
                     const l = try Level.init(self.allocator);
+                    errdefer l.deinit(self.allocator);
                     try map.put(self.allocator, order.price, l);
                     break :blk l;
                 };
