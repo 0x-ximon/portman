@@ -483,6 +483,13 @@ const Context = struct {
             if (expected_liquidity != level.liquidity) return E.LiquidityMismatch;
         }
     }
+
+    fn totalLiquidity(map: *Map) u64 {
+        var sum: u64 = 0;
+        var iter = map.iter(.ascending);
+        while (iter.next()) |entry| sum += entry.value.liquidity;
+        return sum;
+    }
 };
 
 fn testBook(_: Context, smith: *std.testing.Smith) !void {
@@ -504,19 +511,43 @@ fn testBook(_: Context, smith: *std.testing.Smith) !void {
             .quantity = smith.valueRangeAtMost(u64, 1000, 1_000_000_000),
         };
 
+        const bids_before = Context.totalLiquidity(&book.bids);
+        const asks_before = Context.totalLiquidity(&book.asks);
+        const q_start = order.quantity;
+
         if (book.processOrder(&order)) |settled| {
             defer allocator.free(settled);
 
-            for (settled) |s| {
-                if (s.status != .filled and s.status != .partial)
-                    return Context.E.InvalidSettledState;
+            const bids_after = Context.totalLiquidity(&book.bids);
+            const asks_after = Context.totalLiquidity(&book.asks);
 
-                if (s.status == .filled and s.quantity != 0)
-                    return Context.E.InvalidSettledState;
+            const q_rem = order.quantity;
+            const q_traded = q_start - q_rem;
+
+            switch (order.side) {
+                .buy => {
+                    try testing.expectEqual(asks_before - asks_after, q_traded);
+
+                    if (order.mode == .gtc and order.status != .filled)
+                        try testing.expectEqual(bids_after - bids_before, q_rem)
+                    else
+                        try testing.expectEqual(bids_before, bids_after);
+                },
+                .sell => {
+                    try testing.expectEqual(bids_before - bids_after, q_traded);
+
+                    if (order.mode == .gtc and order.status != .filled)
+                        try testing.expectEqual(asks_after - asks_before, q_rem)
+                    else
+                        try testing.expectEqual(asks_before, asks_after);
+                },
             }
         } else |err| {
             try testing.expectEqual(order.status, .cancelled);
             try testing.expect(err == Errors.InsufficientLiquidity);
+
+            try testing.expectEqual(bids_before, Context.totalLiquidity(&book.bids));
+            try testing.expectEqual(asks_before, Context.totalLiquidity(&book.asks));
         }
 
         try Context.bookInvariantsHold(book);
