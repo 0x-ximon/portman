@@ -11,28 +11,26 @@ WHERE ID = $1 LIMIT 1;
 SELECT * FROM tickers
 WHERE symbol = $1 LIMIT 1;
 
--- name: UpdateTicker :one
-UPDATE tickers
-SET lot_size = $2, tick_size = $3
-WHERE ID = $1
-RETURNING *;
-
--- name: UpdateTickerQuotes :one
-UPDATE tickers
-SET ask = $2, bid = $3
-WHERE ID = $1
-RETURNING *;
-
--- name: UpdateTickerStatus :one
-UPDATE tickers
-SET status = $2
-WHERE ID = $1
-RETURNING *;
-
 -- name: ListTickers :many
 SELECT * FROM tickers
 ORDER BY symbol;
 
+-- name: UpdateTicker :exec
+UPDATE tickers
+SET lot_size = $2, tick_size = $3
+WHERE ID = $1;
+
+-- name: UpdateTickerQuotes :exec
+UPDATE tickers
+SET ask = $2, bid = $3
+WHERE ID = $1;
+
+-- name: UpdateTickerStatus :exec
+UPDATE tickers
+SET ticker_status = $2
+WHERE ID = $1;
+
 -- name: DeleteTicker :exec
-DELETE FROM tickers
+UPDATE tickers
+SET ticker_status = 'deleted'
 WHERE ID = $1;

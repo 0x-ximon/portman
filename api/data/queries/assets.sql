@@ -5,11 +5,11 @@ RETURNING *;
 
 -- name: GetAsset :one
 SELECT * FROM assets
-WHERE id = $1;
+WHERE id = $1 LIMIT 1;
 
 -- name: FindAssetBySymbol :one
 SELECT * FROM assets
-WHERE symbol = $1;
+WHERE symbol = $1 LIMIT 1;
 
 -- name: ListAssets :many
 SELECT * FROM assets;

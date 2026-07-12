@@ -7,54 +7,63 @@ package repositories
 
 import (
 	"context"
+
+	"github.com/shopspring/decimal"
 )
 
 const createTicker = `-- name: CreateTicker :one
-INSERT INTO tickers (symbol, base, quote, status) 
-VALUES ($1, $2, $3, $4)
-RETURNING id, base, quote, symbol, ask, bid, last, status
+INSERT INTO tickers (symbol, lot_size, tick_size, base_asset, quote_asset)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, ticker_status, created_at, updated_at, deleted_at
 `
 
 type CreateTickerParams struct {
-	Symbol string       `json:"symbol"`
-	Base   string       `json:"base"`
-	Quote  string       `json:"quote"`
-	Status TickerStatus `json:"status"`
+	Symbol     string          `json:"symbol"`
+	LotSize    decimal.Decimal `json:"lot_size"`
+	TickSize   decimal.Decimal `json:"tick_size"`
+	BaseAsset  int32           `json:"base_asset"`
+	QuoteAsset int32           `json:"quote_asset"`
 }
 
 func (q *Queries) CreateTicker(ctx context.Context, arg CreateTickerParams) (Ticker, error) {
 	row := q.db.QueryRow(ctx, createTicker,
 		arg.Symbol,
-		arg.Base,
-		arg.Quote,
-		arg.Status,
+		arg.LotSize,
+		arg.TickSize,
+		arg.BaseAsset,
+		arg.QuoteAsset,
 	)
 	var i Ticker
 	err := row.Scan(
 		&i.ID,
-		&i.Base,
-		&i.Quote,
 		&i.Symbol,
+		&i.LotSize,
+		&i.TickSize,
 		&i.Ask,
 		&i.Bid,
-		&i.Last,
-		&i.Status,
+		&i.BaseAsset,
+		&i.QuoteAsset,
+		&i.TickerStatus,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteTicker = `-- name: DeleteTicker :exec
-DELETE FROM tickers
+UPDATE tickers
+SET ticker_status = 'deleted'
 WHERE ID = $1
 `
 
-func (q *Queries) DeleteTicker(ctx context.Context, id int32) error {
+func (q *Queries) DeleteTicker(ctx context.Context, id int64) error {
 	_, err := q.db.Exec(ctx, deleteTicker, id)
 	return err
 }
 
 const findTickerBySymbol = `-- name: FindTickerBySymbol :one
-SELECT id, base, quote, symbol, ask, bid, last, status FROM tickers
+SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, ticker_status, created_at, updated_at, deleted_at FROM tickers
 WHERE symbol = $1 LIMIT 1
 `
 
@@ -63,40 +72,48 @@ func (q *Queries) FindTickerBySymbol(ctx context.Context, symbol string) (Ticker
 	var i Ticker
 	err := row.Scan(
 		&i.ID,
-		&i.Base,
-		&i.Quote,
 		&i.Symbol,
+		&i.LotSize,
+		&i.TickSize,
 		&i.Ask,
 		&i.Bid,
-		&i.Last,
-		&i.Status,
+		&i.BaseAsset,
+		&i.QuoteAsset,
+		&i.TickerStatus,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getTicker = `-- name: GetTicker :one
-SELECT id, base, quote, symbol, ask, bid, last, status FROM tickers
+SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, ticker_status, created_at, updated_at, deleted_at FROM tickers
 WHERE ID = $1 LIMIT 1
 `
 
-func (q *Queries) GetTicker(ctx context.Context, id int32) (Ticker, error) {
+func (q *Queries) GetTicker(ctx context.Context, id int64) (Ticker, error) {
 	row := q.db.QueryRow(ctx, getTicker, id)
 	var i Ticker
 	err := row.Scan(
 		&i.ID,
-		&i.Base,
-		&i.Quote,
 		&i.Symbol,
+		&i.LotSize,
+		&i.TickSize,
 		&i.Ask,
 		&i.Bid,
-		&i.Last,
-		&i.Status,
+		&i.BaseAsset,
+		&i.QuoteAsset,
+		&i.TickerStatus,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const listTickers = `-- name: ListTickers :many
-SELECT id, base, quote, symbol, ask, bid, last, status FROM tickers
+SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, ticker_status, created_at, updated_at, deleted_at FROM tickers
 ORDER BY symbol
 `
 
@@ -111,13 +128,17 @@ func (q *Queries) ListTickers(ctx context.Context) ([]Ticker, error) {
 		var i Ticker
 		if err := rows.Scan(
 			&i.ID,
-			&i.Base,
-			&i.Quote,
 			&i.Symbol,
+			&i.LotSize,
+			&i.TickSize,
 			&i.Ask,
 			&i.Bid,
-			&i.Last,
-			&i.Status,
+			&i.BaseAsset,
+			&i.QuoteAsset,
+			&i.TickerStatus,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -127,4 +148,54 @@ func (q *Queries) ListTickers(ctx context.Context) ([]Ticker, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateTicker = `-- name: UpdateTicker :exec
+UPDATE tickers
+SET lot_size = $2, tick_size = $3
+WHERE ID = $1
+`
+
+type UpdateTickerParams struct {
+	ID       int64           `json:"id"`
+	LotSize  decimal.Decimal `json:"lot_size"`
+	TickSize decimal.Decimal `json:"tick_size"`
+}
+
+func (q *Queries) UpdateTicker(ctx context.Context, arg UpdateTickerParams) error {
+	_, err := q.db.Exec(ctx, updateTicker, arg.ID, arg.LotSize, arg.TickSize)
+	return err
+}
+
+const updateTickerQuotes = `-- name: UpdateTickerQuotes :exec
+UPDATE tickers
+SET ask = $2, bid = $3
+WHERE ID = $1
+`
+
+type UpdateTickerQuotesParams struct {
+	ID  int64           `json:"id"`
+	Ask decimal.Decimal `json:"ask"`
+	Bid decimal.Decimal `json:"bid"`
+}
+
+func (q *Queries) UpdateTickerQuotes(ctx context.Context, arg UpdateTickerQuotesParams) error {
+	_, err := q.db.Exec(ctx, updateTickerQuotes, arg.ID, arg.Ask, arg.Bid)
+	return err
+}
+
+const updateTickerStatus = `-- name: UpdateTickerStatus :exec
+UPDATE tickers
+SET ticker_status = $2
+WHERE ID = $1
+`
+
+type UpdateTickerStatusParams struct {
+	ID           int64        `json:"id"`
+	TickerStatus TickerStatus `json:"ticker_status"`
+}
+
+func (q *Queries) UpdateTickerStatus(ctx context.Context, arg UpdateTickerStatusParams) error {
+	_, err := q.db.Exec(ctx, updateTickerStatus, arg.ID, arg.TickerStatus)
+	return err
 }
