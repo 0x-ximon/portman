@@ -6,7 +6,7 @@ CREATE TABLE assets (
       id SERIAL PRIMARY KEY,
 
       name TEXT NOT NULL,
-      symbol TEXT NOT NULL,
+      symbol TEXT NOT NULL UNIQUE ,
       decimals INTEGER NOT NULL,
       asset_class ASSET_CLASS NOT NULL,
 

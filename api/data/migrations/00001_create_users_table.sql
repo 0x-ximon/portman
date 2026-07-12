@@ -1,10 +1,9 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TYPE USER_ROLE AS ENUM ('USER', 'BOT', 'ADMIN');
 
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,

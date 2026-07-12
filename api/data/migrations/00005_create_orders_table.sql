@@ -7,7 +7,7 @@ CREATE TYPE ORDER_STATUS AS ENUM ('PENDING', 'REJECTED', 'PARTIAL', 'CANCELLED',
 create TABLE orders (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id) NOT NULL,
-    ticker_symbol TEXT REFERENCES tickers(symbol) NOT NULL,
+    ticker_id BIGINT REFERENCES tickers(id) NOT NULL,
 
     price NUMERIC NOT NULL,
     quantity NUMERIC NOT NULL,
@@ -16,7 +16,10 @@ create TABLE orders (
     order_status ORDER_STATUS NOT NULL,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT validate_price CHECK (price >= 0),
+    CONSTRAINT validate_quantity CHECK (quantity >= 0)
 );
 -- +goose StatementEnd
 

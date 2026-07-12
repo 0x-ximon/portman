@@ -6,12 +6,11 @@ CREATE TABLE balances (
     asset_id INTEGER REFERENCES assets(id) NOT NULL,
 
     available NUMERIC NOT NULL DEFAULT 0,
-    locked NUMERIC NOT NULL DEFAULT 0
-);
+    locked NUMERIC NOT NULL DEFAULT 0,
 
-ALTER TABLE balances
-ADD CONSTRAINT validate_available CHECK (available >= 0),
-ADD CONSTRAINT validate_locked CHECK (locked >= 0);
+    CONSTRAINT validate_available CHECK (available >= 0),
+    CONSTRAINT validate_locked CHECK (locked >= 0)
+);
 -- +goose StatementEnd
 
 -- +goose Down
