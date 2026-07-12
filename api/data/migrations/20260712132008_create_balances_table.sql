@@ -5,8 +5,8 @@ CREATE TABLE balances (
     user_id UUID REFERENCES users(id) NOT NULL,
     asset_id INTEGER REFERENCES assets(id) NOT NULL,
 
-    available BIGINT NOT NULL DEFAULT 0,
-    locked BIGINT NOT NULL DEFAULT 0,
+    available NUMERIC NOT NULL DEFAULT 0,
+    locked NUMERIC NOT NULL DEFAULT 0
 );
 
 ALTER TABLE balances
