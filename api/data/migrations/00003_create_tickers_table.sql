@@ -2,9 +2,8 @@
 -- +goose StatementBegin
 CREATE TYPE TICKER_STATUS AS ENUM ('OPEN', 'CLOSED', 'SUSPENDED');
 
-CREATE TABLE
-  tickers (
-    ID SERIAL PRIMARY KEY,
+CREATE TABLE tickers (
+    id SERIAL PRIMARY KEY,
 
     base TEXT NOT NULL,
     quote TEXT NOT NULL,
