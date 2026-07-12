@@ -14,48 +14,48 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type AssetClass string
+type AssetKind string
 
 const (
-	AssetClassCRYPTO    AssetClass = "CRYPTO"
-	AssetClassSTOCK     AssetClass = "STOCK"
-	AssetClassFIAT      AssetClass = "FIAT"
-	AssetClassCOMMODITY AssetClass = "COMMODITY"
+	AssetKindCRYPTO    AssetKind = "CRYPTO"
+	AssetKindSTOCK     AssetKind = "STOCK"
+	AssetKindFIAT      AssetKind = "FIAT"
+	AssetKindCOMMODITY AssetKind = "COMMODITY"
 )
 
-func (e *AssetClass) Scan(src interface{}) error {
+func (e *AssetKind) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = AssetClass(s)
+		*e = AssetKind(s)
 	case string:
-		*e = AssetClass(s)
+		*e = AssetKind(s)
 	default:
-		return fmt.Errorf("unsupported scan type for AssetClass: %T", src)
+		return fmt.Errorf("unsupported scan type for AssetKind: %T", src)
 	}
 	return nil
 }
 
-type NullAssetClass struct {
-	AssetClass AssetClass `json:"asset_class"`
-	Valid      bool       `json:"valid"` // Valid is true if AssetClass is not NULL
+type NullAssetKind struct {
+	AssetKind AssetKind `json:"asset_kind"`
+	Valid     bool      `json:"valid"` // Valid is true if AssetKind is not NULL
 }
 
 // Scan implements the Scanner interface.
-func (ns *NullAssetClass) Scan(value interface{}) error {
+func (ns *NullAssetKind) Scan(value interface{}) error {
 	if value == nil {
-		ns.AssetClass, ns.Valid = "", false
+		ns.AssetKind, ns.Valid = "", false
 		return nil
 	}
 	ns.Valid = true
-	return ns.AssetClass.Scan(value)
+	return ns.AssetKind.Scan(value)
 }
 
 // Value implements the driver Valuer interface.
-func (ns NullAssetClass) Value() (driver.Value, error) {
+func (ns NullAssetKind) Value() (driver.Value, error) {
 	if !ns.Valid {
 		return nil, nil
 	}
-	return string(ns.AssetClass), nil
+	return string(ns.AssetKind), nil
 }
 
 type OrderMode string
@@ -279,7 +279,7 @@ type Asset struct {
 	Name      string             `json:"name"`
 	Symbol    string             `json:"symbol"`
 	Decimals  int32              `json:"decimals"`
-	Class     AssetClass         `json:"class"`
+	Kind      AssetKind          `json:"kind"`
 	CreatedAt time.Time          `json:"created_at"`
 	UpdatedAt time.Time          `json:"updated_at"`
 	DeletedAt pgtype.Timestamptz `json:"deleted_at"`

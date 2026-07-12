@@ -10,16 +10,16 @@ import (
 )
 
 const createAsset = `-- name: CreateAsset :one
-INSERT INTO assets (name, symbol, decimals, class)
+INSERT INTO assets (name, symbol, decimals, kind)
 VALUES ($1, $2, $3, $4)
-RETURNING id, name, symbol, decimals, class, created_at, updated_at, deleted_at
+RETURNING id, name, symbol, decimals, kind, created_at, updated_at, deleted_at
 `
 
 type CreateAssetParams struct {
-	Name     string     `json:"name"`
-	Symbol   string     `json:"symbol"`
-	Decimals int32      `json:"decimals"`
-	Class    AssetClass `json:"class"`
+	Name     string    `json:"name"`
+	Symbol   string    `json:"symbol"`
+	Decimals int32     `json:"decimals"`
+	Kind     AssetKind `json:"kind"`
 }
 
 func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset, error) {
@@ -27,7 +27,7 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 		arg.Name,
 		arg.Symbol,
 		arg.Decimals,
-		arg.Class,
+		arg.Kind,
 	)
 	var i Asset
 	err := row.Scan(
@@ -35,7 +35,7 @@ func (q *Queries) CreateAsset(ctx context.Context, arg CreateAssetParams) (Asset
 		&i.Name,
 		&i.Symbol,
 		&i.Decimals,
-		&i.Class,
+		&i.Kind,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -55,7 +55,7 @@ func (q *Queries) DeleteAsset(ctx context.Context, id int32) error {
 }
 
 const findAssetBySymbol = `-- name: FindAssetBySymbol :one
-SELECT id, name, symbol, decimals, class, created_at, updated_at, deleted_at FROM assets
+SELECT id, name, symbol, decimals, kind, created_at, updated_at, deleted_at FROM assets
 WHERE symbol = $1 LIMIT 1
 `
 
@@ -67,7 +67,7 @@ func (q *Queries) FindAssetBySymbol(ctx context.Context, symbol string) (Asset, 
 		&i.Name,
 		&i.Symbol,
 		&i.Decimals,
-		&i.Class,
+		&i.Kind,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -76,7 +76,7 @@ func (q *Queries) FindAssetBySymbol(ctx context.Context, symbol string) (Asset, 
 }
 
 const getAsset = `-- name: GetAsset :one
-SELECT id, name, symbol, decimals, class, created_at, updated_at, deleted_at FROM assets
+SELECT id, name, symbol, decimals, kind, created_at, updated_at, deleted_at FROM assets
 WHERE id = $1 LIMIT 1
 `
 
@@ -88,7 +88,7 @@ func (q *Queries) GetAsset(ctx context.Context, id int32) (Asset, error) {
 		&i.Name,
 		&i.Symbol,
 		&i.Decimals,
-		&i.Class,
+		&i.Kind,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -97,7 +97,7 @@ func (q *Queries) GetAsset(ctx context.Context, id int32) (Asset, error) {
 }
 
 const listAssets = `-- name: ListAssets :many
-SELECT id, name, symbol, decimals, class, created_at, updated_at, deleted_at FROM assets
+SELECT id, name, symbol, decimals, kind, created_at, updated_at, deleted_at FROM assets
 `
 
 func (q *Queries) ListAssets(ctx context.Context) ([]Asset, error) {
@@ -114,7 +114,7 @@ func (q *Queries) ListAssets(ctx context.Context) ([]Asset, error) {
 			&i.Name,
 			&i.Symbol,
 			&i.Decimals,
-			&i.Class,
+			&i.Kind,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,

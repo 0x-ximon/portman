@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TYPE ASSET_CLASS AS ENUM ('CRYPTO', 'STOCK', 'FIAT', 'COMMODITY');
+CREATE TYPE ASSET_KIND AS ENUM ('CRYPTO', 'STOCK', 'FIAT', 'COMMODITY');
 
 CREATE TABLE assets (
     id SERIAL PRIMARY KEY,
@@ -8,7 +8,7 @@ CREATE TABLE assets (
     name TEXT NOT NULL,
     symbol TEXT NOT NULL UNIQUE,
     decimals INTEGER NOT NULL,
-    class ASSET_CLASS NOT NULL,
+    kind ASSET_KIND NOT NULL,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -19,5 +19,5 @@ CREATE TABLE assets (
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE assets;
-DROP TYPE ASSET_CLASS;
+DROP TYPE ASSET_KIND;
 -- +goose StatementEnd
