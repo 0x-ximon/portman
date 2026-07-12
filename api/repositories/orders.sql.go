@@ -13,18 +13,18 @@ import (
 )
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (user_id, ticker_id, price, quantity, order_side, order_mode)
+INSERT INTO orders (user_id, ticker_id, price, quantity, side, mode)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, user_id, ticker_id, price, quantity, order_side, order_mode, order_status, created_at, updated_at
+RETURNING id, user_id, ticker_id, price, quantity, side, mode, status, created_at, updated_at
 `
 
 type CreateOrderParams struct {
-	UserID    uuid.UUID       `json:"user_id"`
-	TickerID  int64           `json:"ticker_id"`
-	Price     decimal.Decimal `json:"price"`
-	Quantity  decimal.Decimal `json:"quantity"`
-	OrderSide OrderSide       `json:"order_side"`
-	OrderMode OrderMode       `json:"order_mode"`
+	UserID   uuid.UUID       `json:"user_id"`
+	TickerID int64           `json:"ticker_id"`
+	Price    decimal.Decimal `json:"price"`
+	Quantity decimal.Decimal `json:"quantity"`
+	Side     OrderSide       `json:"side"`
+	Mode     OrderMode       `json:"mode"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -33,8 +33,8 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.TickerID,
 		arg.Price,
 		arg.Quantity,
-		arg.OrderSide,
-		arg.OrderMode,
+		arg.Side,
+		arg.Mode,
 	)
 	var i Order
 	err := row.Scan(
@@ -43,9 +43,9 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.TickerID,
 		&i.Price,
 		&i.Quantity,
-		&i.OrderSide,
-		&i.OrderMode,
-		&i.OrderStatus,
+		&i.Side,
+		&i.Mode,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -53,7 +53,7 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 }
 
 const getOrder = `-- name: GetOrder :one
-SELECT id, user_id, ticker_id, price, quantity, order_side, order_mode, order_status, created_at, updated_at FROM orders
+SELECT id, user_id, ticker_id, price, quantity, side, mode, status, created_at, updated_at FROM orders
 WHERE ID = $1 and user_id = $2 LIMIT 1
 `
 
@@ -71,9 +71,9 @@ func (q *Queries) GetOrder(ctx context.Context, arg GetOrderParams) (Order, erro
 		&i.TickerID,
 		&i.Price,
 		&i.Quantity,
-		&i.OrderSide,
-		&i.OrderMode,
-		&i.OrderStatus,
+		&i.Side,
+		&i.Mode,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -81,7 +81,7 @@ func (q *Queries) GetOrder(ctx context.Context, arg GetOrderParams) (Order, erro
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, user_id, ticker_id, price, quantity, order_side, order_mode, order_status, created_at, updated_at FROM orders
+SELECT id, user_id, ticker_id, price, quantity, side, mode, status, created_at, updated_at FROM orders
 WHERE user_id = $1
 ORDER BY created_at
 `
@@ -101,9 +101,9 @@ func (q *Queries) ListOrders(ctx context.Context, userID uuid.UUID) ([]Order, er
 			&i.TickerID,
 			&i.Price,
 			&i.Quantity,
-			&i.OrderSide,
-			&i.OrderMode,
-			&i.OrderStatus,
+			&i.Side,
+			&i.Mode,
+			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -119,16 +119,16 @@ func (q *Queries) ListOrders(ctx context.Context, userID uuid.UUID) ([]Order, er
 
 const updateOrder = `-- name: UpdateOrder :exec
 UPDATE orders
-SET order_status = $2, updated_at = now()
+SET status = $2, updated_at = now()
 WHERE ID = $1
 `
 
 type UpdateOrderParams struct {
-	ID          int64       `json:"id"`
-	OrderStatus OrderStatus `json:"order_status"`
+	ID     int64       `json:"id"`
+	Status OrderStatus `json:"status"`
 }
 
 func (q *Queries) UpdateOrder(ctx context.Context, arg UpdateOrderParams) error {
-	_, err := q.db.Exec(ctx, updateOrder, arg.ID, arg.OrderStatus)
+	_, err := q.db.Exec(ctx, updateOrder, arg.ID, arg.Status)
 	return err
 }

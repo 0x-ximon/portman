@@ -1,5 +1,5 @@
 -- name: CreateAsset :one
-INSERT INTO assets (name, symbol, decimals, asset_class)
+INSERT INTO assets (name, symbol, decimals, class)
 VALUES ($1, $2, $3, $4)
 RETURNING *;
 

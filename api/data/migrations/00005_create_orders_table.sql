@@ -11,9 +11,9 @@ CREATE TABLE orders (
 
     price NUMERIC NOT NULL,
     quantity NUMERIC NOT NULL,
-    order_side ORDER_SIDE NOT NULL,
-    order_mode ORDER_MODE NOT NULL,
-    order_status ORDER_STATUS NOT NULL DEFAULT 'PENDING',
+    side ORDER_SIDE NOT NULL,
+    mode ORDER_MODE NOT NULL,
+    status ORDER_STATUS NOT NULL DEFAULT 'PENDING',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -275,14 +275,14 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 }
 
 type Asset struct {
-	ID         int32              `json:"id"`
-	Name       string             `json:"name"`
-	Symbol     string             `json:"symbol"`
-	Decimals   int32              `json:"decimals"`
-	AssetClass AssetClass         `json:"asset_class"`
-	CreatedAt  time.Time          `json:"created_at"`
-	UpdatedAt  time.Time          `json:"updated_at"`
-	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
+	ID        int32              `json:"id"`
+	Name      string             `json:"name"`
+	Symbol    string             `json:"symbol"`
+	Decimals  int32              `json:"decimals"`
+	Class     AssetClass         `json:"class"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Balance struct {
@@ -293,31 +293,31 @@ type Balance struct {
 }
 
 type Order struct {
-	ID          int64           `json:"id"`
-	UserID      uuid.UUID       `json:"user_id"`
-	TickerID    int64           `json:"ticker_id"`
-	Price       decimal.Decimal `json:"price"`
-	Quantity    decimal.Decimal `json:"quantity"`
-	OrderSide   OrderSide       `json:"order_side"`
-	OrderMode   OrderMode       `json:"order_mode"`
-	OrderStatus OrderStatus     `json:"order_status"`
-	CreatedAt   time.Time       `json:"created_at"`
-	UpdatedAt   time.Time       `json:"updated_at"`
+	ID        int64           `json:"id"`
+	UserID    uuid.UUID       `json:"user_id"`
+	TickerID  int64           `json:"ticker_id"`
+	Price     decimal.Decimal `json:"price"`
+	Quantity  decimal.Decimal `json:"quantity"`
+	Side      OrderSide       `json:"side"`
+	Mode      OrderMode       `json:"mode"`
+	Status    OrderStatus     `json:"status"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
 }
 
 type Ticker struct {
-	ID           int64              `json:"id"`
-	Symbol       string             `json:"symbol"`
-	LotSize      decimal.Decimal    `json:"lot_size"`
-	TickSize     decimal.Decimal    `json:"tick_size"`
-	Ask          decimal.Decimal    `json:"ask"`
-	Bid          decimal.Decimal    `json:"bid"`
-	BaseAsset    int32              `json:"base_asset"`
-	QuoteAsset   int32              `json:"quote_asset"`
-	TickerStatus TickerStatus       `json:"ticker_status"`
-	CreatedAt    time.Time          `json:"created_at"`
-	UpdatedAt    time.Time          `json:"updated_at"`
-	DeletedAt    pgtype.Timestamptz `json:"deleted_at"`
+	ID         int64              `json:"id"`
+	Symbol     string             `json:"symbol"`
+	LotSize    decimal.Decimal    `json:"lot_size"`
+	TickSize   decimal.Decimal    `json:"tick_size"`
+	Ask        decimal.Decimal    `json:"ask"`
+	Bid        decimal.Decimal    `json:"bid"`
+	BaseAsset  int32              `json:"base_asset"`
+	QuoteAsset int32              `json:"quote_asset"`
+	Status     TickerStatus       `json:"status"`
+	CreatedAt  time.Time          `json:"created_at"`
+	UpdatedAt  time.Time          `json:"updated_at"`
+	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type User struct {
@@ -328,7 +328,7 @@ type User struct {
 	WalletAddress string             `json:"wallet_address"`
 	Password      string             `json:"password"`
 	ApiKey        *string            `json:"api_key"`
-	UserRole      UserRole           `json:"user_role"`
+	Role          UserRole           `json:"role"`
 	CreatedAt     time.Time          `json:"created_at"`
 	UpdatedAt     time.Time          `json:"updated_at"`
 	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`

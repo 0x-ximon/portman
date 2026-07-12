@@ -27,10 +27,10 @@ WHERE ID = $1;
 
 -- name: UpdateTickerStatus :exec
 UPDATE tickers
-SET ticker_status = $2
+SET status = $2
 WHERE ID = $1;
 
 -- name: DeleteTicker :exec
 UPDATE tickers
-SET ticker_status = 'deleted'
+SET deleted_at = now()
 WHERE ID = $1;

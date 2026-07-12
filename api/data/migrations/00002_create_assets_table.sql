@@ -8,7 +8,7 @@ CREATE TABLE assets (
     name TEXT NOT NULL,
     symbol TEXT NOT NULL UNIQUE,
     decimals INTEGER NOT NULL,
-    asset_class ASSET_CLASS NOT NULL,
+    class ASSET_CLASS NOT NULL,
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

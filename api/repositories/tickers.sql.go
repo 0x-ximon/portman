@@ -14,7 +14,7 @@ import (
 const createTicker = `-- name: CreateTicker :one
 INSERT INTO tickers (symbol, lot_size, tick_size, base_asset, quote_asset)
 VALUES ($1, $2, $3, $4, $5)
-RETURNING id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, ticker_status, created_at, updated_at, deleted_at
+RETURNING id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, status, created_at, updated_at, deleted_at
 `
 
 type CreateTickerParams struct {
@@ -43,7 +43,7 @@ func (q *Queries) CreateTicker(ctx context.Context, arg CreateTickerParams) (Tic
 		&i.Bid,
 		&i.BaseAsset,
 		&i.QuoteAsset,
-		&i.TickerStatus,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -53,7 +53,7 @@ func (q *Queries) CreateTicker(ctx context.Context, arg CreateTickerParams) (Tic
 
 const deleteTicker = `-- name: DeleteTicker :exec
 UPDATE tickers
-SET ticker_status = 'deleted'
+SET deleted_at = now()
 WHERE ID = $1
 `
 
@@ -63,7 +63,7 @@ func (q *Queries) DeleteTicker(ctx context.Context, id int64) error {
 }
 
 const findTickerBySymbol = `-- name: FindTickerBySymbol :one
-SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, ticker_status, created_at, updated_at, deleted_at FROM tickers
+SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, status, created_at, updated_at, deleted_at FROM tickers
 WHERE symbol = $1 LIMIT 1
 `
 
@@ -79,7 +79,7 @@ func (q *Queries) FindTickerBySymbol(ctx context.Context, symbol string) (Ticker
 		&i.Bid,
 		&i.BaseAsset,
 		&i.QuoteAsset,
-		&i.TickerStatus,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -88,7 +88,7 @@ func (q *Queries) FindTickerBySymbol(ctx context.Context, symbol string) (Ticker
 }
 
 const getTicker = `-- name: GetTicker :one
-SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, ticker_status, created_at, updated_at, deleted_at FROM tickers
+SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, status, created_at, updated_at, deleted_at FROM tickers
 WHERE ID = $1 LIMIT 1
 `
 
@@ -104,7 +104,7 @@ func (q *Queries) GetTicker(ctx context.Context, id int64) (Ticker, error) {
 		&i.Bid,
 		&i.BaseAsset,
 		&i.QuoteAsset,
-		&i.TickerStatus,
+		&i.Status,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
@@ -113,7 +113,7 @@ func (q *Queries) GetTicker(ctx context.Context, id int64) (Ticker, error) {
 }
 
 const listTickers = `-- name: ListTickers :many
-SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, ticker_status, created_at, updated_at, deleted_at FROM tickers
+SELECT id, symbol, lot_size, tick_size, ask, bid, base_asset, quote_asset, status, created_at, updated_at, deleted_at FROM tickers
 ORDER BY symbol
 `
 
@@ -135,7 +135,7 @@ func (q *Queries) ListTickers(ctx context.Context) ([]Ticker, error) {
 			&i.Bid,
 			&i.BaseAsset,
 			&i.QuoteAsset,
-			&i.TickerStatus,
+			&i.Status,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.DeletedAt,
@@ -186,16 +186,16 @@ func (q *Queries) UpdateTickerQuotes(ctx context.Context, arg UpdateTickerQuotes
 
 const updateTickerStatus = `-- name: UpdateTickerStatus :exec
 UPDATE tickers
-SET ticker_status = $2
+SET status = $2
 WHERE ID = $1
 `
 
 type UpdateTickerStatusParams struct {
-	ID           int64        `json:"id"`
-	TickerStatus TickerStatus `json:"ticker_status"`
+	ID     int64        `json:"id"`
+	Status TickerStatus `json:"status"`
 }
 
 func (q *Queries) UpdateTickerStatus(ctx context.Context, arg UpdateTickerStatusParams) error {
-	_, err := q.db.Exec(ctx, updateTickerStatus, arg.ID, arg.TickerStatus)
+	_, err := q.db.Exec(ctx, updateTickerStatus, arg.ID, arg.Status)
 	return err
 }

@@ -12,7 +12,7 @@ CREATE TABLE users (
 
     password TEXT NOT NULL,
     api_key TEXT DEFAULT NULL,
-    user_role USER_ROLE NOT NULL DEFAULT 'USER',
+    role USER_ROLE NOT NULL DEFAULT 'USER',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

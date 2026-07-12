@@ -1,5 +1,5 @@
 -- name: CreateOrder :one
-INSERT INTO orders (user_id, ticker_id, price, quantity, order_side, order_mode)
+INSERT INTO orders (user_id, ticker_id, price, quantity, side, mode)
 VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
@@ -14,5 +14,5 @@ ORDER BY created_at;
 
 -- name: UpdateOrder :exec
 UPDATE orders
-SET order_status = $2, updated_at = now()
+SET status = $2, updated_at = now()
 WHERE ID = $1;
