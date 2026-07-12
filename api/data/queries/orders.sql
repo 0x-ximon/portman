@@ -1,5 +1,5 @@
 -- name: CreateOrder :one
-INSERT INTO orders (user_id, ticker_symbol, price, quantity, side, type)
+INSERT INTO orders (user_id, ticker_id, price, quantity, side, mode)
 VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 

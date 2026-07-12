@@ -1,5 +1,5 @@
 -- name: CreateUser :one
-INSERT INTO users (first_name, last_name, email_address, wallet_address, role, password, api_key) 
+INSERT INTO users (first_name, last_name, email_address, wallet_address, password, api_key, user_role)
 VALUES ($1, $2, $3, $4, $5, $6, $7)
 RETURNING *;
 
@@ -19,5 +19,6 @@ WHERE api_key = $1 LIMIT 1;
 SELECT * FROM users;
 
 -- name: DeleteUser :exec
-DELETE FROM users
+UPDATE users
+SET deleted_at = now()
 WHERE ID = $1;

@@ -13,7 +13,7 @@ CREATE TABLE orders (
     quantity NUMERIC NOT NULL,
     order_side ORDER_SIDE NOT NULL,
     order_mode ORDER_MODE NOT NULL,
-    order_status ORDER_STATUS NOT NULL,
+    order_status ORDER_STATUS NOT NULL DEFAULT 'PENDING',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
