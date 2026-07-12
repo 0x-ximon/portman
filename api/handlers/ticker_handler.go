@@ -87,7 +87,7 @@ func (h *TickerHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if claims.Role != repositories.UserRoleADMIN {
+	if claims.Role != repositories.UserRoleADMINISTRATOR {
 		logger.Warn("user is not an admin", "user_id", claims.ID, "role", claims.Role)
 		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to list users")
 		return

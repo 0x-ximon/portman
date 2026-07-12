@@ -1,6 +1,6 @@
 -- +goose Up
 -- +goose StatementBegin
-CREATE TYPE USER_ROLE AS ENUM ('USER', 'BOT', 'ADMIN');
+CREATE TYPE USER_ROLE AS ENUM ('REGULAR', 'AUTOMATED', 'ADMINISTRATOR');
 
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -12,7 +12,7 @@ CREATE TABLE users (
 
     password TEXT NOT NULL,
     api_key TEXT DEFAULT NULL,
-    role USER_ROLE NOT NULL DEFAULT 'USER',
+    role USER_ROLE NOT NULL DEFAULT 'REGULAR',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),

@@ -234,9 +234,9 @@ func (ns NullTickerStatus) Value() (driver.Value, error) {
 type UserRole string
 
 const (
-	UserRoleUSER  UserRole = "USER"
-	UserRoleBOT   UserRole = "BOT"
-	UserRoleADMIN UserRole = "ADMIN"
+	UserRoleREGULAR       UserRole = "REGULAR"
+	UserRoleAUTOMATED     UserRole = "AUTOMATED"
+	UserRoleADMINISTRATOR UserRole = "ADMINISTRATOR"
 )
 
 func (e *UserRole) Scan(src interface{}) error {
