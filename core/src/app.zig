@@ -5,6 +5,7 @@ const net = Io.net;
 
 const Book = @import("book.zig");
 const Order = Book.Order;
+const Ticker = Book.Ticker;
 const Packet = @import("packet.zig");
 const Header = Packet.Header;
 
@@ -14,7 +15,7 @@ address: net.IpAddress,
 server: ?net.Server,
 market: Market,
 
-const Market = std.AutoHashMap(u16, *Book);
+const Market = std.AutoHashMap(Ticker, *Book);
 
 const AppError = error{
     ServerNotInitialized,

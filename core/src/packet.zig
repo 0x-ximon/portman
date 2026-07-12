@@ -18,8 +18,8 @@ pub const Header = extern struct {
     length: u16,
     nonce: u32,
     timestamp: u64,
-    src_id: u64,
-    dest_id: u64,
+    source: u64,
+    destination: u64,
 };
 
 pub fn info(reader: *Io.Reader) !*const Header {

@@ -6,15 +6,19 @@ const testing = std.testing;
 
 const Self = @This();
 const Map = @import("map.zig")
-    .Map(u64, *Level, 32, compare);
+    .Map(Price, *Level, 64, compare);
 
-fn compare(a: u64, b: u64) math.Order {
+fn compare(a: Price, b: Price) math.Order {
     return math.order(a, b);
 }
 
 allocator: mem.Allocator,
 asks: Map,
 bids: Map,
+
+pub const Ticker = u32;
+pub const Price = u64;
+pub const Quantity = u64;
 
 const Status = enum(u8) {
     pending = 0,
@@ -42,11 +46,9 @@ const Flags = packed struct(u8) {
 
 pub const Order = extern struct {
     id: u64,
-    price: u64,
-    quantity: u64,
-    asset: u16,
-    price_precision: u8,
-    qty_precision: u8,
+    price: Price,
+    quantity: Quantity,
+    ticker: Ticker,
     status: Status,
     side: Side,
     mode: Mode,
@@ -500,13 +502,11 @@ fn testBook(_: Context, smith: *std.testing.Smith) !void {
     while (!smith.eos()) {
         var order: Order = .{
             .status = .pending,
-            .qty_precision = 3,
-            .price_precision = 3,
             .id = smith.value(u64),
             .side = smith.value(Side),
             .mode = smith.value(Mode),
             .flags = smith.value(Flags),
-            .asset = smith.valueRangeAtMost(u16, 1000, 1010),
+            .ticker = smith.valueRangeAtMost(u16, 1000, 1010),
             .price = smith.valueRangeAtMost(u64, 100_000, 150_000),
             .quantity = smith.valueRangeAtMost(u64, 1000, 1_000_000_000),
         };
