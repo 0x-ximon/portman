@@ -14,13 +14,14 @@ from pydantic import BaseModel
 
 from common.exceptions import ApiError, Code, NotFoundError, PortmanException
 from common.logging import logger
-from common.models import Order, Side, Type, User
+from common.models import Order, OrderMode, OrderSide, User
 from common.typings import Failure, Payload, Success
 
 
 class Worker:
     bot_id: int
-    symbol: str
+    ticker_id: int
+    ticker_symbol: str
     price: Decimal
 
     id: UUID | None
@@ -30,24 +31,25 @@ class Worker:
     logger: Any
     client: httpx.AsyncClient
 
-    def __init__(self, bot_id: int, client: httpx.AsyncClient, symbol: str):
+    def __init__(self, bot_id: int, client: httpx.AsyncClient, ticker_id: int, ticker_symbol: str):
         self.bot_id = bot_id
-        self.symbol = symbol
-        self.price = Decimal("0")
+        self.ticker_id = ticker_id
+        self.ticker_symbol = ticker_symbol
+        self.price = Decimal(100)
 
         self.id = None
         self.jwt = None
         self.user = None
 
         self.client = client
-        self.logger = logger.bind(id=f"worker-{bot_id}", symbol=self.symbol)
+        self.logger = logger.bind(id=f"worker-{bot_id}", ticker_symbol=self.ticker_symbol)
 
     async def run(self):
         try:
             await self.connect()
             print(f"Bot #{self.bot_id} - Connected")
 
-            asyncio.create_task(self.handle_ticks(self.symbol))
+            asyncio.create_task(self.handle_ticks(self.ticker_symbol))
             await self.execute()
 
         except PortmanException:
@@ -71,8 +73,9 @@ class Worker:
 
             match payload.root:
                 case Success(data=creds):
-                    self.id = creds.id
-                    self.jwt = creds.jwt
+                    if isinstance(creds, Creds):
+                        self.id = creds.id
+                        self.jwt = creds.jwt
 
                 case Failure(error=err):
                     match err.code:
@@ -110,7 +113,8 @@ class Worker:
 
             match payload.root:
                 case Success(data=user):
-                    self.user = user
+                    if isinstance(user, User):
+                        self.user = user
 
                 case Failure(error=err):
                     self.logger.error("retrieval failed", code=err.code, detail=err.detail)
@@ -141,7 +145,8 @@ class Worker:
 
             match payload.root:
                 case Success(data=user):
-                    self.user = user
+                    if isinstance(user, User):
+                        self.user = user
 
                 case Failure(error=err):
                     self.logger.error("failed to create user", code=err.code, detail=err.detail)
@@ -169,7 +174,8 @@ class Worker:
 
                 match payload.root:
                     case Success(data=order):
-                        self.logger.info("submitted order", side=order.side, type=order.type)
+                        if isinstance(order, Order):
+                            self.logger.info("submitted order", side=order.side, mode=order.mode)
 
                     case Failure(error=err):
                         self.logger.error("failed to create order", code=err.code, detail=err.detail)
@@ -230,20 +236,20 @@ class Worker:
 
     def generate_order_payload(self) -> dict[str, Any]:
         assert self.user is not None, "user is not set"
-        ticker_symbol = self.symbol
+        ticker_id = self.ticker_id
         user_id = str(self.user.id)
 
         price = float(Decimal(self.price))
         quantity = float(Decimal("1.00"))
 
-        side = random.choice([Side.BUY, Side.SELL])
-        type = random.choice([Type.LIMIT, Type.MARKET])
+        side = random.choice([OrderSide.BUY, OrderSide.SELL])
+        mode = random.choice([OrderMode.GTC, OrderMode.FOK, OrderMode.IOC])
 
         return {
             "user_id": user_id,
-            "ticker_symbol": ticker_symbol,
+            "ticker_id": ticker_id,
             "quantity": quantity,
             "price": price,
             "side": side,
-            "type": type,
+            "mode": mode,
         }

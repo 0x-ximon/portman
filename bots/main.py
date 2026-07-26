@@ -1,6 +1,7 @@
 import asyncio
 
 from common.config import Config
+from common.exceptions import PortmanException
 from logic.manager import Manager
 
 
@@ -12,7 +13,7 @@ async def main():
         manager = Manager()
         await manager.start(config.api_url, config.bots_amount)
 
-    except Exception as e:
+    except PortmanException as e:
         print(f"Program crashed: {e}")
 
 
