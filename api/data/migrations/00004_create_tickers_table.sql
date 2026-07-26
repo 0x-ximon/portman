@@ -1,5 +1,11 @@
 -- +goose Up
 -- +goose StatementBegin
+CREATE FUNCTION to_precision(decimals INTEGER) RETURNS NUMERIC AS $$
+BEGIN
+    RETURN 10::NUMERIC ^ (-decimals);
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TYPE TICKER_STATUS AS ENUM ('OPEN', 'CLOSED', 'SUSPENDED');
 
 CREATE TABLE tickers (
@@ -12,8 +18,8 @@ CREATE TABLE tickers (
     ask NUMERIC NOT NULL DEFAULT 0,
     bid NUMERIC NOT NULL DEFAULT 0,
 
-    base_asset INTEGER REFERENCES assets(id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
-    quote_asset INTEGER REFERENCES assets(id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    base_asset INTEGER REFERENCES assets(id) NOT NULL,
+    quote_asset INTEGER REFERENCES assets(id) NOT NULL,
     status TICKER_STATUS NOT NULL DEFAULT 'CLOSED',
 
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -26,4 +32,5 @@ CREATE TABLE tickers (
 -- +goose StatementBegin
 DROP TABLE tickers;
 DROP TYPE TICKER_STATUS;
+DROP FUNCTION to_precision;
 -- +goose StatementEnd
