@@ -1,7 +1,7 @@
 services:
-  portman-database:
+  portman_database:
     image: postgres:18-alpine
-    container_name: portman-database
+    container_name: portman_database
     restart: unless-stopped
     environment:
       POSTGRES_USER: admin
@@ -14,18 +14,18 @@ services:
     ports:
       - "5432:5432"
 
-  portman-cache:
+  portman_cache:
     image: redis:8-alpine
-    container_name: portman-cache
+    container_name: portman_cache
     restart: unless-stopped
     networks: 
       - portman_network
     ports:
       - "6379:6379"
 
-  portman-queue:
+  portman_queue:
     image: nats:2-alpine
-    container_name: portman-queue
+    container_name: portman_queue
     restart: unless-stopped
     networks: 
       - portman_network
