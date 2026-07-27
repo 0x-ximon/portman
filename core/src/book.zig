@@ -22,9 +22,10 @@ pub const Quantity = u64;
 
 const Status = enum(u8) {
     pending = 0,
-    filled = 1,
+    rejected = 1,
     partial = 2,
     cancelled = 3,
+    fulfilled = 4,
 };
 
 const Side = enum(u8) {
@@ -152,7 +153,7 @@ fn gtc(self: *Self, order: *Order) ![]Order {
             }
 
             // Order not fully filled, store in bids
-            if (order.status != .filled) {
+            if (order.status != .fulfilled) {
                 map = &self.bids;
 
                 var level = map.get(order.price) orelse blk: {
@@ -192,7 +193,7 @@ fn gtc(self: *Self, order: *Order) ![]Order {
             }
 
             // Order not fully filled, store in asks
-            if (order.status != .filled) {
+            if (order.status != .fulfilled) {
                 map = &self.asks;
 
                 var level = map.get(order.price) orelse blk: {
@@ -232,7 +233,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
                 const level = entry.value;
 
                 if (price > order.price) {
-                    order.status = .cancelled;
+                    order.status = .rejected;
                     return Errors.InsufficientLiquidity;
                 }
 
@@ -241,7 +242,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
             }
 
             if (available < order.quantity) {
-                order.status = .cancelled;
+                order.status = .rejected;
                 return Errors.InsufficientLiquidity;
             }
 
@@ -279,7 +280,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
                 const level = entry.value;
 
                 if (price < order.price) {
-                    order.status = .cancelled;
+                    order.status = .rejected;
                     return Errors.InsufficientLiquidity;
                 }
 
@@ -288,7 +289,7 @@ fn fok(self: *Self, order: *Order) ![]Order {
             }
 
             if (available < order.quantity) {
-                order.status = .cancelled;
+                order.status = .rejected;
                 return Errors.InsufficientLiquidity;
             }
 
@@ -401,7 +402,7 @@ fn match(
                 order.quantity -= item.quantity;
 
                 item.quantity = 0;
-                item.status = .filled;
+                item.status = .fulfilled;
                 order.status = .partial;
 
                 try indexes.append(self.allocator, index);
@@ -409,8 +410,8 @@ fn match(
             },
             .eq => {
                 level.liquidity -= order.quantity;
-                order.status = .filled;
-                item.status = .filled;
+                order.status = .fulfilled;
+                item.status = .fulfilled;
                 order.quantity = 0;
                 item.quantity = 0;
 
@@ -427,7 +428,7 @@ fn match(
 
                 order.quantity = 0;
                 item.status = .partial;
-                order.status = .filled;
+                order.status = .fulfilled;
 
                 try settled.append(self.allocator, item.*);
                 try settled.append(self.allocator, order.*);
@@ -477,7 +478,7 @@ const Context = struct {
 
             for (level.orders.items) |o| {
                 // A resting order should never be fully filled or have 0 quantity
-                if (o.quantity == 0 or o.status == .filled) return E.DeadOrderResting;
+                if (o.quantity == 0 or o.status == .fulfilled) return E.DeadOrderResting;
                 expected_liquidity += o.quantity;
             }
 
@@ -528,7 +529,7 @@ fn testBook(_: Context, smith: *std.testing.Smith) !void {
                 .buy => {
                     try testing.expectEqual(asks_before - asks_after, q_traded);
 
-                    if (order.mode == .gtc and order.status != .filled)
+                    if (order.mode == .gtc and order.status != .fulfilled)
                         try testing.expectEqual(bids_after - bids_before, q_rem)
                     else
                         try testing.expectEqual(bids_before, bids_after);
@@ -536,14 +537,14 @@ fn testBook(_: Context, smith: *std.testing.Smith) !void {
                 .sell => {
                     try testing.expectEqual(bids_before - bids_after, q_traded);
 
-                    if (order.mode == .gtc and order.status != .filled)
+                    if (order.mode == .gtc and order.status != .fulfilled)
                         try testing.expectEqual(asks_after - asks_before, q_rem)
                     else
                         try testing.expectEqual(asks_before, asks_after);
                 },
             }
         } else |err| {
-            try testing.expectEqual(order.status, .cancelled);
+            try testing.expectEqual(order.status, .rejected);
             try testing.expect(err == Errors.InsufficientLiquidity);
 
             try testing.expectEqual(bids_before, Context.totalLiquidity(&book.bids));

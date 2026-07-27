@@ -70,9 +70,9 @@ fn handle(self: *App, io: Io, allocator: mem.Allocator) !void {
     const orders = try Packet.recv(reader, header.length);
 
     for (orders) |*order| {
-        const book = self.market.get(order.asset) orelse blk: {
+        const book = self.market.get(order.ticker) orelse blk: {
             const b = try Book.init(allocator);
-            try self.market.put(order.asset, b);
+            try self.market.put(order.ticker, b);
             break :blk b;
         };
 

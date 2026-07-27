@@ -20,10 +20,10 @@ type ClaimsKey struct{}
 
 type Claims struct {
 	jwt.RegisteredClaims
-	ID            uuid.UUID         `json:"id"`
-	EmailAddress  string            `json:"email"`
-	WalletAddress string            `json:"wallet"`
-	Role          repositories.Role `json:"role"`
+	ID            uuid.UUID             `json:"id"`
+	EmailAddress  string                `json:"email"`
+	WalletAddress string                `json:"wallet"`
+	Role          repositories.UserRole `json:"role"`
 }
 
 func GenerateOTP(length int) (string, error) {

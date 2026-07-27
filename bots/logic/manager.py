@@ -1,6 +1,6 @@
 import asyncio
 import random
-from typing import Any, List
+from typing import Any
 
 import httpx
 import pydantic
@@ -13,11 +13,13 @@ from logic.worker import Worker
 
 
 class Manager:
-    tickers: list[Ticker] = []
-    tasks: list[asyncio.Task] = []
     logger: Any
+    tickers: list[Ticker]
+    tasks: list[asyncio.Task]
 
     def __init__(self) -> None:
+        self.tasks = []
+        self.tickers = []
         self.logger = logger.bind(id="manager")
 
     async def start(self, base_url: str, bots_amount: int) -> None:
@@ -28,7 +30,7 @@ class Manager:
             self.logger.info("starting all bots", count=bots_amount)
             await self.get_tickers(shared_client)
 
-            bots = [Worker(i, shared_client, self.random_ticker()) for i in range(1, bots_amount + 1)]
+            bots = [Worker(i, shared_client, *self.random_ticker()) for i in range(1, bots_amount + 1)]
             self.tasks = [asyncio.create_task(bot.run()) for bot in bots]
 
             try:
@@ -36,6 +38,10 @@ class Manager:
 
             except (asyncio.CancelledError, KeyboardInterrupt):
                 self.logger.info("shutdown signal received")
+
+            except Exception as e:
+                self.logger.error("an unexpected error occurred", detail=str(e))
+                raise PortmanException(f"something went wrong: {e}") from e
 
             finally:
                 await self.stop()
@@ -48,18 +54,19 @@ class Manager:
         await asyncio.gather(*self.tasks, return_exceptions=True)
         self.logger.info("all bots stopped")
 
-    def random_ticker(self) -> str:
+    def random_ticker(self) -> tuple[int, str]:
         assert len(self.tickers) > 0, "no tickers available"
-        return random.choice(self.tickers).symbol
+        ticker = random.choice(self.tickers)
+        return ticker.id, ticker.symbol
 
     async def get_tickers(self, client: httpx.AsyncClient) -> None:
         try:
             response = await client.get("/tickers")
-            payload = Payload[List[Ticker]].model_validate(response.json())
+            payload = Payload[list[Ticker]].model_validate(response.json())
 
             match payload.root:
                 case Success(data=ticker_list):
-                    for ticker in ticker_list:
+                    for ticker in ticker_list:  # ty:ignore[not-iterable]
                         if ticker.status == TickerStatus.OPEN:
                             self.tickers.append(ticker)
 

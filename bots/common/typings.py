@@ -1,4 +1,4 @@
-from typing import Generic, Literal, TypeVar, Union
+from typing import Literal, TypeVar
 
 from pydantic import BaseModel, RootModel
 
@@ -12,7 +12,7 @@ class Error(BaseModel):
     detail: str
 
 
-class Success(BaseModel, Generic[T]):
+class Success[T](BaseModel):
     status: Literal["success"]
     data: T
 
@@ -22,4 +22,4 @@ class Failure(BaseModel):
     error: Error
 
 
-Payload = RootModel[Union[Success[T], Failure]]
+Payload = RootModel[Success[T] | Failure]

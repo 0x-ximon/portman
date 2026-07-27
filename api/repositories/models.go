@@ -14,6 +14,93 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+type AssetKind string
+
+const (
+	AssetKindCRYPTO    AssetKind = "CRYPTO"
+	AssetKindSTOCK     AssetKind = "STOCK"
+	AssetKindFIAT      AssetKind = "FIAT"
+	AssetKindCOMMODITY AssetKind = "COMMODITY"
+)
+
+func (e *AssetKind) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = AssetKind(s)
+	case string:
+		*e = AssetKind(s)
+	default:
+		return fmt.Errorf("unsupported scan type for AssetKind: %T", src)
+	}
+	return nil
+}
+
+type NullAssetKind struct {
+	AssetKind AssetKind `json:"asset_kind"`
+	Valid     bool      `json:"valid"` // Valid is true if AssetKind is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullAssetKind) Scan(value interface{}) error {
+	if value == nil {
+		ns.AssetKind, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.AssetKind.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullAssetKind) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.AssetKind), nil
+}
+
+type OrderMode string
+
+const (
+	OrderModeGTC OrderMode = "GTC"
+	OrderModeFOK OrderMode = "FOK"
+	OrderModeIOC OrderMode = "IOC"
+)
+
+func (e *OrderMode) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OrderMode(s)
+	case string:
+		*e = OrderMode(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OrderMode: %T", src)
+	}
+	return nil
+}
+
+type NullOrderMode struct {
+	OrderMode OrderMode `json:"order_mode"`
+	Valid     bool      `json:"valid"` // Valid is true if OrderMode is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullOrderMode) Scan(value interface{}) error {
+	if value == nil {
+		ns.OrderMode, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.OrderMode.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullOrderMode) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.OrderMode), nil
+}
+
 type OrderSide string
 
 const (
@@ -60,9 +147,10 @@ type OrderStatus string
 
 const (
 	OrderStatusPENDING   OrderStatus = "PENDING"
+	OrderStatusREJECTED  OrderStatus = "REJECTED"
+	OrderStatusPARTIAL   OrderStatus = "PARTIAL"
 	OrderStatusCANCELLED OrderStatus = "CANCELLED"
 	OrderStatusFULFILLED OrderStatus = "FULFILLED"
-	OrderStatusREJECTED  OrderStatus = "REJECTED"
 )
 
 func (e *OrderStatus) Scan(src interface{}) error {
@@ -98,91 +186,6 @@ func (ns NullOrderStatus) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return string(ns.OrderStatus), nil
-}
-
-type OrderType string
-
-const (
-	OrderTypeLIMIT  OrderType = "LIMIT"
-	OrderTypeMARKET OrderType = "MARKET"
-)
-
-func (e *OrderType) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = OrderType(s)
-	case string:
-		*e = OrderType(s)
-	default:
-		return fmt.Errorf("unsupported scan type for OrderType: %T", src)
-	}
-	return nil
-}
-
-type NullOrderType struct {
-	OrderType OrderType `json:"order_type"`
-	Valid     bool      `json:"valid"` // Valid is true if OrderType is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullOrderType) Scan(value interface{}) error {
-	if value == nil {
-		ns.OrderType, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.OrderType.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullOrderType) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.OrderType), nil
-}
-
-type Role string
-
-const (
-	RoleREGULAR       Role = "REGULAR"
-	RoleAUTOMATED     Role = "AUTOMATED"
-	RoleADMINISTRATOR Role = "ADMINISTRATOR"
-)
-
-func (e *Role) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = Role(s)
-	case string:
-		*e = Role(s)
-	default:
-		return fmt.Errorf("unsupported scan type for Role: %T", src)
-	}
-	return nil
-}
-
-type NullRole struct {
-	Role  Role `json:"role"`
-	Valid bool `json:"valid"` // Valid is true if Role is not NULL
-}
-
-// Scan implements the Scanner interface.
-func (ns *NullRole) Scan(value interface{}) error {
-	if value == nil {
-		ns.Role, ns.Valid = "", false
-		return nil
-	}
-	ns.Valid = true
-	return ns.Role.Scan(value)
-}
-
-// Value implements the driver Valuer interface.
-func (ns NullRole) Value() (driver.Value, error) {
-	if !ns.Valid {
-		return nil, nil
-	}
-	return string(ns.Role), nil
 }
 
 type TickerStatus string
@@ -228,28 +231,93 @@ func (ns NullTickerStatus) Value() (driver.Value, error) {
 	return string(ns.TickerStatus), nil
 }
 
+type UserRole string
+
+const (
+	UserRoleREGULAR       UserRole = "REGULAR"
+	UserRoleAUTOMATED     UserRole = "AUTOMATED"
+	UserRoleADMINISTRATOR UserRole = "ADMINISTRATOR"
+)
+
+func (e *UserRole) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = UserRole(s)
+	case string:
+		*e = UserRole(s)
+	default:
+		return fmt.Errorf("unsupported scan type for UserRole: %T", src)
+	}
+	return nil
+}
+
+type NullUserRole struct {
+	UserRole UserRole `json:"user_role"`
+	Valid    bool     `json:"valid"` // Valid is true if UserRole is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullUserRole) Scan(value interface{}) error {
+	if value == nil {
+		ns.UserRole, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.UserRole.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullUserRole) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.UserRole), nil
+}
+
+type Asset struct {
+	ID        int32              `json:"id"`
+	Name      string             `json:"name"`
+	Symbol    string             `json:"symbol"`
+	Decimals  int32              `json:"decimals"`
+	Kind      AssetKind          `json:"kind"`
+	CreatedAt time.Time          `json:"created_at"`
+	UpdatedAt time.Time          `json:"updated_at"`
+	DeletedAt pgtype.Timestamptz `json:"deleted_at"`
+}
+
+type Balance struct {
+	UserID    uuid.UUID       `json:"user_id"`
+	AssetID   int32           `json:"asset_id"`
+	Available decimal.Decimal `json:"available"`
+	Locked    decimal.Decimal `json:"locked"`
+}
+
 type Order struct {
-	ID           int64           `json:"id"`
-	UserID       uuid.UUID       `json:"user_id"`
-	TickerSymbol string          `json:"ticker_symbol"`
-	Price        decimal.Decimal `json:"price"`
-	Quantity     decimal.Decimal `json:"quantity"`
-	Side         OrderSide       `json:"side"`
-	Type         OrderType       `json:"type"`
-	Status       OrderStatus     `json:"status"`
-	CreatedAt    time.Time       `json:"created_at"`
-	UpdatedAt    time.Time       `json:"updated_at"`
+	ID        int64           `json:"id"`
+	UserID    uuid.UUID       `json:"user_id"`
+	TickerID  int64           `json:"ticker_id"`
+	Price     decimal.Decimal `json:"price"`
+	Quantity  decimal.Decimal `json:"quantity"`
+	Side      OrderSide       `json:"side"`
+	Mode      OrderMode       `json:"mode"`
+	Status    OrderStatus     `json:"status"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
 }
 
 type Ticker struct {
-	ID     int32           `json:"id"`
-	Base   string          `json:"base"`
-	Quote  string          `json:"quote"`
-	Symbol string          `json:"symbol"`
-	Ask    decimal.Decimal `json:"ask"`
-	Bid    decimal.Decimal `json:"bid"`
-	Last   decimal.Decimal `json:"last"`
-	Status TickerStatus    `json:"status"`
+	ID         int64              `json:"id"`
+	Symbol     string             `json:"symbol"`
+	LotSize    decimal.Decimal    `json:"lot_size"`
+	TickSize   decimal.Decimal    `json:"tick_size"`
+	Ask        decimal.Decimal    `json:"ask"`
+	Bid        decimal.Decimal    `json:"bid"`
+	BaseAsset  int32              `json:"base_asset"`
+	QuoteAsset int32              `json:"quote_asset"`
+	Status     TickerStatus       `json:"status"`
+	CreatedAt  time.Time          `json:"created_at"`
+	UpdatedAt  time.Time          `json:"updated_at"`
+	DeletedAt  pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type User struct {
@@ -258,11 +326,9 @@ type User struct {
 	LastName      string             `json:"last_name"`
 	EmailAddress  string             `json:"email_address"`
 	WalletAddress string             `json:"wallet_address"`
-	FreeBalance   decimal.Decimal    `json:"free_balance"`
-	FrozenBalance decimal.Decimal    `json:"frozen_balance"`
 	Password      string             `json:"password"`
 	ApiKey        *string            `json:"api_key"`
-	Role          Role               `json:"role"`
+	Role          UserRole           `json:"role"`
 	CreatedAt     time.Time          `json:"created_at"`
 	UpdatedAt     time.Time          `json:"updated_at"`
 	DeletedAt     pgtype.Timestamptz `json:"deleted_at"`

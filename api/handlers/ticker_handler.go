@@ -32,7 +32,7 @@ func (h *TickerHandler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ticker, err := repo.GetTicker(ctx, int32(id))
+	ticker, err := repo.GetTicker(ctx, id)
 	if err != nil {
 		logger.Warn("failed to get ticker", "ticker_id", id, "error", err)
 		SendFailure(w, http.StatusNotFound, codeNotFound, "ticker  not found")
@@ -87,13 +87,13 @@ func (h *TickerHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if claims.Role != repositories.RoleADMINISTRATOR {
+	if claims.Role != repositories.UserRoleADMINISTRATOR {
 		logger.Warn("user is not an admin", "user_id", claims.ID, "role", claims.Role)
 		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user not authorized to list users")
 		return
 	}
 
-	err = repo.DeleteTicker(ctx, int32(id))
+	err = repo.DeleteTicker(ctx, id)
 	if err != nil {
 		logger.Error("database error during ticker deletion", "error", err)
 		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")

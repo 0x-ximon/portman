@@ -1,6 +1,6 @@
 -- name: CreateTicker :one
-INSERT INTO tickers (symbol, base, quote, status) 
-VALUES ($1, $2, $3, $4)
+INSERT INTO tickers (symbol, lot_size, tick_size, base_asset, quote_asset)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetTicker :one
@@ -15,6 +15,22 @@ WHERE symbol = $1 LIMIT 1;
 SELECT * FROM tickers
 ORDER BY symbol;
 
+-- name: UpdateTicker :exec
+UPDATE tickers
+SET lot_size = $2, tick_size = $3
+WHERE ID = $1;
+
+-- name: UpdateTickerQuotes :exec
+UPDATE tickers
+SET ask = $2, bid = $3
+WHERE ID = $1;
+
+-- name: UpdateTickerStatus :exec
+UPDATE tickers
+SET status = $2
+WHERE ID = $1;
+
 -- name: DeleteTicker :exec
-DELETE FROM tickers
+UPDATE tickers
+SET deleted_at = now()
 WHERE ID = $1;

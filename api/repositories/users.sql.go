@@ -12,9 +12,9 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (first_name, last_name, email_address, wallet_address, role, password, api_key) 
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, first_name, last_name, email_address, wallet_address, free_balance, frozen_balance, password, api_key, role, created_at, updated_at, deleted_at
+INSERT INTO users (first_name, last_name, email_address, wallet_address, password, api_key)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, first_name, last_name, email_address, wallet_address, password, api_key, role, created_at, updated_at, deleted_at
 `
 
 type CreateUserParams struct {
@@ -22,7 +22,6 @@ type CreateUserParams struct {
 	LastName      string  `json:"last_name"`
 	EmailAddress  string  `json:"email_address"`
 	WalletAddress string  `json:"wallet_address"`
-	Role          Role    `json:"role"`
 	Password      string  `json:"password"`
 	ApiKey        *string `json:"api_key"`
 }
@@ -33,7 +32,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.LastName,
 		arg.EmailAddress,
 		arg.WalletAddress,
-		arg.Role,
 		arg.Password,
 		arg.ApiKey,
 	)
@@ -44,8 +42,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.LastName,
 		&i.EmailAddress,
 		&i.WalletAddress,
-		&i.FreeBalance,
-		&i.FrozenBalance,
 		&i.Password,
 		&i.ApiKey,
 		&i.Role,
@@ -57,7 +53,8 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const deleteUser = `-- name: DeleteUser :exec
-DELETE FROM users
+UPDATE users
+SET deleted_at = now()
 WHERE ID = $1
 `
 
@@ -67,7 +64,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id uuid.UUID) error {
 }
 
 const findUserByApiKey = `-- name: FindUserByApiKey :one
-SELECT id, first_name, last_name, email_address, wallet_address, free_balance, frozen_balance, password, api_key, role, created_at, updated_at, deleted_at FROM users
+SELECT id, first_name, last_name, email_address, wallet_address, password, api_key, role, created_at, updated_at, deleted_at FROM users
 WHERE api_key = $1 LIMIT 1
 `
 
@@ -80,8 +77,6 @@ func (q *Queries) FindUserByApiKey(ctx context.Context, apiKey *string) (User, e
 		&i.LastName,
 		&i.EmailAddress,
 		&i.WalletAddress,
-		&i.FreeBalance,
-		&i.FrozenBalance,
 		&i.Password,
 		&i.ApiKey,
 		&i.Role,
@@ -93,7 +88,7 @@ func (q *Queries) FindUserByApiKey(ctx context.Context, apiKey *string) (User, e
 }
 
 const findUserByEmail = `-- name: FindUserByEmail :one
-SELECT id, first_name, last_name, email_address, wallet_address, free_balance, frozen_balance, password, api_key, role, created_at, updated_at, deleted_at FROM users
+SELECT id, first_name, last_name, email_address, wallet_address, password, api_key, role, created_at, updated_at, deleted_at FROM users
 WHERE email_address = $1 LIMIT 1
 `
 
@@ -106,8 +101,6 @@ func (q *Queries) FindUserByEmail(ctx context.Context, emailAddress string) (Use
 		&i.LastName,
 		&i.EmailAddress,
 		&i.WalletAddress,
-		&i.FreeBalance,
-		&i.FrozenBalance,
 		&i.Password,
 		&i.ApiKey,
 		&i.Role,
@@ -119,7 +112,7 @@ func (q *Queries) FindUserByEmail(ctx context.Context, emailAddress string) (Use
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, first_name, last_name, email_address, wallet_address, free_balance, frozen_balance, password, api_key, role, created_at, updated_at, deleted_at FROM users
+SELECT id, first_name, last_name, email_address, wallet_address, password, api_key, role, created_at, updated_at, deleted_at FROM users
 WHERE ID = $1 LIMIT 1
 `
 
@@ -132,8 +125,6 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.LastName,
 		&i.EmailAddress,
 		&i.WalletAddress,
-		&i.FreeBalance,
-		&i.FrozenBalance,
 		&i.Password,
 		&i.ApiKey,
 		&i.Role,
@@ -145,7 +136,7 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT id, first_name, last_name, email_address, wallet_address, free_balance, frozen_balance, password, api_key, role, created_at, updated_at, deleted_at FROM users
+SELECT id, first_name, last_name, email_address, wallet_address, password, api_key, role, created_at, updated_at, deleted_at FROM users
 `
 
 func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
@@ -163,8 +154,6 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 			&i.LastName,
 			&i.EmailAddress,
 			&i.WalletAddress,
-			&i.FreeBalance,
-			&i.FrozenBalance,
 			&i.Password,
 			&i.ApiKey,
 			&i.Role,
@@ -180,4 +169,47 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateUser = `-- name: UpdateUser :exec
+UPDATE users
+SET first_name = $2, last_name = $3, email_address = $4, wallet_address = $5, password = $6
+WHERE ID = $1
+`
+
+type UpdateUserParams struct {
+	ID            uuid.UUID `json:"id"`
+	FirstName     string    `json:"first_name"`
+	LastName      string    `json:"last_name"`
+	EmailAddress  string    `json:"email_address"`
+	WalletAddress string    `json:"wallet_address"`
+	Password      string    `json:"password"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) error {
+	_, err := q.db.Exec(ctx, updateUser,
+		arg.ID,
+		arg.FirstName,
+		arg.LastName,
+		arg.EmailAddress,
+		arg.WalletAddress,
+		arg.Password,
+	)
+	return err
+}
+
+const updateUserRole = `-- name: UpdateUserRole :exec
+UPDATE users
+SET role = $2
+WHERE ID = $1
+`
+
+type UpdateUserRoleParams struct {
+	ID   uuid.UUID `json:"id"`
+	Role UserRole  `json:"role"`
+}
+
+func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) error {
+	_, err := q.db.Exec(ctx, updateUserRole, arg.ID, arg.Role)
+	return err
 }
