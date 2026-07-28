@@ -1,8 +1,6 @@
 import argparse
 import os
 
-from dotenv import load_dotenv
-
 from common.constants import BOTS_AMOUNT
 
 
@@ -25,7 +23,6 @@ class Config:
         self.bots_amount = args.amount
 
     def __get_env(self) -> os._Environ[str]:
-        load_dotenv()
         return os.environ
 
     def __get_args(self) -> argparse.Namespace:
