@@ -31,6 +31,10 @@ func main() {
 	pool := cfg.pool
 	defer pool.Close()
 
+	// Goroutines
+	go cfg.batcher.Start(ctx)
+
+	// Middlewares
 	mid := Middleware{}
 	chain := mid.NewChain(
 		mid.Logging,
@@ -46,9 +50,10 @@ func main() {
 
 	// Handlers
 	deps := &handlers.Dependencies{
-		DB:     pool,
-		Mailer: cfg.mailer,
-		Cacher: cfg.cacher,
+		DB:      pool,
+		Mailer:  cfg.mailer,
+		Cacher:  cfg.cacher,
+		Batcher: cfg.batcher,
 	}
 
 	auth := deps.NewAuthHandler()
@@ -73,7 +78,6 @@ func main() {
 	mux.HandleFunc("GET /orders", orders.List)
 	mux.HandleFunc("POST /orders", orders.Create)
 	mux.HandleFunc("GET /orders/{id}", orders.Get)
-	// mux.HandleFunc("GET /orders/process", orders.Process)
 
 	log.Printf("Portman API listening on %s\n", addr)
 	if err := server.ListenAndServe(); err != nil {

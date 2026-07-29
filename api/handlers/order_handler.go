@@ -11,8 +11,9 @@ import (
 )
 
 type OrderHandler struct {
-	db     *pgxpool.Pool
-	mailer *services.MailService
+	db      *pgxpool.Pool
+	mailer  *services.MailService
+	batcher *services.BatchService
 }
 
 func (h *OrderHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -86,8 +87,7 @@ func (h *OrderHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Send order to core
-
+	h.batcher.CreateOrder <- order
 	logger.Info("order created successfully", "order_id", order.ID, "user_id", user.ID)
 	SendSuccess(w, order)
 }

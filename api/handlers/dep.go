@@ -6,9 +6,10 @@ import (
 )
 
 type Dependencies struct {
-	DB     *pgxpool.Pool
-	Mailer *services.MailService
-	Cacher *services.CacheService
+	DB      *pgxpool.Pool
+	Mailer  *services.MailService
+	Cacher  *services.CacheService
+	Batcher *services.BatchService
 }
 
 func (d *Dependencies) NewAuthHandler() *AuthHandler {
@@ -33,7 +34,8 @@ func (d *Dependencies) NewTickerHandler() *TickerHandler {
 
 func (d *Dependencies) NewOrderHandler() *OrderHandler {
 	return &OrderHandler{
-		db:     d.DB,
-		mailer: d.Mailer,
+		db:      d.DB,
+		mailer:  d.Mailer,
+		batcher: d.Batcher,
 	}
 }
