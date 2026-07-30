@@ -33,55 +33,79 @@ func NewBatchService() (*BatchService, error) {
 
 	return &BatchService{
 		client:      client,
-		CreateOrder: make(chan repo.Order, batchSize),
-		UpdateOrder: make(chan repo.Order, batchSize),
-		CancelOrder: make(chan repo.Order, batchSize),
+		CreateOrder: make(chan repo.Order, 0xFF),
+		UpdateOrder: make(chan repo.Order, 0xFF),
+		CancelOrder: make(chan repo.Order, 0xFF),
 	}, nil
 }
 
+// TODO: Handle the Returned Error and Implement Retry Logic to Prevent Data Loss
 func (b *BatchService) Start(ctx context.Context) {
 	var (
-		createBuffer []repo.Order
-		updateBuffer []repo.Order
-		cancelBuffer []repo.Order
+		createBuffer [0xFF]repo.Order
+		updateBuffer [0xFF]repo.Order
+		cancelBuffer [0xFF]repo.Order
 	)
 
-	ticker := time.NewTicker(tickerInterval)
+	var (
+		createCount int
+		updateCount int
+		cancelCount int
+	)
+
+	ticker := time.NewTicker(interval)
 	for {
 		select {
 
 		case <-ticker.C:
-			b.Send(createBuffer, "CREATE")
-			b.Send(updateBuffer, "UPDATE")
-			b.Send(cancelBuffer, "CANCEL")
+			b.Send(createBuffer, "CREATE", createCount)
+			b.Send(updateBuffer, "UPDATE", updateCount)
+			b.Send(cancelBuffer, "CANCEL", cancelCount)
 
-			createBuffer = nil
-			updateBuffer = nil
-			cancelBuffer = nil
+			createCount = 0
+			updateCount = 0
+			cancelCount = 0
 
 		case order := <-b.CreateOrder:
-			createBuffer = append(createBuffer, order)
+			if createCount < 0xFF {
+				createBuffer[createCount] = order
+				createCount++
+			} else {
+				b.Send(createBuffer, "CREATE", createCount)
+				createCount = 0
+			}
 
 		case order := <-b.UpdateOrder:
-			updateBuffer = append(updateBuffer, order)
+			if updateCount < 0xFF {
+				updateBuffer[updateCount] = order
+				updateCount++
+			} else {
+				b.Send(updateBuffer, "UPDATE", updateCount)
+				updateCount = 0
+			}
 
 		case order := <-b.CancelOrder:
-			cancelBuffer = append(cancelBuffer, order)
+			if cancelCount < 0xFF {
+				cancelBuffer[cancelCount] = order
+				cancelCount++
+			} else {
+				b.Send(cancelBuffer, "CANCEL", cancelCount)
+				cancelCount = 0
+			}
 
 		case <-ctx.Done():
 			ticker.Stop()
 
-			b.Send(createBuffer, "CREATE")
-			b.Send(updateBuffer, "UPDATE")
-			b.Send(cancelBuffer, "CANCEL")
+			b.Send(createBuffer, "CREATE", createCount)
+			b.Send(updateBuffer, "UPDATE", updateCount)
+			b.Send(cancelBuffer, "CANCEL", cancelCount)
 			return
-
 		}
 	}
 }
 
-func (b *BatchService) Send(buffer []repo.Order, operation string) error {
-	if len(buffer) == 0 {
+func (b *BatchService) Send(buffer [0xFF]repo.Order, operation string, count int) error {
+	if count == 0 {
 		return fmt.Errorf("buffer is empty")
 	}
 
@@ -106,28 +130,29 @@ func (b *BatchService) Send(buffer []repo.Order, operation string) error {
 		Flags    uint8
 	}
 
-	l := len(buffer) * int(unsafe.Sizeof(Order{}))
 	headers := Headers{
 		Version:     version,
 		Instruction: instruction[operation],
-		Length:      uint16(l),
-		Nonce:       0,
-		Timestamp:   0,
+		Length:      uint16(count * int(unsafe.Sizeof(Order{}))),
+		Nonce:       nonce,
+		Timestamp:   uint64(time.Now().UnixNano()),
 		Source:      0,
 		Destination: 0,
 	}
 
-	orders := make([]Order, len(buffer))
-	for i, o := range buffer {
-		// TODO: Properly handle price and quantity conversion to prevent precision loss
+	orders := make([]Order, count)
+	for i := range count {
+		order := buffer[i]
+
+		// TODO: Prevent Precision Loss During price and quantity conversion
 		orders[i] = Order{
-			ID:       uint64(o.ID),
-			Price:    o.Price.BigInt().Uint64(),
-			Quantity: o.Quantity.BigInt().Uint64(),
-			Ticker:   uint32(o.TickerID),
-			Status:   status[o.Status],
-			Side:     side[o.Side],
-			Mode:     mode[o.Mode],
+			ID:       uint64(order.ID),
+			Price:    order.Price.BigInt().Uint64(),
+			Quantity: order.Quantity.BigInt().Uint64(),
+			Ticker:   uint32(order.TickerID),
+			Status:   status[order.Status],
+			Side:     side[order.Side],
+			Mode:     mode[order.Mode],
 			Flags:    0x00,
 		}
 	}
@@ -152,8 +177,9 @@ func (b *BatchService) Send(buffer []repo.Order, operation string) error {
 }
 
 const version = 1
-const batchSize = 256
-const tickerInterval = time.Second * 1
+const interval = time.Second * 10
+
+var nonce = uint32(0)
 
 var instruction = map[string]uint8{
 	"CREATE": 0,
