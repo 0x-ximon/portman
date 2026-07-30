@@ -22,9 +22,14 @@ pub const Header = extern struct {
     destination: u64,
 };
 
-pub fn recv(bytes: []const u8) struct { *const Header, []Order } {
+pub fn recv(data: []const u8, buffer: []u8) struct { *const Header, []Order } {
     const size = @sizeOf(Header);
-    const header: *const Header = @ptrCast(@alignCast(bytes[0..size]));
-    const orders: []Order = @ptrCast(@alignCast(@constCast(bytes[size..])));
+    @memcpy(buffer[0..size], data[0..size]);
+    const header: *const Header = @ptrCast(@alignCast(buffer[0..size]));
+
+    const end = size + header.length;
+    @memcpy(buffer[size..end], data[size..end]);
+    const orders: []Order = @ptrCast(@alignCast(buffer[size..end]));
+
     return .{ header, orders };
 }

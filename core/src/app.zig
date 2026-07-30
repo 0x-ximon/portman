@@ -52,18 +52,21 @@ pub fn run(self: *App) !void {
 }
 
 pub fn onMessage(self: *App, msg: *const nats.Message) void {
-    self.nonce += 1;
-    const header, const orders = Packet.recv(msg.data);
+    var buffer: [0x2000]u8 align(8) = undefined;
+    const header, const orders = Packet.recv(msg.data, &buffer);
     const payload = self.handle(header, orders) catch |err| {
-        std.log.err("Error: {s}", .{@errorName(err)});
+        std.log.err("{s}", .{@errorName(err)});
         return;
     };
 
     if (payload.len > 0) {
         self.queue.publish("orders.processed", std.mem.sliceAsBytes(payload)) catch |err| {
-            std.log.err("Error: {s}", .{@errorName(err)});
+            std.log.err("{s}", .{@errorName(err)});
         };
     }
+
+    std.log.info("Orders processed. Nonce: {}", .{self.nonce});
+    self.nonce += 1;
 }
 
 pub fn handle(self: *App, header: *const Header, orders: []Order) ![]Order {
