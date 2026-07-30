@@ -9,15 +9,10 @@ pub fn main(init: std.process.Init) !void {
     const gpa = init.gpa;
     const io = init.io;
 
-    const arena = init.arena;
-    defer arena.deinit();
+    const queue_url = env.get("QUEUE_URL") orelse "nats://localhost:4222";
+    const app = try App.init(gpa, io, queue_url);
+    defer app.deinit();
 
-    const host = env.get("HOST") orelse "127.0.0.1";
-    const port = try std.fmt.parseInt(u16, env.get("PORT") orelse "3002", 10);
-
-    const app = try App.init(arena.allocator(), .{ .host = host, .port = port });
-    defer app.deinit(io);
-
-    std.debug.print("Portman Core listening on {s}:{d}\n", .{ host, port });
-    try app.run(io, gpa, .{ .reuse_address = true });
+    std.debug.print("Portman Core Starting\n", .{});
+    try app.run();
 }

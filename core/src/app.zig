@@ -1,7 +1,8 @@
 const std = @import("std");
 const mem = std.mem;
 const Io = std.Io;
-const net = Io.net;
+
+const nats = @import("nats");
 
 const Book = @import("book.zig");
 const Order = Book.Order;
@@ -11,9 +12,10 @@ const Header = Packet.Header;
 
 const App = @This();
 
-address: net.IpAddress,
-server: ?net.Server,
+allocator: mem.Allocator,
+queue: *nats.Client,
 market: Market,
+nonce: u32,
 
 const Market = std.AutoHashMap(Ticker, *Book);
 
@@ -21,57 +23,60 @@ const AppError = error{
     ServerNotInitialized,
 };
 
-pub const AppConfig = struct {
-    host: []const u8,
-    port: u16,
-};
-
-pub fn init(allocator: mem.Allocator, config: AppConfig) !*App {
+pub fn init(allocator: mem.Allocator, io: Io, queue_url: []const u8) !*App {
     const self = try allocator.create(App);
+    const queue = try nats.Client.connect(allocator, io, queue_url, .{});
+
     self.* = .{
-        .address = try .parse(config.host, config.port),
         .market = .init(allocator),
-        .server = null,
+        .allocator = allocator,
+        .queue = queue,
+        .nonce = 0,
     };
 
     return self;
 }
 
-pub fn deinit(self: *App, io: Io) void {
+pub fn deinit(self: *App) void {
     var iter = self.market.valueIterator();
     while (iter.next()) |book| book.*.deinit();
 
-    if (self.server) |*s| s.deinit(io);
     self.market.deinit();
+    self.queue.deinit();
 }
 
-pub fn run(self: *App, io: Io, allocator: mem.Allocator, options: net.IpAddress.ListenOptions) !void {
-    self.server = try self.address.listen(io, options);
-    while (true) {
-        self.handle(io, allocator) catch |err| {
-            std.log.err("something went wrong: {any}", .{err});
+pub fn run(self: *App) !void {
+    const subscription = try self.queue.subscribe("orders.match", nats.MsgHandler.init(App, self));
+    defer subscription.deinit();
+    while (true) {}
+}
+
+pub fn onMessage(self: *App, msg: *const nats.Message) void {
+    var buffer: [0x2000]u8 align(8) = undefined;
+    const header, const orders = Packet.recv(msg.data, &buffer);
+    const payload = self.handle(header, orders) catch |err| {
+        std.log.err("{s}", .{@errorName(err)});
+        return;
+    };
+
+    if (payload.len > 0) {
+        self.queue.publish("orders.processed", std.mem.sliceAsBytes(payload)) catch |err| {
+            std.log.err("{s}", .{@errorName(err)});
         };
     }
+
+    std.log.info("Orders processed. Nonce: {}", .{self.nonce});
+    self.nonce += 1;
 }
 
-fn handle(self: *App, io: Io, allocator: mem.Allocator) !void {
-    if (self.server == null) {
-        return AppError.ServerNotInitialized;
-    }
-
-    const stream = try self.server.?.accept(io);
-    defer stream.socket.close(io);
-
-    var buffer: [1024 * 64]u8 align(8) = undefined;
-    var buf_reader = stream.reader(io, &buffer);
-    const reader = &buf_reader.interface;
-
-    const header = try Packet.info(reader);
-    const orders = try Packet.recv(reader, header.length);
+pub fn handle(self: *App, header: *const Header, orders: []Order) ![]Order {
+    // PERF: Use a more performant data structure
+    var payload = std.ArrayList(Order).empty;
+    errdefer payload.deinit(self.allocator);
 
     for (orders) |*order| {
         const book = self.market.get(order.ticker) orelse blk: {
-            const b = try Book.init(allocator);
+            const b = try Book.init(self.allocator);
             try self.market.put(order.ticker, b);
             break :blk b;
         };
@@ -79,9 +84,12 @@ fn handle(self: *App, io: Io, allocator: mem.Allocator) !void {
         switch (header.instruction) {
             .CancelOrder => try book.cancelOrder(order),
             .UpdateOrder => try book.updateOrder(order),
-            .ProcessOrder => _ = try book.processOrder(order),
+            .ProcessOrder => {
+                const processed = try book.processOrder(order);
+                for (processed) |p| try payload.append(self.allocator, p);
+            },
         }
-
-        std.log.info("order processed: {any}", .{order});
     }
+
+    return payload.toOwnedSlice(self.allocator);
 }

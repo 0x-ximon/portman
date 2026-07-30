@@ -15,11 +15,12 @@ type Consumers struct {
 }
 
 type Config struct {
-	addr   string
-	base   string
-	pool   *pgxpool.Pool
-	mailer *services.MailService
-	cacher *services.CacheService
+	addr    string
+	base    string
+	pool    *pgxpool.Pool
+	mailer  *services.MailService
+	batcher *services.BatchService
+	cacher  *services.CacheService
 }
 
 func (c *Config) Load(ctx context.Context) error {
@@ -53,6 +54,12 @@ func (c *Config) Load(ctx context.Context) error {
 		return fmt.Errorf("cache setup failed: %w", err)
 	}
 	c.cacher = cacher
+
+	batcher, err := services.NewBatchService()
+	if err != nil {
+		return fmt.Errorf("batch setup failed: %w", err)
+	}
+	c.batcher = batcher
 
 	return nil
 }

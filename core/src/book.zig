@@ -58,6 +58,7 @@ pub const Order = extern struct {
 
 const Errors = error{
     InsufficientLiquidity,
+    NotImplemented,
 };
 
 const Level = struct {
@@ -112,9 +113,13 @@ pub fn processOrder(self: *Self, order: *Order) ![]Order {
     };
 }
 
-pub fn updateOrder(_: *Self, _: *Order) !void {}
+pub fn updateOrder(_: *Self, _: *Order) !void {
+    return error.NotImplemented;
+}
 
-pub fn cancelOrder(_: *Self, _: *Order) !void {}
+pub fn cancelOrder(_: *Self, _: *Order) !void {
+    return error.NotImplemented;
+}
 
 // Good Till Cancelled
 fn gtc(self: *Self, order: *Order) ![]Order {

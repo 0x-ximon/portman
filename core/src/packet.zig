@@ -22,19 +22,14 @@ pub const Header = extern struct {
     destination: u64,
 };
 
-pub fn info(reader: *Io.Reader) !*const Header {
-    const bytes = try reader.take(@sizeOf(Header));
-    const header: *const Header = @ptrCast(@alignCast(bytes.ptr));
-    return header;
-}
+pub fn recv(data: []const u8, buffer: []u8) struct { *const Header, []Order } {
+    const size = @sizeOf(Header);
+    @memcpy(buffer[0..size], data[0..size]);
+    const header: *const Header = @ptrCast(@alignCast(buffer[0..size]));
 
-pub fn recv(reader: *Io.Reader, length: usize) ![]Order {
-    const bytes = try reader.take(length);
-    const count = length / @sizeOf(Order);
-    const orders = @as([*]Order, @ptrCast(@alignCast(bytes.ptr)))[0..count];
-    return orders;
-}
+    const end = size + header.length;
+    @memcpy(buffer[size..end], data[size..end]);
+    const orders: []Order = @ptrCast(@alignCast(buffer[size..end]));
 
-pub fn send(writer: Io.Writer) void {
-    _ = writer;
+    return .{ header, orders };
 }

@@ -4,6 +4,11 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
+    const nats = b.dependency("nats", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const lib = b.addModule("lib", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
@@ -17,6 +22,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "lib", .module = lib },
+                .{ .name = "nats", .module = nats.module("nats") },
             },
         }),
     });
