@@ -3,6 +3,7 @@ pragma solidity ^0.8.30;
 
 import {Account} from "@openzeppelin/contracts/account/Account.sol";
 import {MultiSignerERC7913} from "@openzeppelin/contracts/utils/cryptography/signers/MultiSignerERC7913.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 // HELP: You plan on leveraging these signers with a threshold of 1 for a Portman Account
 // import {SignerECDSA} from "@openzeppelin/contracts/utils/cryptography/signers/SignerECDSA.sol";
@@ -13,6 +14,13 @@ import {MultiSignerERC7913} from "@openzeppelin/contracts/utils/cryptography/sig
 // import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 // import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
-contract PortmanAccount is Account, MultiSignerERC7913 {
-    constructor(bytes[] memory signers, uint64 threshold) MultiSignerERC7913(signers, threshold) {}
+contract PortmanAccount is Account, MultiSignerERC7913, Initializable {
+    constructor() MultiSignerERC7913(new bytes[](0), 0) {
+        _disableInitializers();
+    }
+
+    function initialize(bytes[] memory signers, uint64 threshold) public initializer {
+        _addSigners(signers);
+        _setThreshold(threshold);
+    }
 }
