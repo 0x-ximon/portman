@@ -8,3 +8,6 @@ build:
 
 test:
     forge test -vvv
+
+deploy script:
+    forge script script/{{script}}.s.sol --rpc-url $ETHEREUM_RPC --account $ACCOUNT --password "$PASSWORD" --broadcast

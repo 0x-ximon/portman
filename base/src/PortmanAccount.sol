@@ -7,7 +7,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {MultiSignerERC7913} from "@openzeppelin/contracts/utils/cryptography/signers/MultiSignerERC7913.sol";
 
 contract PortmanAccount is Account, MultiSignerERC7913, Initializable {
-    constructor() MultiSignerERC7913(new bytes[](0), 0) {
+    constructor(bytes[] memory admins) MultiSignerERC7913(admins, 1) {
         _disableInitializers();
     }
 
