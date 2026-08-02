@@ -2,25 +2,33 @@
 pragma solidity ^0.8.30;
 
 import {Account} from "@openzeppelin/contracts/account/Account.sol";
-import {MultiSignerERC7913} from "@openzeppelin/contracts/utils/cryptography/signers/MultiSignerERC7913.sol";
+import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-
-// HELP: You plan on leveraging these signers with a threshold of 1 for a Portman Account
-// import {SignerECDSA} from "@openzeppelin/contracts/utils/cryptography/signers/SignerECDSA.sol";
-// import {SignerP256} from "@openzeppelin/contracts/utils/cryptography/signers/SignerP256.sol";
-// import {SignerZKEmail} from "@openzeppelin/contracts/utils/cryptography/signers/SignerZKEmail.sol";
-
-// TODO: Consider inheriting if ERC721 or ERC1155 would be used.
-// import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-// import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import {MultiSignerERC7913} from "@openzeppelin/contracts/utils/cryptography/signers/MultiSignerERC7913.sol";
 
 contract PortmanAccount is Account, MultiSignerERC7913, Initializable {
     constructor() MultiSignerERC7913(new bytes[](0), 0) {
         _disableInitializers();
     }
 
-    function initialize(bytes[] memory signers, uint64 threshold) public initializer {
+    function initialize(bytes[] memory signers, uint64 threshold) external initializer {
         _addSigners(signers);
         _setThreshold(threshold);
+    }
+
+    function addSigners(bytes[] memory signers) external onlyEntryPointOrSelf {
+        _addSigners(signers);
+    }
+
+    function removeSigners(bytes[] memory signers) external onlyEntryPointOrSelf {
+        _removeSigners(signers);
+    }
+
+    function setThreshold(uint64 threshold) external onlyEntryPointOrSelf {
+        _setThreshold(threshold);
+    }
+
+    function isValidSignature(bytes32 hash, bytes calldata signature) external view returns (bytes4) {
+        return _rawSignatureValidation(hash, signature) ? IERC1271.isValidSignature.selector : bytes4(0xffffffff);
     }
 }
