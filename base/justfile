@@ -11,3 +11,12 @@ test:
 
 deploy script:
     forge script script/{{script}}.s.sol --rpc-url $ETHEREUM_RPC --account $ACCOUNT --password "$PASSWORD" --broadcast
+
+inspect:
+    @mkdir -p tmp
+
+    @forge inspect --json PortmanAccount abi > tmp/PortmanAccount.abi
+    @forge inspect --json PortmanAccount bytecode > tmp/PortmanAccount.bin
+
+    @forge inspect --json PortmanManager abi > tmp/PortmanManager.abi
+    @forge inspect --json PortmanManager bytecode > tmp/PortmanManager.bin
