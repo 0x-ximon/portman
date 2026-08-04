@@ -2,8 +2,8 @@
 -- +goose StatementBegin
 CREATE TABLE balances (
     PRIMARY KEY (user_id, asset_id),
-    user_id UUID REFERENCES users(id) NOT NULL,
-    asset_id INTEGER REFERENCES assets(id) NOT NULL,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    asset_id INTEGER REFERENCES assets(id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
 
     available NUMERIC NOT NULL DEFAULT 0,
     locked NUMERIC NOT NULL DEFAULT 0,
