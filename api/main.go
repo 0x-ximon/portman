@@ -8,15 +8,7 @@ import (
 	chi "github.com/go-chi/chi/middleware"
 
 	"github.com/0x-ximon/portman/api/handlers"
-	"github.com/joho/godotenv"
 )
-
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
 
 func main() {
 	mux := http.NewServeMux()

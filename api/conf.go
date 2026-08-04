@@ -16,7 +16,6 @@ type Consumers struct {
 
 type Config struct {
 	addr    string
-	base    string
 	pool    *pgxpool.Pool
 	mailer  *services.MailService
 	batcher *services.BatchService
@@ -31,16 +30,9 @@ func (c *Config) Load(ctx context.Context) error {
 	c.pool = conn
 
 	addr, ok := os.LookupEnv("ADDR")
-	if !ok || addr == "" {
-		addr = "127.0.0.1:3001"
+	if !ok {
+		return fmt.Errorf("ADDR is not set")
 	}
-	c.addr = addr
-
-	base, ok := os.LookupEnv("BASE")
-	if !ok || base == "" {
-		base = "http://127.0.0.1:3001"
-	}
-	c.base = base
 	c.addr = addr
 
 	mailer, err := services.NewMailService()
