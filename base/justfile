@@ -20,3 +20,6 @@ inspect:
 
     @forge inspect --json PortmanManager abi > tmp/PortmanManager.abi
     @forge inspect --json PortmanManager bytecode > tmp/PortmanManager.bin
+
+    @forge inspect --json PortmanDispenser abi > tmp/PortmanDispenser.abi
+    @forge inspect --json PortmanDispenser bytecode > tmp/PortmanDispenser.bin
