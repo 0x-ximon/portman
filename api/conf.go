@@ -7,19 +7,15 @@ import (
 
 	"github.com/0x-ximon/portman/api/services"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/nats-io/nats.go/jetstream"
 )
-
-type Consumers struct {
-	ordersProcessed jetstream.Consumer
-}
 
 type Config struct {
 	addr    string
 	pool    *pgxpool.Pool
+	web3    *services.Web3Service
 	mailer  *services.MailService
-	batcher *services.BatchService
 	cacher  *services.CacheService
+	batcher *services.BatchService
 }
 
 func (c *Config) Load(ctx context.Context) error {
@@ -34,6 +30,12 @@ func (c *Config) Load(ctx context.Context) error {
 		return fmt.Errorf("ADDR is not set")
 	}
 	c.addr = addr
+
+	web3, err := services.NewWeb3Service()
+	if err != nil {
+		return fmt.Errorf("web3 setup failed: %w", err)
+	}
+	c.web3 = web3
 
 	mailer, err := services.NewMailService()
 	if err != nil {

@@ -11,3 +11,7 @@ build:
 
 test:
     go test -v
+
+generate:
+    @mkdir -p contracts
+    @abigen --v2 --abi ../base/tmp/PortmanDispenser.abi --bin ../base/tmp/PortmanDispenser.bin --pkg contracts --type Dispenser --out contracts/dispenser.go
