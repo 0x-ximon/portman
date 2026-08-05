@@ -43,6 +43,7 @@ func main() {
 	// Handlers
 	deps := &handlers.Dependencies{
 		DB:      pool,
+		Web3:    cfg.web3,
 		Mailer:  cfg.mailer,
 		Cacher:  cfg.cacher,
 		Batcher: cfg.batcher,

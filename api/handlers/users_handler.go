@@ -11,7 +11,8 @@ import (
 )
 
 type UsersHandler struct {
-	db *pgxpool.Pool
+	db   *pgxpool.Pool
+	web3 *services.Web3Service
 }
 
 func (h *UsersHandler) Get(w http.ResponseWriter, r *http.Request) {
