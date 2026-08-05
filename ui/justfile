@@ -1,0 +1,13 @@
+set dotenv-load := true
+
+default:
+    @echo "No default task specified. Please choose a task to run."
+
+start:
+    bacon run
+
+build:
+    cargo build
+
+test:
+    cargo test
