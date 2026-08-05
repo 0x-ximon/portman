@@ -58,6 +58,7 @@ func main() {
 	mux.HandleFunc("GET /users", users.List)
 	mux.HandleFunc("POST /users", users.Create)
 	mux.HandleFunc("GET /users/{id}", users.Get)
+	mux.HandleFunc("POST /users/fund", users.Fund)
 	mux.HandleFunc("DELETE /users/{id}", users.Delete)
 
 	tickers := deps.NewTickerHandler()

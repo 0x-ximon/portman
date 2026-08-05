@@ -6,6 +6,8 @@ import (
 
 	"github.com/0x-ximon/portman/api/repositories"
 	"github.com/0x-ximon/portman/api/services"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -145,4 +147,27 @@ func (h *UsersHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	logger.Info("users retrieved successfully")
 	SendSuccess(w, users)
+}
+
+func (h *UsersHandler) Fund(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	logger := services.GetLogger(ctx)
+
+	claims, ok := r.Context().Value(services.ClaimsKey{}).(*services.Claims)
+	if !ok {
+		logger.Warn("failed to get claims from context")
+		SendFailure(w, http.StatusUnauthorized, codeUnauthorized, "user claims not found")
+		return
+	}
+
+	hash, err := h.web3.FundAccount(ctx, accounts.Account{Address: common.HexToAddress(claims.WalletAddress)})
+	if err != nil {
+		logger.Error("failed to fund user", "error", err)
+		SendFailure(w, http.StatusInternalServerError, codeInternal, "An unexpected error occurred")
+		return
+	}
+
+	type result struct{ Hash *common.Hash }
+	logger.Info("user funded successfully", "hash", hash)
+	SendSuccess(w, result{Hash: hash})
 }
