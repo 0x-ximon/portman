@@ -1,0 +1,8 @@
+{
+	"name": "Portman",
+	"summary": "A high-performance, terminal-native portfolio manager.",
+	"media": {
+		"images": ["demo_dark.png", "demo_light.png"],
+		"videos": []
+	}
+}
