@@ -1,0 +1,25 @@
+set dotenv-load := true
+
+default:
+    @echo "No default task specified. Please choose a task to run."
+
+build:
+    forge build 
+
+test:
+    forge test -vvv
+
+deploy script:
+    forge script script/{{script}}.s.sol --rpc-url $ETHEREUM_RPC --account $ACCOUNT --password "$PASSWORD" --broadcast
+
+inspect:
+    @mkdir -p tmp
+
+    @forge inspect --json PortmanAccount abi > tmp/PortmanAccount.abi
+    @forge inspect --json PortmanAccount bytecode > tmp/PortmanAccount.bin
+
+    @forge inspect --json PortmanManager abi > tmp/PortmanManager.abi
+    @forge inspect --json PortmanManager bytecode > tmp/PortmanManager.bin
+
+    @forge inspect --json PortmanDispenser abi > tmp/PortmanDispenser.abi
+    @forge inspect --json PortmanDispenser bytecode > tmp/PortmanDispenser.bin

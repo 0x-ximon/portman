@@ -7,6 +7,7 @@ import (
 
 type Dependencies struct {
 	DB      *pgxpool.Pool
+	Web3    *services.Web3Service
 	Mailer  *services.MailService
 	Cacher  *services.CacheService
 	Batcher *services.BatchService
@@ -22,7 +23,8 @@ func (d *Dependencies) NewAuthHandler() *AuthHandler {
 
 func (d *Dependencies) NewUsersHandler() *UsersHandler {
 	return &UsersHandler{
-		db: d.DB,
+		db:   d.DB,
+		web3: d.Web3,
 	}
 }
 

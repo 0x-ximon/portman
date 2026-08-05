@@ -8,15 +8,7 @@ import (
 	chi "github.com/go-chi/chi/middleware"
 
 	"github.com/0x-ximon/portman/api/handlers"
-	"github.com/joho/godotenv"
 )
-
-func init() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
 
 func main() {
 	mux := http.NewServeMux()
@@ -51,6 +43,7 @@ func main() {
 	// Handlers
 	deps := &handlers.Dependencies{
 		DB:      pool,
+		Web3:    cfg.web3,
 		Mailer:  cfg.mailer,
 		Cacher:  cfg.cacher,
 		Batcher: cfg.batcher,
@@ -65,6 +58,7 @@ func main() {
 	mux.HandleFunc("GET /users", users.List)
 	mux.HandleFunc("POST /users", users.Create)
 	mux.HandleFunc("GET /users/{id}", users.Get)
+	mux.HandleFunc("POST /users/fund", users.Fund)
 	mux.HandleFunc("DELETE /users/{id}", users.Delete)
 
 	tickers := deps.NewTickerHandler()
