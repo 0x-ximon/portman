@@ -7,12 +7,14 @@ import {PortmanDispenser} from "../src/PortmanDispenser.sol";
 
 contract PortmanDispenserScript is Script {
     function run() public {
-        vm.startBroadcast();
+        address sender = vm.envAddress("SENDER");
 
-        address admin = msg.sender;
-        PortmanDispenser dispenser = new PortmanDispenser(admin);
+        vm.startBroadcast(sender);
+        PortmanDispenser dispenser = new PortmanDispenser(sender);
         console.log("PortmanDispenser:", address(dispenser));
 
+        address asset = dispenser.createAsset("Portman Dollar", "USD", 6);
+        console.log("PortmanAsset:", asset);
         vm.stopBroadcast();
     }
 }

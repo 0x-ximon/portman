@@ -7,7 +7,10 @@ import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 contract PortmanAsset is ERC20, Ownable {
     uint8 private immutable DECIMALS;
 
-    constructor(string memory name, string memory symbol, uint8 _decimals) ERC20(name, symbol) Ownable(msg.sender) {
+    constructor(string memory name, string memory symbol, uint8 _decimals, address owner)
+        ERC20(name, symbol)
+        Ownable(owner)
+    {
         DECIMALS = _decimals;
     }
 
@@ -34,10 +37,11 @@ contract PortmanDispenser is Ownable {
         asset.fund(to, amount);
     }
 
-    function createAsset(string memory name, string memory symbol, uint8 precision) external onlyOwner {
+    function createAsset(string memory name, string memory symbol, uint8 decimal) external onlyOwner returns (address) {
         require(address(assets[name]) == address(0), AssetAlreadyExists());
-        PortmanAsset asset = new PortmanAsset(name, symbol, precision);
+        PortmanAsset asset = new PortmanAsset(name, symbol, decimal, address(this));
         assets[name] = asset;
+        return address(asset);
     }
 }
 
