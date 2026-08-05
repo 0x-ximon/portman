@@ -1,0 +1,29 @@
+name: Base [Solidity]
+
+on:
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        defaults:
+            run:
+                working-directory: base
+
+        steps:
+          - uses: actions/checkout@v4
+            with:
+              submodules: recursive
+
+          - name: Install Foundry
+            uses: foundry-rs/foundry-toolchain@v1
+
+          - name: Build
+            run: forge build
+
+          - name: Run tests
+            run: forge test -vvv

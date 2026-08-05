@@ -1,4 +1,4 @@
-name: TUI [Rust]
+name: UI [Rust]
 
 on:
     push:
@@ -15,7 +15,7 @@ jobs:
 
         defaults:
             run:
-                working-directory: tui
+                working-directory: ui
 
         steps:
             - uses: actions/checkout@v5
