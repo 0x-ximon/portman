@@ -1,6 +1,6 @@
 *.bru linguist-detectable=false
 *.js linguist-detectable=false
-*.just linguist-detectable=false
+*.justfile linguist-detectable=false
 *.mdx linguist-detectable=false
 *.sql linguist-detectable=false
 *.tmpl linguist-detectable=false
