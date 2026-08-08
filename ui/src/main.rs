@@ -1,15 +1,18 @@
-use crate::events::Events;
+use std::io;
+
 use anyhow::Result;
 use app::App;
 use ratatui::{backend::CrosstermBackend, Terminal};
-use std::io;
+
+use crate::events::Events;
 
 mod app;
+mod contracts;
 mod events;
-// mod contracts;
-// mod screens;
-// mod services;
-// mod widgets;
+mod model;
+mod screens;
+mod services;
+mod widgets;
 
 fn main() -> Result<()> {
     let stdout = io::stdout();

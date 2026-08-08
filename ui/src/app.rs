@@ -1,6 +1,5 @@
 use std::{io, panic};
 
-use crate::events::{Event, Events};
 use anyhow::Result;
 use crossterm::event::KeyCode;
 use ratatui::{
@@ -10,22 +9,37 @@ use ratatui::{
         execute,
         terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
     },
-    layout::Alignment,
-    widgets::{Block, BorderType, Borders},
-    Frame,
+};
+
+use crate::{
+    events::{Event, Events},
+    model::Model,
 };
 
 pub type Terminal = ratatui::Terminal<CrosstermBackend<io::Stdout>>;
 
 #[derive(Debug)]
+pub struct AppState {}
+
+#[derive(Debug)]
 pub struct App {
-    terminal: Terminal,
+    model: Model,
     events: Events,
+    state: AppState,
+    terminal: Terminal,
 }
 
 impl App {
     pub fn new(terminal: Terminal, events: Events) -> Self {
-        Self { terminal, events }
+        let model = Model::new();
+        let state = AppState {};
+
+        Self {
+            model,
+            state,
+            events,
+            terminal,
+        }
     }
 
     pub fn init(&mut self) -> Result<()> {
@@ -52,7 +66,9 @@ impl App {
 
     pub fn run(&mut self) -> Result<()> {
         loop {
-            self.terminal.draw(|frame| Self::draw(frame))?;
+            self.terminal
+                .draw(|frame| frame.render_widget(&self.model, frame.area()))?;
+
             match self.events.next()? {
                 Event::Tick => {}
                 Event::Key(k) => {
@@ -65,16 +81,6 @@ impl App {
                 Event::Quit => return Ok(()),
             }
         }
-    }
-
-    fn draw(frame: &mut Frame) {
-        let widget = Block::new()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .title("Portman")
-            .title_alignment(Alignment::Left);
-
-        frame.render_widget(widget, frame.area());
     }
 
     fn reset() -> Result<()> {
