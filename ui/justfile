@@ -4,10 +4,13 @@ default:
     @echo "No default task specified. Please choose a task to run."
 
 start:
-    bacon run
+    @cargo run
 
 build:
-    cargo build
+    @cargo build
 
 test:
-    cargo test
+    @cargo test
+
+generate:
+    @forge bind --module --select PortmanAccount --select PortmanManager --root ../base --bindings-path ./src/contracts --overwrite
