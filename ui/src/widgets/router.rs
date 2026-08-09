@@ -13,10 +13,10 @@ impl Router {
     }
 }
 
-impl Widget for Router {
+impl Widget for &Router {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let content = Block::new()
-            .borders(Borders::NONE)
+            .borders(Borders::ALL)
             .border_type(BorderType::Rounded);
 
         content.render(area, buf);

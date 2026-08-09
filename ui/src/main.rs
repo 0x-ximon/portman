@@ -12,6 +12,7 @@ mod events;
 mod model;
 mod screens;
 mod services;
+mod state;
 mod widgets;
 
 fn main() -> Result<()> {

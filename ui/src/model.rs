@@ -7,11 +7,16 @@ use ratatui::{
 use crate::widgets::{navigator::Navigator, router::Router};
 
 #[derive(Debug)]
-pub struct Model {}
+pub struct Model {
+    navigator: Navigator,
+    router: Router,
+}
 
 impl Model {
     pub fn new() -> Self {
-        Self {}
+        let navigator = Navigator::new();
+        let router = Router::new();
+        Self { navigator, router }
     }
 }
 
@@ -22,10 +27,7 @@ impl Widget for &Model {
             .constraints(vec![Constraint::Percentage(10), Constraint::Percentage(90)])
             .split(area);
 
-        let navigator = Navigator::new();
-        let router = Router::new();
-
-        navigator.render(layout[0], buf);
-        router.render(layout[1], buf);
+        let _ = &self.navigator.render(layout[0], buf);
+        let _ = &self.router.render(layout[1], buf);
     }
 }

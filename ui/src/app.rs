@@ -14,25 +14,23 @@ use ratatui::{
 use crate::{
     events::{Event, Events},
     model::Model,
+    state::State,
 };
 
 pub type Terminal = ratatui::Terminal<CrosstermBackend<io::Stdout>>;
 
 #[derive(Debug)]
-pub struct AppState {}
-
-#[derive(Debug)]
 pub struct App {
     model: Model,
+    state: State,
     events: Events,
-    state: AppState,
     terminal: Terminal,
 }
 
 impl App {
     pub fn new(terminal: Terminal, events: Events) -> Self {
         let model = Model::new();
-        let state = AppState {};
+        let state = State::new();
 
         Self {
             model,

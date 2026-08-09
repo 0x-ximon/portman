@@ -34,7 +34,7 @@ impl Events {
                 let mut tick = Instant::now();
                 loop {
                     let timeout = interval.checked_sub(tick.elapsed()).unwrap_or(interval);
-                    if terminal_event::poll(timeout).is_ok() {
+                    if let Ok(true) = terminal_event::poll(timeout) {
                         if let Ok(event) = terminal_event::read() {
                             let _ = match event {
                                 TerminalEvent::Key(k) => sender.send(Event::Key(k)),
