@@ -14,7 +14,7 @@ use ratatui::{
 use crate::{
     events::{Event, Events},
     model::Model,
-    state::State,
+    state::{Routes, State},
 };
 
 pub type Terminal = ratatui::Terminal<CrosstermBackend<io::Stdout>>;
@@ -64,16 +64,19 @@ impl App {
 
     pub fn run(&mut self) -> Result<()> {
         loop {
-            self.terminal
-                .draw(|frame| frame.render_widget(&self.model, frame.area()))?;
+            self.terminal.draw(|frame| {
+                frame.render_stateful_widget(&self.model, frame.area(), &mut self.state)
+            })?;
 
             match self.events.next()? {
                 Event::Tick => {}
-                Event::Key(k) => {
-                    if k.code == KeyCode::Esc {
-                        return Ok(());
-                    }
-                }
+                Event::Key(k) => match k.code {
+                    KeyCode::Esc => return Ok(()),
+                    KeyCode::Char('1') => self.state.set_active(Routes::Home),
+                    KeyCode::Char('2') => self.state.set_active(Routes::Account),
+                    KeyCode::Char('3') => self.state.set_active(Routes::Config),
+                    _ => {}
+                },
                 Event::Mouse(m) => {}
                 Event::Resize(w, h) => {}
                 Event::Quit => return Ok(()),
