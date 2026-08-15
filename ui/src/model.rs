@@ -1,7 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Layout, Rect},
-    widgets::{StatefulWidget, Widget},
+    widgets::StatefulWidget,
 };
 
 use crate::state::State;

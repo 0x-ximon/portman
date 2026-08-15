@@ -21,8 +21,8 @@ impl StatefulWidget for &Navigator {
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let text = match state.active {
             Routes::Home => "Home",
-            Routes::Account => "Account",
             Routes::Config => "Config",
+            Routes::Account => "Account",
         };
 
         let border = Block::new()
@@ -30,7 +30,6 @@ impl StatefulWidget for &Navigator {
             .border_type(BorderType::Rounded);
 
         let content = Paragraph::new(text).block(border);
-
         content.render(area, buf);
     }
 }
