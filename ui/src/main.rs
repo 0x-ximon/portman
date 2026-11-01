@@ -7,6 +7,7 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use crate::events::Events;
 
 mod app;
+mod configs;
 mod contracts;
 mod events;
 mod model;

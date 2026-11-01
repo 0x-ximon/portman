@@ -28,10 +28,12 @@ impl Events {
     pub fn new(rate: u64) -> Self {
         let interval = Duration::from_millis(rate);
         let (sender, receiver) = mpsc::channel();
+
         let handler = {
             let sender = sender.clone();
             thread::spawn(move || {
                 let mut tick = Instant::now();
+
                 loop {
                     let timeout = interval.checked_sub(tick.elapsed()).unwrap_or(interval);
                     if let Ok(true) = terminal_event::poll(timeout) {

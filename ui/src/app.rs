@@ -14,7 +14,7 @@ use ratatui::{
 use crate::{
     events::{Event, Events},
     model::Model,
-    state::{Routes, State},
+    state::State,
 };
 
 pub type Terminal = ratatui::Terminal<CrosstermBackend<io::Stdout>>;
@@ -72,13 +72,19 @@ impl App {
                 Event::Tick => {}
                 Event::Key(k) => match k.code {
                     KeyCode::Esc => return Ok(()),
-                    KeyCode::Char('1') => self.state.set_active(Routes::Home),
-                    KeyCode::Char('2') => self.state.set_active(Routes::Account),
-                    KeyCode::Char('3') => self.state.set_active(Routes::Config),
+                    // KeyCode::Char('1') => self.state.set_active(Routes::Home),
+                    // KeyCode::Char('2') => self.state.set_active(Routes::Account),
+                    // KeyCode::Char('3') => self.state.set_active(Routes::Config),
                     _ => {}
                 },
-                Event::Mouse(m) => {}
-                Event::Resize(w, h) => {}
+                Event::Mouse(m) => {
+                    let _ = m;
+                }
+
+                Event::Resize(w, h) => {
+                    _ = (w, h);
+                }
+
                 Event::Quit => return Ok(()),
             }
         }

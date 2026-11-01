@@ -14,12 +14,12 @@ impl AccountScreen {
 }
 
 impl Widget for &AccountScreen {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         let border = Block::new()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded);
 
         let content = Paragraph::new("Account").block(border);
-        content.render(area, buf);
+        content.render(area, buffer);
     }
 }

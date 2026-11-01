@@ -23,6 +23,7 @@ impl StatefulWidget for &Navigator {
             Routes::Home => "Home",
             Routes::Config => "Config",
             Routes::Account => "Account",
+            _ => "Unknown",
         };
 
         let border = Block::new()

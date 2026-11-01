@@ -5,19 +5,26 @@ use ratatui::{
 };
 
 use crate::state::State;
-use crate::widgets::{navigator::Navigator, router::Router};
+use crate::widgets::{body::Body, footer::Footer, header::Header};
 
 #[derive(Debug)]
 pub struct Model {
-    navigator: Navigator,
-    router: Router,
+    header: Header,
+    body: Body,
+    footer: Footer,
 }
 
 impl Model {
     pub fn new() -> Self {
-        let navigator = Navigator::new();
-        let router = Router::new();
-        Self { navigator, router }
+        let header = Header::new();
+        let body = Body::new();
+        let footer = Footer::new();
+
+        Self {
+            header,
+            body,
+            footer,
+        }
     }
 }
 
@@ -27,10 +34,15 @@ impl StatefulWidget for &Model {
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let layout = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Percentage(10), Constraint::Percentage(90)])
+            .constraints(vec![
+                Constraint::Percentage(6),
+                Constraint::Percentage(88),
+                Constraint::Percentage(6),
+            ])
             .split(area);
 
-        let _ = &self.navigator.render(layout[0], buf, state);
-        let _ = &self.router.render(layout[1], buf, state);
+        let _ = &self.header.render(layout[0], buf, state);
+        let _ = &self.body.render(layout[1], buf, state);
+        let _ = &self.footer.render(layout[2], buf, state);
     }
 }

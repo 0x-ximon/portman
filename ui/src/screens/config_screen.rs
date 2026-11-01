@@ -14,12 +14,12 @@ impl ConfigScreen {
 }
 
 impl Widget for &ConfigScreen {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(self, area: Rect, buffer: &mut Buffer) {
         let border = Block::new()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded);
 
         let content = Paragraph::new("Config").block(border);
-        content.render(area, buf);
+        content.render(area, buffer);
     }
 }
