@@ -31,7 +31,7 @@ impl Model {
 impl StatefulWidget for &Model {
     type State = State;
 
-    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
         let layout = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
@@ -41,8 +41,8 @@ impl StatefulWidget for &Model {
             ])
             .split(area);
 
-        let _ = &self.header.render(layout[0], buf, state);
-        let _ = &self.body.render(layout[1], buf, state);
-        let _ = &self.footer.render(layout[2], buf, state);
+        let _ = &self.header.render(layout[0], buffer, state);
+        let _ = &self.body.render(layout[1], buffer, state);
+        let _ = &self.footer.render(layout[2], buffer, state);
     }
 }

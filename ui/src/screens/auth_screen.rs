@@ -1,20 +1,6 @@
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{Block, BorderType, Borders, Paragraph, Widget},
-};
+use ratatui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
-// const LOGO: &str = r#"
-// ██████╗  ██████╗ ██████╗ ████████╗███╗   ███╗ █████╗ ███╗   ██╗
-// ██╔══██╗██╔═══██╗██╔══██╗╚══██╔══╝████╗ ████║██╔══██╗████╗  ██║
-// ██████╔╝██║   ██║██████╔╝   ██║   ██╔████╔██║███████║██╔██╗ ██║
-// ██╔═══╝ ██║   ██║██╔══██╗   ██║   ██║╚██╔╝██║██╔══██║██║╚██╗██║
-// ██║     ╚██████╔╝██║  ██║   ██║   ██║ ╚═╝ ██║██║  ██║██║ ╚████║
-// ╚═╝      ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝"#;
-//
-// let logo = Paragraph::new(LOGO.trim_start_matches('\n'))
-//     .style(Style::new().fg(Color::Rgb(0xF2, 0xA9, 0x3B)))
-//     .alignment(Alignment::Center);
+use crate::state::State;
 
 #[derive(Debug)]
 pub struct AuthScreen {}
@@ -25,13 +11,12 @@ impl AuthScreen {
     }
 }
 
-impl Widget for &AuthScreen {
-    fn render(self, area: Rect, buffer: &mut Buffer) {
-        let border = Block::new()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded);
+impl StatefulWidget for &AuthScreen {
+    type State = State;
 
-        let content = Paragraph::new("Auth").block(border);
-        content.render(area, buffer);
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        _ = area;
+        _ = buffer;
+        _ = state;
     }
 }

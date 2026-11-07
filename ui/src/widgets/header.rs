@@ -2,24 +2,24 @@ use ratatui::{
     buffer::Buffer,
     layout::{Constraint, Direction, Flex, Layout, Rect},
     style::Stylize,
-    widgets::{Block, BorderType, Borders, Padding, Paragraph, StatefulWidget, Widget},
+    widgets::{Block, Borders, Padding, Paragraph, StatefulWidget, Widget},
 };
 
 use crate::{
     configs::APP_VERSION,
     state::{Routes, State},
-    widgets::navigator::Navigator,
+    widgets::router::Router,
 };
 
 #[derive(Debug)]
 pub struct Header {
-    navigator: Navigator,
+    router: Router,
 }
 
 impl Header {
     pub fn new() -> Self {
         Self {
-            navigator: Navigator::new(),
+            router: Router::new(),
         }
     }
 }
