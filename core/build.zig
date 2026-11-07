@@ -9,9 +9,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
-    const lib = b.addModule("lib", .{
-        .root_source_file = b.path("src/root.zig"),
+    const lib = b.addModule("portman_lib", .{
         .target = target,
+        .optimize = optimize,
+        .root_source_file = b.path("src/root.zig"),
     });
 
     const exe = b.addExecutable(.{
@@ -27,25 +28,27 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    b.installArtifact(exe);
+    const tests = b.addTest(.{
+        .use_llvm = true,
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/test.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "lib", .module = lib },
+            },
+        }),
+    });
 
+    b.installArtifact(exe);
     const run_step = b.step("run", "Run the app");
     const run_cmd = b.addRunArtifact(exe);
 
     run_step.dependOn(&run_cmd.step);
     run_cmd.step.dependOn(b.getInstallStep());
-
-    if (b.args) |args| {
-        run_cmd.addArgs(args);
-    }
-
-    const lib_tests = b.addTest(.{ .root_module = lib, .use_llvm = true });
-    const exe_tests = b.addTest(.{ .root_module = exe.root_module, .use_llvm = true });
-
-    const run_lib_tests = b.addRunArtifact(lib_tests);
-    const run_exe_tests = b.addRunArtifact(exe_tests);
+    run_cmd.addPassthruArgs();
 
     const test_step = b.step("test", "Run tests");
-    test_step.dependOn(&run_lib_tests.step);
-    test_step.dependOn(&run_exe_tests.step);
+    const run_tests = b.addRunArtifact(tests);
+    test_step.dependOn(&run_tests.step);
 }

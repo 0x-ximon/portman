@@ -1,12 +1,12 @@
 .{
     .name = .portman_core,
-    .version = "0.0.0",
+    .version = "0.1.0",
     .fingerprint = 0x671b7c41b058c8b6,
-    .minimum_zig_version = "0.16.0",
+    .minimum_zig_version = "0.17.0",
     .dependencies = .{
         .nats = .{
-            .url = "https://github.com/nats-io/nats.zig/archive/refs/tags/v0.1.0.tar.gz",
-            .hash = "nats-0.1.0-991asSaJHwDW4HKS48mXiDMmBrr_yAk1P3RNEW5cudKa",
+            .url = "git+https://github.com/nats-io/nats.zig#7f1ad603b6495cb10fed5eee628d845fe214c601",
+            .hash = "nats-0.1.0-991asUeTHwBdTug5WfNzPnvxGbT9ZrEJCrjXClbqqBvg",
         },
     },
     .paths = .{
