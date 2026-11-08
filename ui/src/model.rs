@@ -16,14 +16,10 @@ pub struct Model {
 
 impl Model {
     pub fn new() -> Self {
-        let header = Header::new();
-        let body = Body::new();
-        let footer = Footer::new();
-
         Self {
-            header,
-            body,
-            footer,
+            header: Header::new(),
+            body: Body::new(),
+            footer: Footer::new(),
         }
     }
 }

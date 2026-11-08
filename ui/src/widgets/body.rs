@@ -1,8 +1,4 @@
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{StatefulWidget, Widget},
-};
+use ratatui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
     screens::{

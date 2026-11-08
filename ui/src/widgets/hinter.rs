@@ -4,7 +4,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget},
 };
 
-use crate::state::{Routes, State};
+use crate::state::State;
 
 #[derive(Debug)]
 pub struct Hinter {}

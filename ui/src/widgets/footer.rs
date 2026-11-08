@@ -1,6 +1,7 @@
 use ratatui::{
     buffer::Buffer,
     layout::Rect,
+    style::Stylize,
     widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget},
 };
 
@@ -23,11 +24,9 @@ impl StatefulWidget for &Footer {
         let _ = buffer;
         let _ = state;
 
-        let border = Block::new()
-            .borders(Borders::TOP)
-            .border_type(BorderType::Rounded);
+        let border = Block::new().borders(Borders::TOP).dark_gray();
 
-        let content = Paragraph::new("Footer").block(border);
+        let content = Paragraph::new("[Esc] Quit").block(border);
         content.render(area, buffer);
     }
 }

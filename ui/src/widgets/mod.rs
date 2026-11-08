@@ -1,3 +1,4 @@
+pub mod authenticator;
 pub mod banner;
 pub mod body;
 pub mod footer;
