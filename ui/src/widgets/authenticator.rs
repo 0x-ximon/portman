@@ -1,12 +1,12 @@
 use ratatui::{
     buffer::Buffer,
     layout::{Alignment, Constraint, Direction, Flex, Layout, Rect, Size},
-    style::Stylize,
+    style::{Style, Stylize},
     text::Text,
-    widgets::{Block, Borders, Padding, Paragraph, StatefulWidget, Widget},
+    widgets::{Block, Borders, Paragraph, StatefulWidget, Widget},
 };
 
-use crate::state::State;
+use crate::{meta::Action, state::State};
 
 #[derive(Debug)]
 pub struct Authenticator {
@@ -57,14 +57,21 @@ impl StatefulWidget for &Authenticator {
             .flex(Flex::Start)
             .split(block.inner(area));
 
+        let hovered = state.hovered == Some(Action::Authenticate);
+        let style = match hovered {
+            true => Style::new().on_blue(),
+            false => Style::new().on_light_blue(),
+        };
+
         let button = Paragraph::new("\nSign in with Passkey")
-            .on_light_blue()
+            .style(style)
             .centered();
 
         (&self.heading).render(layout[0], buffer);
         (&self.subheading).render(layout[1], buffer);
         (button).render(layout[3], buffer);
 
+        state.hitboxes.push((layout[3], Action::Authenticate));
         block.render(area, buffer);
     }
 }

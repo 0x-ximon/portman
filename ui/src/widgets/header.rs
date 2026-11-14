@@ -5,11 +5,7 @@ use ratatui::{
     widgets::{Block, Borders, Padding, Paragraph, StatefulWidget, Widget},
 };
 
-use crate::{
-    configs::APP_VERSION,
-    state::{Routes, State},
-    widgets::router::Router,
-};
+use crate::{configs::APP_VERSION, meta::Route, state::State, widgets::router::Router};
 
 #[derive(Debug)]
 pub struct Header {
@@ -33,8 +29,8 @@ impl StatefulWidget for &Header {
             .borders(Borders::BOTTOM)
             .dark_gray();
 
-        match state.active {
-            Routes::Auth => {
+        match state.route {
+            Route::Auth => {
                 let layout = Layout::default()
                     .direction(Direction::Horizontal)
                     .constraints(vec![Constraint::Percentage(20), Constraint::Percentage(20)])
@@ -54,10 +50,10 @@ impl StatefulWidget for &Header {
                     .render(layout[1], buffer);
             }
 
-            Routes::Home => todo!(),
-            Routes::Account => todo!(),
-            Routes::Trades => todo!(),
-            Routes::Config => todo!(),
+            Route::Home => todo!(),
+            Route::Account => todo!(),
+            Route::Trades => todo!(),
+            Route::Config => todo!(),
         };
 
         block.render(area, buffer);

@@ -1,7 +1,7 @@
 use std::{io, panic};
 
 use anyhow::Result;
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
 use ratatui::{
     backend::CrosstermBackend,
     crossterm::{
@@ -9,10 +9,12 @@ use ratatui::{
         execute,
         terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
     },
+    layout::Position,
 };
 
 use crate::{
     events::{Event, Events},
+    meta::Action,
     model::Model,
     state::State,
 };
@@ -72,13 +74,19 @@ impl App {
                 Event::Tick => {}
                 Event::Key(k) => match k.code {
                     KeyCode::Esc => return Ok(()),
-                    // KeyCode::Char('1') => self.state.set_active(Routes::Home),
-                    // KeyCode::Char('2') => self.state.set_active(Routes::Account),
-                    // KeyCode::Char('3') => self.state.set_active(Routes::Config),
                     _ => {}
                 },
                 Event::Mouse(m) => {
-                    let _ = m;
+                    let position = Position::new(m.column, m.row);
+                    match m.kind {
+                        MouseEventKind::Down(MouseButton::Left) => {
+                            if let Some(action) = self.state.hit(position) {
+                                self.execute(action);
+                            }
+                        }
+                        MouseEventKind::Moved => self.state.hovered = self.state.hit(position),
+                        _ => {}
+                    }
                 }
 
                 Event::Resize(w, h) => {
@@ -87,6 +95,12 @@ impl App {
 
                 Event::Quit => return Ok(()),
             }
+        }
+    }
+
+    fn execute(&self, action: Action) {
+        match action {
+            Action::Authenticate => {}
         }
     }
 

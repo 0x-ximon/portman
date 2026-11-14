@@ -4,7 +4,7 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph, StatefulWidget, Widget},
 };
 
-use crate::state::{Routes, State};
+use crate::{meta::Route, state::State};
 
 #[derive(Debug)]
 pub struct Router {}
@@ -19,10 +19,10 @@ impl StatefulWidget for &Router {
     type State = State;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        let text = match state.active {
-            Routes::Home => "Home",
-            Routes::Config => "Config",
-            Routes::Account => "Account",
+        let text = match state.route {
+            Route::Home => "Home",
+            Route::Config => "Config",
+            Route::Account => "Account",
             _ => "Unknown",
         };
 

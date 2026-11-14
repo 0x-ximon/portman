@@ -37,6 +37,7 @@ impl StatefulWidget for &Model {
             ])
             .split(area);
 
+        state.hitboxes.clear();
         let _ = &self.header.render(layout[0], buffer, state);
         let _ = &self.body.render(layout[1], buffer, state);
         let _ = &self.footer.render(layout[2], buffer, state);

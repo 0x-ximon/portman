@@ -12,6 +12,7 @@ mod app;
 mod configs;
 mod contracts;
 mod events;
+mod meta;
 mod model;
 mod screens;
 mod services;

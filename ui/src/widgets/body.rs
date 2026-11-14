@@ -1,11 +1,12 @@
 use ratatui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
 
 use crate::{
+    meta::Route,
     screens::{
         account_screen::AccountScreen, auth_screen::AuthScreen, config_screen::ConfigScreen,
         home_screen::HomeScreen, trades_screen::TradesScreen,
     },
-    state::{Routes, State},
+    state::State,
 };
 
 #[derive(Debug)]
@@ -33,12 +34,12 @@ impl StatefulWidget for &Body {
     type State = State;
 
     fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
-        match state.active {
-            Routes::Auth => self.auth_screen.render(area, buffer, state),
-            Routes::Home => self.home_screen.render(area, buffer, state),
-            Routes::Account => self.account_screen.render(area, buffer, state),
-            Routes::Trades => self.trades_screen.render(area, buffer, state),
-            Routes::Config => self.config_screen.render(area, buffer, state),
+        match state.route {
+            Route::Auth => self.auth_screen.render(area, buffer, state),
+            Route::Home => self.home_screen.render(area, buffer, state),
+            Route::Account => self.account_screen.render(area, buffer, state),
+            Route::Trades => self.trades_screen.render(area, buffer, state),
+            Route::Config => self.config_screen.render(area, buffer, state),
         }
     }
 }
