@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Script} from "forge-std/Script.sol";
-import {console} from "forge-std/console.sol";
-import {PortmanDispenser} from "../src/PortmanDispenser.sol";
+import { PortmanDispenser } from "../src/PortmanDispenser.sol";
+import { Script } from "forge-std/Script.sol";
+import { console } from "forge-std/console.sol";
 
 contract PortmanDispenserScript is Script {
     function run() public {

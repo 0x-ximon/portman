@@ -1,7 +1,7 @@
 use std::{io, panic};
 
 use anyhow::Result;
-use crossterm::event::KeyCode;
+use crossterm::event::{KeyCode, MouseButton, MouseEventKind};
 use ratatui::{
     backend::CrosstermBackend,
     crossterm::{
@@ -9,12 +9,14 @@ use ratatui::{
         execute,
         terminal::{self, EnterAlternateScreen, LeaveAlternateScreen},
     },
+    layout::Position,
 };
 
 use crate::{
     events::{Event, Events},
+    meta::Action,
     model::Model,
-    state::{Routes, State},
+    state::State,
 };
 
 pub type Terminal = ratatui::Terminal<CrosstermBackend<io::Stdout>>;
@@ -72,15 +74,33 @@ impl App {
                 Event::Tick => {}
                 Event::Key(k) => match k.code {
                     KeyCode::Esc => return Ok(()),
-                    KeyCode::Char('1') => self.state.set_active(Routes::Home),
-                    KeyCode::Char('2') => self.state.set_active(Routes::Account),
-                    KeyCode::Char('3') => self.state.set_active(Routes::Config),
                     _ => {}
                 },
-                Event::Mouse(m) => {}
-                Event::Resize(w, h) => {}
+                Event::Mouse(m) => {
+                    let position = Position::new(m.column, m.row);
+                    match m.kind {
+                        MouseEventKind::Down(MouseButton::Left) => {
+                            if let Some(action) = self.state.hit(position) {
+                                self.execute(action);
+                            }
+                        }
+                        MouseEventKind::Moved => self.state.hovered = self.state.hit(position),
+                        _ => {}
+                    }
+                }
+
+                Event::Resize(w, h) => {
+                    _ = (w, h);
+                }
+
                 Event::Quit => return Ok(()),
             }
+        }
+    }
+
+    fn execute(&self, action: Action) {
+        match action {
+            Action::Authenticate => {}
         }
     }
 

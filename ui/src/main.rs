@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::io;
 
 use anyhow::Result;
@@ -7,8 +9,10 @@ use ratatui::{backend::CrosstermBackend, Terminal};
 use crate::events::Events;
 
 mod app;
+mod configs;
 mod contracts;
 mod events;
+mod meta;
 mod model;
 mod screens;
 mod services;

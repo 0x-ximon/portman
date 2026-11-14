@@ -1,8 +1,6 @@
-use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    widgets::{Block, BorderType, Borders, Paragraph, Widget},
-};
+use ratatui::{buffer::Buffer, layout::Rect, widgets::StatefulWidget};
+
+use crate::state::State;
 
 #[derive(Debug)]
 pub struct AccountScreen {}
@@ -13,13 +11,12 @@ impl AccountScreen {
     }
 }
 
-impl Widget for &AccountScreen {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let border = Block::new()
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded);
+impl StatefulWidget for &AccountScreen {
+    type State = State;
 
-        let content = Paragraph::new("Account").block(border);
-        content.render(area, buf);
+    fn render(self, area: Rect, buffer: &mut Buffer, state: &mut Self::State) {
+        _ = area;
+        _ = buffer;
+        _ = state;
     }
 }

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.30;
 
-import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
-import {ERC20} from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import { Ownable } from "openzeppelin-contracts/contracts/access/Ownable.sol";
+import { ERC20 } from "openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 
 contract PortmanAsset is ERC20, Ownable {
     uint8 private immutable DECIMALS;
@@ -29,7 +29,7 @@ contract PortmanDispenser is Ownable {
     error AssetAlreadyExists();
     error AssetNotFound();
 
-    constructor(address owner) Ownable(owner) {}
+    constructor(address owner) Ownable(owner) { }
 
     function dispense(string memory name, address to, uint256 amount) external onlyOwner {
         PortmanAsset asset = assets[name];
